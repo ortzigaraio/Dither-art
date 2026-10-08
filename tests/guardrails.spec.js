@@ -562,3 +562,22 @@ test.describe('18.2 runtime robustness', () => {
     await waitForRender(page, n);
   });
 });
+
+test.describe('18.2 the page never looks alive but dead', () => {
+  test('if the app script cannot run, a visible notice explains it', async ({ page }) => {
+    test.setTimeout(30_000);
+    await page.route('**/src/main.js', (route) => route.abort());
+    await page.goto('/');
+    await expect(page.locator('p.noscript[role="alert"]')).toBeVisible({ timeout: 12_000 });
+    await expect(page.locator('p.noscript')).toContainText(/could not start|no ha podido arrancar/);
+    // the static page (header, headline, dropzone text) is still there to read
+    await expect(page.locator('#hero-title')).toBeVisible();
+  });
+
+  test('a healthy start never shows the notice', async ({ page }) => {
+    test.setTimeout(30_000);
+    await gotoApp(page);
+    await page.waitForTimeout(6500); // the safety net fires at 6 s
+    await expect(page.locator('p.noscript')).toHaveCount(0);
+  });
+});

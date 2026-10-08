@@ -1129,6 +1129,10 @@ Registro de cambios respecto a este plan, decididos durante la implementación (
 - La exportación ANSI de ASCII usa la extensión `.ansi.txt` (UTF-8 con SGR); `.ans` queda para el CP437 del modo ANSI (fase 3).
 - Estado: claves de `localStorage` `horain.theme`, `horain.lang` y `horain.params` (versionado `v:1`). El enlace compartible `#s=` y la validación de estado externo ya están hechos (se necesitaban para las pruebas de 18.3); presets y "Sorpréndeme" siguen para la fase 7.
 
+**Robustez**
+- `boot.js` incluye una red de seguridad: si a los 6 s la app no ha arrancado (script bloqueado, navegador muy antiguo, error al cargar) muestra un aviso visible en lugar de una página que parece viva pero no responde (18.2). La tabla de ruido azul (≈ 60 ms) se genera en un `requestIdleCallback` tras el arranque, no al primer uso.
+- Si un modo lanza una excepción, el pipeline muestra la fuente original con el chip `ERROR EN EL MODO`; los modos WebGL2 (`mode.surface = 'gl'`) tienen su propio canvas y recuperan el estado tras `webglcontextlost`/`webglcontextrestored` (preparado para la fase 5, ya probado con un modo de prueba).
+
 **Interfaz**
 - Hero en dos columnas en escritorio (titular + dropzone a la izquierda, demo viva del motor a la derecha) en lugar de un canvas a ancho completo; rota 4 "looks" ASCII cada 4 s (con `prefers-reduced-motion`, un solo fotograma fijo). La galería de modos con miniaturas en vivo se hizo ya en la fase 1 porque el motor lo permite sin esfuerzo; el contador de visitas, Open Graph, manifest, atajos de teclado y Post-FX siguen para la fase 7.
 - El subtítulo del hero cuenta los modos registrados ("1 estilo") en lugar del "25 estilos" final, y el texto de ACERCA dice que el video y la cámara están en camino: actualizar en la fase 2.

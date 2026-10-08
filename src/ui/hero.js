@@ -7,6 +7,7 @@ import { createPipeline } from '../engine/pipeline.js';
 import { createScheduler } from '../scheduler.js';
 import { IMAGE_PARAMS } from '../engine/preprocess.js';
 import { COLOR_PARAMS } from '../engine/color.js';
+import { GRADIENT_OPTIONS } from '../engine/glyphs.js';
 import { DemoSource } from '../io/sources.js';
 import { defaultsOf, sanitizeParams } from '../state.js';
 import { themeOutputColors, onThemeChange } from './header.js';
@@ -59,7 +60,9 @@ export function createHome({ onOpenMode }) {
   // ---- hero demo ----------------------------------------------------------------------------
   function labelFor(look) {
     const mode = getMode(look.modeId);
-    return t('hero.demoLabel', { mode: `${tl(mode.name).toLowerCase()} · ${look.mode?.gradient ?? ''}`.replace(/ · $/, '') });
+    const gradient = GRADIENT_OPTIONS.find((o) => o.value === look.mode?.gradient);
+    const parts = [tl(mode.name), gradient ? tl(gradient.label) : ''].filter(Boolean);
+    return t('hero.demoLabel', { mode: parts.join(' · ').toLowerCase() });
   }
 
   async function frame(now) {

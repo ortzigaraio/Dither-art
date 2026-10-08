@@ -412,3 +412,22 @@ test.describe('home view', () => {
     expect(loaded).toEqual(expect.arrayContaining(['Unbounded', 'Geist', 'Geist Mono']));
   });
 });
+
+test.describe('home view (language)', () => {
+  test('the hero demo label and the nav landmark follow the language', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('horain.lang', 'es'));
+    await gotoApp(page);
+    await page.waitForFunction(() => !document.getElementById('hero-demo').hidden);
+    await expect(page.locator('#hero-demo-label')).toHaveText(/^demo · ascii · /);
+    await expect(page.locator('#site-nav')).toHaveAttribute('aria-label', 'Principal');
+    await page.click('.lang-toggle [data-lang="en"]');
+    await expect(page.locator('#site-nav')).toHaveAttribute('aria-label', 'Primary');
+    // gradient names come from the localized option labels, not raw ids
+    const labels = new Set();
+    for (let i = 0; i < 5; i++) {
+      labels.add(await page.locator('#hero-demo-label').textContent());
+      await page.waitForTimeout(1000);
+    }
+    expect([...labels].some((l) => /standard|blocks|detailed|katakana/.test(l))).toBe(true);
+  });
+});
