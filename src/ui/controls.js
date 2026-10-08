@@ -100,7 +100,13 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
         const paint = (v) => {
           range.style.setProperty('--pct', `${((v - param.min) / (param.max - param.min)) * 100}%`);
         };
-        range.addEventListener('pointerdown', () => onDragging(true));
+        range.addEventListener('pointerdown', () => {
+          onDragging(true);
+          // `change` does not fire when the value did not move, so also end the drag on pointer release
+          const end = () => { onDragging(false); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', end); };
+          window.addEventListener('pointerup', end);
+          window.addEventListener('pointercancel', end);
+        });
         range.addEventListener('input', () => {
           const v = Number(range.value);
           paint(v);
@@ -212,8 +218,13 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
           rst.addEventListener('click', () => { commit(null); build(); });
           line.append(add, del, rst);
         };
+        let signature = '';
         api.update = (force) => {
-          if (force || !line.contains(document.activeElement)) build();
+          const sig = JSON.stringify([current(), store.get(path) === null]);
+          if (sig === signature && !force) return;
+          if (!force && line.contains(document.activeElement)) return;
+          signature = sig;
+          build();
         };
         break;
       }
