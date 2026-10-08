@@ -79,6 +79,7 @@ export default {
   'cat.sim': 'Simulación',
 
   'viewer.toolbar': 'Visor',
+  'viewer.viewport': 'Zoom y desplazamiento: rueda del ratón, arrastrar, o las teclas +, − y 0',
   'viewer.canvasLabel': 'Resultado',
   'viewer.fit': 'Ajustar',
   'viewer.split': 'Antes/después',

@@ -79,6 +79,7 @@ export default {
   'cat.sim': 'Simulation',
 
   'viewer.toolbar': 'Viewer',
+  'viewer.viewport': 'Zoom and pan: mouse wheel, drag, or the + − 0 keys',
   'viewer.canvasLabel': 'Result',
   'viewer.fit': 'Fit',
   'viewer.split': 'Before/after',

@@ -143,7 +143,7 @@
             <button type="button" class="btn btn-ghost btn-sm" id="vw-split" aria-pressed="false" data-i18n="viewer.split">Split</button>
             <button type="button" class="btn btn-ghost btn-sm" id="vw-full" data-i18n="viewer.fullscreen">Fullscreen</button>
           </div>
-          <div class="viewer-viewport" id="viewer-viewport">
+          <div class="viewer-viewport" id="viewer-viewport" tabindex="0" role="group" aria-label="Zoom and pan" data-i18n-attr="aria-label:viewer.viewport">
             <div class="viewer-world" id="viewer-world">
               <canvas id="viewer-original" class="viewer-canvas viewer-original" aria-hidden="true"></canvas>
               <canvas id="viewer-canvas" class="viewer-canvas" role="img" aria-label="Output" data-i18n-attr="aria-label:viewer.canvasLabel"></canvas>
