@@ -351,6 +351,10 @@ test.describe('engine', () => {
         const q = d.quantizePalette(rgba, w, h, palette, a, { serpentine: true });
         out[a] = { ok: q.every((v) => v < palette.length), distinct: new Set(q).size };
       }
+      // quantize(buffer, w, h, palette, ...) is the same call (PLAN.md 5.3 API)
+      const viaQuantize = d.quantize(rgba, w, h, palette, 'floyd-steinberg', { serpentine: true });
+      const direct = d.quantizePalette(rgba, w, h, palette, 'floyd-steinberg', { serpentine: true });
+      out.alias = { ok: true, distinct: viaQuantize.every((v, i) => v === direct[i]) ? 2 : 0 };
       return out;
     });
     for (const [a, r] of Object.entries(res)) {

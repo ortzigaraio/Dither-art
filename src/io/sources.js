@@ -52,7 +52,12 @@ export class ImageSource {
     try {
       bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
     } catch {
-      throw new FileError('decode');
+      // Older engines reject the option value: retry plain (the browser then decides about EXIF rotation)
+      try {
+        bitmap = await createImageBitmap(file);
+      } catch {
+        throw new FileError('decode');
+      }
     }
     if (bitmap.width < 1 || bitmap.height < 1) {
       bitmap.close();

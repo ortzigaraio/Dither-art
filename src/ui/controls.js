@@ -54,7 +54,7 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
     const head = el('div', 'ctl-head');
     const lab = el('label', 'ctl-label', { for: id });
     lab.textContent = label;
-    lab.title = t('studio.reset');
+    lab.title = t('studio.dblReset');
     head.appendChild(lab);
 
     // help tooltip

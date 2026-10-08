@@ -8,8 +8,11 @@ import { lumaFromRGBA, sobelLuma } from './analysis.js';
 
 const range = (id, min, max, def, label, extra = {}) => ({ id, type: 'range', min, max, step: 1, default: def, label, ...extra });
 
+// Phones start with a lighter default (PLAN.md 18.2: "valores por defecto más bajos" on mobile)
+const SMALL_SCREEN = typeof matchMedia === 'function' && matchMedia('(max-width: 699px)').matches;
+
 export const IMAGE_PARAMS = [
-  range('cols', 10, 600, 120, { es: 'Caracteres / Resolución', en: 'Characters / Resolution' }, {
+  range('cols', 10, 600, SMALL_SCREEN ? 80 : 120, { es: 'Caracteres / Resolución', en: 'Characters / Resolution' }, {
     help: { es: 'Cuántas columnas de caracteres (o celdas) tiene el resultado.', en: 'How many columns of characters (or cells) the result has.' },
   }),
   range('brightness', 0, 200, 100, { es: 'Brillo', en: 'Brightness' }, { unit: '%' }),
