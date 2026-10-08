@@ -139,7 +139,9 @@ export function createPipeline({ onInvalidate } = {}) {
     }
 
     // Transparent frame: a margin around the output (shown and exported)
-    const margin = Math.round((g.frame || 0) * outScale);
+    // a mode may render smaller than asked to respect size caps; the fallback picture is always 1x
+    const effScale = error ? 1 : (meta.effectiveScale ?? outScale);
+    const margin = Math.round((g.frame || 0) * effScale);
     let canvas = surface;
     if (margin > 0 && !error) {
       framed.width = surface.width + margin * 2;
@@ -154,7 +156,8 @@ export function createPipeline({ onInvalidate } = {}) {
       canvas,
       width: canvas.width,
       height: canvas.height,
-      outScale,
+      outScale: effScale,
+      requestedScale: outScale,
       workWidth: W,
       workHeight: H,
       meta,

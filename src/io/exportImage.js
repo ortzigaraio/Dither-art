@@ -9,13 +9,19 @@ export function canvasToBlob(canvas, type = 'image/png', quality) {
 }
 
 /**
- * Largest scale <= `scale` whose longest side stays within the export limit.
- * `w1`/`h1` are the output size at scale 1.
+ * Largest scale <= `scale` whose longest side should stay within the export limit.
+ * `w1`/`h1` are the output size at scale 1. Modes round cell sizes to whole pixels at every scale, so this is
+ * an estimate with a safety margin: callers must check the real size and call it again (see shrinkToLimit).
  */
 export function fitExportScale(w1, h1, scale, maxSide = LIMITS.maxExportImageSide) {
   const longest = Math.max(w1, h1) * scale;
   if (longest <= maxSide) return { scale, clamped: false };
-  return { scale: Math.max(0.01, (maxSide / Math.max(w1, h1)) * 0.995), clamped: true };
+  return { scale: Math.max(0.01, (maxSide / Math.max(w1, h1)) * 0.96), clamped: true };
+}
+
+/** Scale to retry with when a render of `longest` px came out above the limit at `scale`. */
+export function shrinkToLimit(scale, longest, maxSide = LIMITS.maxExportImageSide) {
+  return scale * (maxSide / longest) * 0.98;
 }
 
 /** Copy a PNG blob to the clipboard. Resolves false when the browser refuses (permissions, Safari...). */
