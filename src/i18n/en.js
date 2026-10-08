@@ -4,6 +4,7 @@ export default {
 
   'brand.by': 'by',
 
+  'nav.primary': 'Primary',
   'nav.studio': 'Studio',
   'nav.modes': 'Styles',
   'nav.about': 'About',

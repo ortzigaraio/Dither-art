@@ -18,4 +18,17 @@
   root.setAttribute('data-theme', theme);
   root.setAttribute('data-tone', tones[theme]);
   root.setAttribute('lang', lang);
+
+  // Safety net: if the app has not started after a few seconds (blocked script, very old browser, a bug at load time)
+  // say so instead of leaving a page that looks alive but does nothing.
+  setTimeout(function () {
+    if (root.getAttribute('data-ready') === 'true' || !document.body) return;
+    var box = document.createElement('p');
+    box.className = 'noscript';
+    box.setAttribute('role', 'alert');
+    box.textContent = lang === 'es'
+      ? 'Dither no ha podido arrancar. Recarga la página o usa una versión reciente de tu navegador.'
+      : 'Dither could not start. Reload the page or use an up-to-date browser.';
+    document.body.insertBefore(box, document.body.firstChild);
+  }, 6000);
 })();
