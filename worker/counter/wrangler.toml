@@ -9,7 +9,7 @@ routes = [{ pattern = "count.ortzigar.org", custom_domain = true }]
 
 # Sites allowed to increment the counter (exact origins, comma-separated, no trailing slash).
 [vars]
-ALLOWED_ORIGINS = "https://horain.ortzigar.org,https://ortzigaraio.github.io,http://localhost:8080"
+ALLOWED_ORIGINS = "https://dither.ortzigar.org,https://ortzigaraio.github.io,http://localhost:8080"
 
 [[d1_databases]]
 binding = "DB"

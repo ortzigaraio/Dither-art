@@ -6,9 +6,9 @@ Nombres que usa esta guía (cámbialos aquí, en `src/config.js` y en `worker/co
 
 | Qué | Valor |
 |---|---|
-| Web | `https://horain.ortzigar.org` |
+| Web | `https://dither.ortzigar.org` |
 | Contador de visitas | `https://count.ortzigar.org` |
-| Usuario / repo de GitHub | `ortzigaraio` / `Ascii-dithering-Image-to-art-` |
+| Usuario / repo de GitHub | `ortzigaraio` / `Dither-art` |
 
 ---
 
@@ -28,7 +28,7 @@ Repo → **Settings** → **Pages** → *Build and deployment*:
 - **Source**: Deploy from a branch
 - **Branch**: `main`, carpeta `/ (root)` → **Save**
 
-En 1–2 minutos estará en `https://ortzigaraio.github.io/Ascii-dithering-Image-to-art-/`. Comprueba que carga antes de seguir.
+En 1–2 minutos estará en `https://ortzigaraio.github.io/Dither-art/`. Comprueba que carga antes de seguir.
 
 ## 4. Dominio propio con Cloudflare
 
@@ -43,12 +43,12 @@ Cloudflare → `ortzigar.org` → **DNS** → **Add record**:
 
 | Tipo | Nombre | Destino | Proxy |
 |---|---|---|---|
-| `CNAME` | `horain` | `ortzigaraio.github.io` | **DNS only** (nube gris) |
+| `CNAME` | `dither` | `ortzigaraio.github.io` | **DNS only** (nube gris) |
 
 Déjalo en **DNS only**: así GitHub puede emitir y renovar el certificado HTTPS sin problemas.
 
 ### 4.3 Conectar el dominio en GitHub
-1. Repo → **Settings** → **Pages** → **Custom domain**: `horain.ortzigar.org` → **Save**.
+1. Repo → **Settings** → **Pages** → **Custom domain**: `dither.ortzigar.org` → **Save**.
    GitHub crea un commit con el archivo `CNAME` en `main`. Es normal; no lo borres.
 2. Espera a que diga **DNS check successful**.
 3. Marca **Enforce HTTPS**. El certificado puede tardar entre 15 minutos y 1 hora; si la casilla está gris, espera y recarga.
@@ -83,7 +83,7 @@ Pruébalo:
 ```bash
 curl https://count.ortzigar.org/count
 # → {"total":0,"today":0}
-curl -X POST -H "Origin: https://horain.ortzigar.org" https://count.ortzigar.org/hit
+curl -X POST -H "Origin: https://dither.ortzigar.org" https://count.ortzigar.org/hit
 # → {"total":1,"today":1}
 ```
 
@@ -94,8 +94,8 @@ Mientras `counterUrl` esté vacío, el contador simplemente no aparece.
 
 ## 6. Comprobación final
 
-- [ ] `https://horain.ortzigar.org` carga con candado (HTTPS) y el logo espino en la cabecera.
+- [ ] `https://dither.ortzigar.org` carga con candado (HTTPS) y el logo espino en la cabecera.
 - [ ] Soltar una imagen abre el estudio y el modo ASCII responde a los controles.
 - [ ] La consola del navegador no muestra errores ni avisos de CSP.
 - [ ] El contador del pie muestra un número, y al recargar el mismo día no sube.
-- [ ] `https://ortzigaraio.github.io/Ascii-dithering-Image-to-art-/` redirige al dominio propio.
+- [ ] `https://ortzigaraio.github.io/Dither-art/` redirige al dominio propio.
