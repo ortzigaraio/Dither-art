@@ -1,6 +1,10 @@
 // Render pipeline (PLAN.md 5.1): source frame -> work canvas (W x H) -> preprocess -> analysis -> mode.render
 // -> output surface (+ transparent frame). One pipeline instance owns its canvases and caches, so the studio,
 // the hero demo and the exporter can each have their own.
+//
+// Output surfaces: Canvas2D by default. A canvas can only ever hold one kind of context, so modes that draw with
+// WebGL2 declare `surface: 'gl'` and get a separate canvas (`ctx.out.gl`, also `ctx.gl`) that survives context loss:
+// on `webglcontextlost` / `webglcontextrestored` the mode state is dropped and rebuilt by the next render.
 
 import { Analysis } from './analysis.js';
 import { cropRect, preprocess, preprocessKey } from './preprocess.js';
@@ -16,10 +20,32 @@ export function createPipeline({ onInvalidate } = {}) {
   const ws = { canvas: makeCanvas(), ctx: null, scratch: [] };
   ws.ctx = ws.canvas.getContext('2d', { willReadFrequently: true });
   const analysis = new Analysis();
-  const surface = makeCanvas();
+  const surface2d = makeCanvas();
   const framed = makeCanvas();
-  const out = { canvas: surface, ctx2d: surface.getContext('2d') };
+  const out2d = { canvas: surface2d, ctx2d: surface2d.getContext('2d'), gl: null };
+  let outGl = null; // created on first use by a 'gl' mode
   const states = new Map(); // modeId -> { mode, state }
+
+  function glSurface() {
+    if (outGl) return outGl;
+    const canvas = makeCanvas();
+    const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true, antialias: false });
+    if (!gl) throw new Error('WebGL2 is not available');
+    canvas.addEventListener('webglcontextlost', (ev) => ev.preventDefault());
+    canvas.addEventListener('webglcontextrestored', () => {
+      // GPU resources are gone: let every GL mode rebuild its state on the next render
+      for (const [id, entry] of states) {
+        if (entry.mode.surface === 'gl') {
+          try { entry.mode.dispose?.(entry.state); } catch { /* resources already lost */ }
+          states.delete(id);
+        }
+      }
+      lastKey = '';
+      onInvalidate?.();
+    });
+    outGl = { canvas, ctx2d: null, gl };
+    return outGl;
+  }
 
   let lastKey = '';
   let lastPre = { imageData: null, usedFilterPath: 'none' };
@@ -35,15 +61,15 @@ export function createPipeline({ onInvalidate } = {}) {
     return entry.state;
   }
 
-  /** Fallback when a mode throws: show the original picture (PLAN.md 18.2). */
+  /** Fallback when a mode throws: show the original picture (PLAN.md 18.2). Always a 2D surface. */
   function drawFallback(frame, crop) {
     const k = Math.min(1, 1280 / Math.max(crop.sw, crop.sh));
-    surface.width = Math.max(1, Math.round(crop.sw * k));
-    surface.height = Math.max(1, Math.round(crop.sh * k));
-    const g = out.ctx2d;
-    g.clearRect(0, 0, surface.width, surface.height);
+    surface2d.width = Math.max(1, Math.round(crop.sw * k));
+    surface2d.height = Math.max(1, Math.round(crop.sh * k));
+    const g = out2d.ctx2d;
+    g.clearRect(0, 0, surface2d.width, surface2d.height);
     try {
-      g.drawImage(frame, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, surface.width, surface.height);
+      g.drawImage(frame, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, surface2d.width, surface2d.height);
     } catch { /* nothing to show */ }
   }
 
@@ -87,8 +113,10 @@ export function createPipeline({ onInvalidate } = {}) {
     const edgeBlend = pre.edgeBlend ?? 'light';
 
     const frame = source.frame(time);
+    // A source may expose `frameId` (e.g. the decoded video frame number): it then decides when pixels changed
+    const frameKey = source.frameId !== undefined ? source.frameId : (source.animated ? time.toFixed(5) : 0);
     const key = [
-      source.version, source.animated ? time.toFixed(5) : 0, preprocessKey(g), `${W}x${H}`, matte, edgeBlend,
+      source.version, frameKey, preprocessKey(g), `${W}x${H}`, matte, edgeBlend,
       `${crop.sx}|${crop.sy}|${crop.sw}|${crop.sh}`,
     ].join('#');
 
@@ -100,6 +128,12 @@ export function createPipeline({ onInvalidate } = {}) {
       lastPre = preprocess(ws, frame, source.width, source.height, g, { matte, edgeBlend });
       analysis.reset(W, H, ws.canvas, lastPre.imageData ? lastPre.imageData.data : null);
       lastKey = key;
+    }
+
+    let out = out2d;
+    let glError = null;
+    if (mode.surface === 'gl') {
+      try { out = glSurface(); } catch (err) { glError = err; }
     }
 
     const ctx = {
@@ -121,7 +155,7 @@ export function createPipeline({ onInvalidate } = {}) {
       params,
       theme,
       out,
-      gl: null,
+      gl: out.gl,
       outScale,
       invalidate: () => onInvalidate?.(),
     };
@@ -129,6 +163,7 @@ export function createPipeline({ onInvalidate } = {}) {
     let meta = {};
     let error = null;
     try {
+      if (glError) throw glError;
       const state = stateFor(mode, ctx);
       const r = mode.render(ctx, state);
       meta = (r && typeof r.then === 'function' ? await r : r) || {};
@@ -142,6 +177,7 @@ export function createPipeline({ onInvalidate } = {}) {
     // a mode may render smaller than asked to respect size caps; the fallback picture is always 1x
     const effScale = error ? 1 : (meta.effectiveScale ?? outScale);
     const margin = Math.round((g.frame || 0) * effScale);
+    const surface = error ? surface2d : out.canvas;
     let canvas = surface;
     if (margin > 0 && !error) {
       framed.width = surface.width + margin * 2;
@@ -181,8 +217,13 @@ export function createPipeline({ onInvalidate } = {}) {
       states.clear();
       lastKey = '';
       ws.canvas.width = ws.canvas.height = 1;
-      surface.width = surface.height = 1;
+      surface2d.width = surface2d.height = 1;
       framed.width = framed.height = 1;
+      if (outGl) {
+        outGl.gl.getExtension('WEBGL_lose_context')?.loseContext();
+        outGl.canvas.width = outGl.canvas.height = 1;
+        outGl = null;
+      }
     },
   };
 }
