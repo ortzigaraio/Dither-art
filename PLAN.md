@@ -1099,3 +1099,36 @@ Reglas de seguridad y calidad. **Tienen prioridad** sobre el resto del plan. Los
 ## 19. Desviaciones
 
 Registro de cambios respecto a este plan, decididos durante la implementación (fecha, qué, por qué). Vacío por ahora.
+
+### Fases 0 y 1 (2026-10-08)
+
+**Archivos y estructura**
+- Añadidos respecto a la sección 2: `src/boot.js` (aplica tema e idioma guardados antes del primer pintado; es un archivo externo porque la CSP prohíbe scripts inline), `src/studio.js` (controlador del estudio: estado, controles, visor, pipeline, scheduler y exportaciones; `main.js` queda como arranque), `src/ui/inputPanel.js` (grupo ENTRADA), `src/ui/scramble.js` (efecto de 4.2), `assets/icons/apple-touch-icon.png` (180×180, rasterizado desde `horain-icon.svg` con `tests/make-icons.mjs`, sin tocar `assets/brand/`).
+- Pruebas: además de `smoke.spec.js` hay `engine.spec.js`, `controls.spec.js`, `guardrails.spec.js`, `i18n.spec.js` y `layout.spec.js`, más `helpers.js` y `global-setup.mjs` (que genera los fixtures). `.gitignore` añade `tests/fixtures/` (se generan en cada máquina; el plan solo listaba cuatro entradas) y `.DS_Store`.
+- `webServer` de Playwright con `stdout/stderr: 'ignore'` (el log de `http.server` ensuciaba la salida).
+
+**Entrada y validación (18.1)**
+- `io/validate.js` lee **64 bytes** (no 32) para ver el `DocType` de WebM y las marcas compatibles de ISO-BMFF (AVIF frente a HEIC). Para rechazar imágenes de más de 100 MP antes de decodificar lee además la cabecera de dimensiones (PNG, GIF, BMP, WebP, y hasta 256 KB para JPEG / 16 KB para AVIF).
+- Los **videos** se reconocen por magic bytes pero todavía no se abren (fase 2): muestran un aviso "el video llegará pronto". El botón USAR CÁMARA no se muestra hasta la fase 2 (`dropzone.addAction` ya permite añadirlo).
+- La demo (`DemoSource`) dibuja "HORAIN" en mayúsculas con Geist Mono, no con Unbounded en minúsculas, para que no se confunda con el logo (18.4).
+
+**Motor y modo ASCII**
+- `dither` y `serpentine` viven en el grupo global IMAGEN (5.2); `serpentine` está apagado por defecto.
+- **Polaridad**: los píxeles claros reciben glifos densos cuando el fondo de salida es oscuro y glifos ligeros cuando es claro (se decide con el color de fondo resuelto; con fondo transparente, con la luminosidad de la tinta). El sentido de la mezcla de bordes (`edges`) sigue esa polaridad; `invertGradient` invierte encima.
+- ASCII declara `draftScale: 1`: es barato y no se baja a media resolución mientras se arrastra un slider. El resto de modos usarán el valor por defecto (0,5), que ya respeta el pipeline.
+- `font` incluye **Geist Mono** (por defecto, sección 3) además de las cinco de 7.1; `edgeChars` está activo por defecto (solo tiene efecto con `edges > 0`). "Courier" cae a Geist Mono donde no exista Courier New.
+- Los glifos se componen **en CPU desde el canal alfa del atlas** (`glyphs.drawGlyphGrid`, por bandas) en lugar de un `drawImage` por celda + `source-in`: 2,5 ms en vez de 17 ms a 120 columnas en el Chromium de pruebas (sin GPU). Los bloques `░▒▓█▀▄▌▐` se dibujan proceduralmente. Está pensado para reutilizarse en Matrix, Retrato tipográfico y Raymarch→ASCII.
+- Extensiones de la interfaz de modo (6): `mode.preOptions(params, theme)` (fondo para píxeles transparentes y dirección de la mezcla de bordes), `mode.draftScale`, `mode.hide` (ids globales que no aplican), `showIf(p, all)` con todos los parámetros como segundo argumento. `FrameContext` añade `theme`, `outScale`, `srcWidth/srcHeight` e `invalidate()`; `pipeline.render()` es asíncrono (los modos pueden devolver promesas, p. ej. por `depth()`).
+- **Tope de tamaño**: ASCII reduce la escala de render si la salida pasaría de 4096 px (vista previa) o 8192 px (exportación) y el pipeline devuelve la escala efectiva. La escala de la vista previa sigue al zoom (hasta 4×) para que el texto no se vea borroso al acercar. La exportación PNG estima el tamaño y luego lo verifica (las celdas son píxeles enteros en cada escala).
+- La exportación ANSI de ASCII usa la extensión `.ansi.txt` (UTF-8 con SGR); `.ans` queda para el CP437 del modo ANSI (fase 3).
+- Estado: claves de `localStorage` `horain.theme`, `horain.lang` y `horain.params` (versionado `v:1`). El enlace compartible `#s=` y la validación de estado externo ya están hechos (se necesitaban para las pruebas de 18.3); presets y "Sorpréndeme" siguen para la fase 7.
+
+**Interfaz**
+- Hero en dos columnas en escritorio (titular + dropzone a la izquierda, demo viva del motor a la derecha) en lugar de un canvas a ancho completo; rota 4 "looks" ASCII cada 4 s (con `prefers-reduced-motion`, un solo fotograma fijo). La galería de modos con miniaturas en vivo se hizo ya en la fase 1 porque el motor lo permite sin esfuerzo; el contador de visitas, Open Graph, manifest, atajos de teclado y Post-FX siguen para la fase 7.
+- El subtítulo del hero cuenta los modos registrados ("1 estilo") en lugar del "25 estilos" final, y el texto de ACERCA dice que el video y la cámara están en camino: actualizar en la fase 2.
+- Móvil: el visor ocupa ~45–50 % de la altura (el plan decía 55vh) porque la barra de modos y la hoja de ajustes (38 dvh) también caben en pantalla.
+- **Contraste**: en el tema PAPER, `--accent-ink #FFFFFF` sobre `--accent #E5402A` da 4,12:1 (< 4,5:1 de AA). Se mantiene la tabla de 4.1 tal cual; arreglo sugerido: `#111111` (4,6:1) o un rojo más oscuro. La prueba de contraste lo documenta como única excepción.
+
+**Rendimiento medido** (Chromium de pruebas, sin GPU, con una fuente animada que cambia de fotograma en cada render, es decir, preprocesado + análisis + modo): ASCII a 160 columnas ≈ 12 ms por fotograma (mono, color original o con difusión de error de Floyd–Steinberg), 300 columnas ≈ 21 ms y 600 columnas ≈ 47 ms (≈ 21 fps, por debajo de 30 fps en este entorno sin GPU). Si solo cambian parámetros del modo (preprocesado en caché) un render cuesta ≈ 2–3 ms. La prueba exige mediana < 33 ms a 160 columnas (≥ 30 fps).
+
+**Pendiente / no cubierto en estas fases**: sin workers todavía (preprocesado, dithering y difusión de error corren en el hilo principal, suficiente hasta 600 columnas); solo se ha probado Chromium (Firefox/Safari no); atajos de teclado (4.7), presets, Post-FX, grupo de profundidad y contador de visitas.
