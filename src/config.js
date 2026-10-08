@@ -1,10 +1,14 @@
 // Single place for site settings and the hard limits of PLAN.md §18.
 // `counterUrl` is public (not a secret). Leave it empty until the visit-counter Worker is deployed (DEPLOY.md).
 
+// The product is called Dither ("by Horain"): it reuses the Horain brand (logo, themes, tokens) but is its own tool
+// (PLAN.md section 0, owner's clarification). Internal ids (theme "horain", css --horain-* tokens) keep the brand name.
 export const config = {
+  productName: 'Dither',
+  fileSlug: 'dither', // prefix of exported file names: dither-<mode>-<YYYYMMDD-HHMMSS>.<ext>
   counterUrl: '',
-  siteUrl: 'https://horain.ortzigar.org/',
-  repoUrl: 'https://github.com/ortzigaraio/Ascii-dithering-Image-to-art-',
+  siteUrl: 'https://dither.ortzigar.org/',
+  repoUrl: 'https://github.com/ortzigaraio/Dither-art',
   authorUrl: 'https://ortzigar.org',
 };
 

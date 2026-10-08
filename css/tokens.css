@@ -1,4 +1,4 @@
-/* HORAIN design tokens: 6 themes (PLAN.md 4.1), brand palette (4.0), type, radii, spacing.
+/* Dither design tokens (Horain brand): 6 themes (PLAN.md 4.1), brand palette (4.0), type, radii, spacing.
    Themes are applied with <html data-theme="horain|claro|amber|crt|paper|cad" data-tone="dark|light">. */
 
 :root {

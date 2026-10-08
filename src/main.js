@@ -15,7 +15,7 @@ import { ImageSource, DemoSource } from './io/sources.js';
 // ---------------------------------------------------------------------------
 function installGlobalErrorHandlers() {
   const report = (err) => {
-    console.error('[horain]', err);
+    console.error('[dither]', err);
     toastError(t('err.unexpected'));
   };
   window.addEventListener('error', (ev) => {
@@ -103,7 +103,7 @@ async function openFile(file) {
     if (source.downscaled) toast(t('info.downscaled', { px: Math.max(source.width, source.height) }));
     setSource(source);
   } catch (err) {
-    if (!(err instanceof FileError)) console.warn('[horain] could not open file:', err);
+    if (!(err instanceof FileError)) console.warn('[dither] could not open file:', err);
     toastError(fileErrorMessage(err));
   }
 }
@@ -139,7 +139,7 @@ function boot() {
   onLangChange(updateHeroSub);
   app.studio.mount();
   setView('home');
-  app.home.init().catch((err) => console.warn('[horain] home init failed', err));
+  app.home.init().catch((err) => console.warn('[dither] home init failed', err));
   document.documentElement.dataset.ready = 'true';
 }
 

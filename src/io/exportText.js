@@ -3,6 +3,7 @@
 // where `chars` has one (possibly multi-unit) code point per cell and `rgba` holds 4 bytes per cell.
 
 import { rgbToHex } from '../engine/color.js';
+import { config } from '../config.js';
 
 const XML_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 
@@ -28,7 +29,7 @@ export function gridToTXT(grid) {
 const cellRGB = (grid, i) => (grid.rgba ? [grid.rgba[i * 4], grid.rgba[i * 4 + 1], grid.rgba[i * 4 + 2]] : grid.mono);
 
 /** Standalone HTML page with a <pre>; contiguous cells of the same colour share one <span>. */
-export function gridToHTML(grid, { title = 'HORAIN' } = {}) {
+export function gridToHTML(grid, { title = config.productName } = {}) {
   const css = grid.css || {};
   const lines = [];
   for (let y = 0; y < grid.rows; y++) {
@@ -79,7 +80,7 @@ export function gridToHTML(grid, { title = 'HORAIN' } = {}) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="generator" content="HORAIN">
+<meta name="generator" content="${escapeXml(config.productName)} by Horain">
 <title>${escapeXml(title)}</title>
 <style>html,body{margin:0;padding:0;${bg ? `background:${bg};` : ''}}body{padding:24px}</style>
 </head>

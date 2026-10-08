@@ -11,7 +11,7 @@ import {
   resolveColors, isDarkBackground, buildGradientLUT, makePaletteMatcher, boostSaturation, rgbToHex,
 } from '../engine/color.js';
 import { gridToText } from '../io/exportText.js';
-import { LIMITS } from '../config.js';
+import { LIMITS, config } from '../config.js';
 
 const COLOR_MODES = ['mono', 'original', 'gradient', 'palette'];
 const MAX_PREVIEW_SIDE = 4096;
@@ -249,7 +249,7 @@ export default {
   /** format: 'txt' | 'html' | 'ansi' */
   toText(state, format, opts) {
     if (!state?.grid) return '';
-    return gridToText(state.grid, format, { title: 'HORAIN ASCII', ...opts });
+    return gridToText(state.grid, format, { title: `${config.productName} ASCII`, ...opts });
   },
 
   dispose(state) {

@@ -22,7 +22,33 @@
   gap: 28px;
 }
 
-.brand { display: inline-flex; align-items: center; flex: none; border-radius: var(--radius-sm); }
+/* Product lockup: "dither" in the display face, "by", then the official Horain logo (never retyped).
+   The gap before the logo keeps clear space around it (PLAN.md 18.4). */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  color: var(--fg);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+  line-height: 1;
+}
+.brand-by {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+  margin-right: 6px;
+}
 
 /* Logo: always one of the two official SVGs, chosen by data-tone (PLAN.md 4.0 / 18.4).
    Letter size is kept equal in both files (the light SVG has a taller viewBox). */
@@ -120,6 +146,7 @@ body[data-view="home"] .view-studio { display: none; }
   gap: 16px 28px;
 }
 .site-footer .logo { --logo-h: 26px; }
+.footer-brand .brand-name { font-size: 1.15rem; }
 .footer-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-left: auto; font-size: 13px; color: var(--fg-2); }
 .footer-links a { color: var(--fg-2); text-decoration: none; }
 .footer-links a:hover { color: var(--accent-text); text-decoration: underline; }
@@ -197,6 +224,10 @@ body[data-view="studio"] .site-footer { display: none; }
   .site-nav, .gh-link { display: none; }
   .header-tools { gap: 8px; }
   .logo { --logo-h: 24px; }
+  .brand { gap: 6px; }
+  .brand-name { font-size: 1.05rem; }
+  .brand-by { margin-right: 2px; }
+  .header-tools .seg button { padding: 4px 9px; }
 
   .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 28px var(--gutter) 8px; }
   .section { padding: 44px var(--gutter) 8px; }
@@ -233,6 +264,17 @@ body[data-view="studio"] .site-footer { display: none; }
 }
 
 @media (max-width: 999px) {
+  .header-inner { gap: 20px; }
+  .site-nav { gap: 16px; }
+  .gh-link { display: none; } /* the footer links to the repository as well */
   .hero { grid-template-columns: minmax(0, 1fr); gap: 32px; }
   .about-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Very small phones (< 360 px): drop "by" and tighten the header so nothing overflows */
+@media (max-width: 359px) {
+  .brand-by { display: none; }
+  .brand-name { font-size: 1rem; }
+  .header-tools .seg button { padding: 4px 8px; }
+  .header-inner { gap: 6px; }
 }

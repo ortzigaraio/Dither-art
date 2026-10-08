@@ -132,7 +132,7 @@ export function createHome({ onOpenMode }) {
     thumbBusy = true;
     while (thumbQueue.length) {
       const card = thumbQueue.shift();
-      try { await drawThumb(card); } catch (err) { console.warn('[horain] thumbnail failed', err); }
+      try { await drawThumb(card); } catch (err) { console.warn('[dither] thumbnail failed', err); }
       await new Promise((r) => setTimeout(r, 0)); // yield to the page between thumbnails
     }
     thumbBusy = false;

@@ -1102,6 +1102,12 @@ Registro de cambios respecto a este plan, decididos durante la implementación (
 
 ### Fases 0 y 1 (2026-10-08)
 
+**Nombre del producto (aclaración del dueño en la sección 0)**
+- El nombre visible es **Dither**: `<title>` "Dither by Horain", cabecera y pie con el lockup `dither` (Unbounded 600, minúsculas) + `by` + el logo espino oficial en SVG (nunca reescrito; hueco previo al logo ≥ la altura de la "o"), README, título y `generator` del HTML exportado, `<noscript>` y la letra de la demo. `src/config.js` añade `productName` y `fileSlug` y usa `siteUrl: 'https://dither.ortzigar.org/'` y `repoUrl: 'https://github.com/ortzigaraio/Dither-art'`; los enlaces a GitHub del HTML coinciden (hay prueba).
+- Los archivos exportados se llaman `dither-<modo>-<YYYYMMDD-HHMMSS>.<ext>` (9.1 decía `horain-`).
+- Se mantiene el nombre de marca donde es marca o identificador interno: tema `horain`, tokens `--horain-*`, paleta "Horain", claves `localStorage` `horain.*`, alt del logo ("Horain") y los archivos de `assets/brand/`. `css/tokens.css` y `css/components.css` no dependen de la lógica (solo de clases del DOM), así que pueden copiarse tal cual al otro repo.
+- Móvil: el selector de tema se reduce a su icono (el `<select>` transparente lo cubre, así que sigue abriendo el selector nativo); en 320 px se oculta "by". Por debajo de 1000 px la cabecera oculta el enlace a GitHub (está en el pie).
+
 **Archivos y estructura**
 - Añadidos respecto a la sección 2: `src/boot.js` (aplica tema e idioma guardados antes del primer pintado; es un archivo externo porque la CSP prohíbe scripts inline), `src/studio.js` (controlador del estudio: estado, controles, visor, pipeline, scheduler y exportaciones; `main.js` queda como arranque), `src/ui/inputPanel.js` (grupo ENTRADA), `src/ui/scramble.js` (efecto de 4.2), `assets/icons/apple-touch-icon.png` (180×180, rasterizado desde `horain-icon.svg` con `tests/make-icons.mjs`, sin tocar `assets/brand/`).
 - Pruebas: además de `smoke.spec.js` hay `engine.spec.js`, `controls.spec.js`, `guardrails.spec.js`, `i18n.spec.js` y `layout.spec.js`, más `helpers.js` y `global-setup.mjs` (que genera los fixtures). `.gitignore` añade `tests/fixtures/` (se generan en cada máquina; el plan solo listaba cuatro entradas) y `.DS_Store`.
@@ -1110,7 +1116,7 @@ Registro de cambios respecto a este plan, decididos durante la implementación (
 **Entrada y validación (18.1)**
 - `io/validate.js` lee **64 bytes** (no 32) para ver el `DocType` de WebM y las marcas compatibles de ISO-BMFF (AVIF frente a HEIC). Para rechazar imágenes de más de 100 MP antes de decodificar lee además la cabecera de dimensiones (PNG, GIF, BMP, WebP, y hasta 256 KB para JPEG / 16 KB para AVIF).
 - Los **videos** se reconocen por magic bytes pero todavía no se abren (fase 2): muestran un aviso "el video llegará pronto". El botón USAR CÁMARA no se muestra hasta la fase 2 (`dropzone.addAction` ya permite añadirlo).
-- La demo (`DemoSource`) dibuja "HORAIN" en mayúsculas con Geist Mono, no con Unbounded en minúsculas, para que no se confunda con el logo (18.4).
+- La demo (`DemoSource`) dibuja "DITHER" en mayúsculas con Geist Mono, no con Unbounded en minúsculas, para que no se confunda con el logo (18.4).
 
 **Motor y modo ASCII**
 - `dither` y `serpentine` viven en el grupo global IMAGEN (5.2); `serpentine` está apagado por defecto.

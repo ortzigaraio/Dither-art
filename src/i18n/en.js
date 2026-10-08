@@ -2,6 +2,8 @@
 export default {
   'a11y.skip': 'Skip to content',
 
+  'brand.by': 'by',
+
   'nav.studio': 'Studio',
   'nav.modes': 'Styles',
   'nav.about': 'About',

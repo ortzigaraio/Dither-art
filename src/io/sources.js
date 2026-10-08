@@ -104,14 +104,14 @@ export class ImageSource {
 }
 
 /**
- * Procedural picture (no licensed files): gradients, a shaded sphere, a ring, bars and the letters HORAIN
+ * Procedural picture (no licensed files): gradients, a shaded sphere, a ring, bars and the letters DITHER
  * (set in mono capitals on purpose: the brand logo is never retyped with a font, PLAN.md 18.4).
  * With `animated: true` it moves with time; otherwise it renders one fixed frame.
  */
 export class DemoSource {
   static async create(opts = {}) {
     try {
-      await document.fonts.load('700 120px "Geist Mono"', 'HORAIN');
+      await document.fonts.load('700 120px "Geist Mono"', 'DITHER');
     } catch { /* fall back to the system font */ }
     return new DemoSource(opts);
   }
@@ -235,7 +235,7 @@ export class DemoSource {
     tg.addColorStop(0, '#ffffff');
     tg.addColorStop(1, '#aeb6c4');
     ctx.fillStyle = tg;
-    ctx.fillText('HORAIN', W / 2, H * 0.94);
+    ctx.fillText('DITHER', W / 2, H * 0.94);
 
     ctx.restore();
   }

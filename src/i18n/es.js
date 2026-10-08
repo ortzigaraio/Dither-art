@@ -2,6 +2,8 @@
 export default {
   'a11y.skip': 'Saltar al contenido',
 
+  'brand.by': 'by',
+
   'nav.studio': 'Estudio',
   'nav.modes': 'Modos',
   'nav.about': 'Acerca',

@@ -1,9 +1,9 @@
-# HORAIN
+# Dither
 
-Turn images into ASCII art and generative art, entirely in your browser. Nothing is uploaded: files are decoded,
+*Dither by Horain.* Turn images into ASCII art and generative art, entirely in your browser. Nothing is uploaded: files are decoded,
 processed and exported on your device.
 
-HORAIN is a static site (no framework, no bundler, no build step): plain HTML, CSS and ES modules, served as-is
+Dither is a static site (no framework, no bundler, no build step): plain HTML, CSS and ES modules, served as-is
 by GitHub Pages. The full specification lives in [`PLAN.md`](PLAN.md) (in Spanish); the rules for agents are in
 [`CLAUDE.md`](CLAUDE.md); publishing steps are in [`DEPLOY.md`](DEPLOY.md).
 

@@ -4,8 +4,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self' blob: data: https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://count.ortzigar.org; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HORAIN</title>
-  <meta name="description" content="Turn images into ASCII art and generative art. Everything runs in your browser: nothing is uploaded.">
+  <title>Dither by Horain</title>
+  <meta name="description" content="Dither turns images into ASCII art and generative art. Everything runs in your browser: nothing is uploaded.">
   <meta name="color-scheme" content="dark light">
   <link rel="icon" type="image/svg+xml" href="./assets/brand/horain-icon.svg">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
@@ -24,7 +24,9 @@
 
   <header class="site-header" id="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Horain">
+      <a class="brand" href="./" aria-label="Dither by Horain">
+        <span class="brand-name">dither</span>
+        <span class="brand-by" data-i18n="brand.by">by</span>
         <img class="logo logo-on-dark" src="./assets/brand/horain-espino-on-dark.svg" alt="Horain" width="97" height="28">
         <img class="logo logo-on-light" src="./assets/brand/horain-espino.svg" alt="Horain" width="96" height="26">
       </a>
@@ -46,7 +48,7 @@
           <button type="button" data-lang="es" aria-pressed="false">ES</button>
           <button type="button" data-lang="en" aria-pressed="false">EN</button>
         </div>
-        <a class="gh-link label" id="gh-link" href="https://github.com/ortzigaraio/Ascii-dithering-Image-to-art-" target="_blank" rel="noopener noreferrer">GitHub<span aria-hidden="true"> &#8599;</span></a>
+        <a class="gh-link label" id="gh-link" href="https://github.com/ortzigaraio/Dither-art" target="_blank" rel="noopener noreferrer">GitHub<span aria-hidden="true"> &#8599;</span></a>
       </div>
     </div>
   </header>
@@ -141,7 +143,7 @@
             <button type="button" class="btn btn-ghost btn-sm" id="vw-1to1">1:1</button>
             <span class="vw-zoom mono" id="vw-zoom" aria-live="off">100%</span>
             <button type="button" class="btn btn-ghost btn-sm" id="vw-split" aria-pressed="false" data-i18n="viewer.split">Split</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="vw-full" data-i18n="viewer.fullscreen">Fullscreen</button>
+            <button type="button" class="btn btn-ghost btn-sm vw-full" id="vw-full" data-i18n="viewer.fullscreen">Fullscreen</button>
           </div>
           <div class="viewer-viewport" id="viewer-viewport" tabindex="0" role="group" aria-label="Zoom and pan" data-i18n-attr="aria-label:viewer.viewport">
             <div class="viewer-world" id="viewer-world">
@@ -174,11 +176,15 @@
 
   <footer class="site-footer" id="site-footer">
     <div class="footer-inner">
-      <img class="logo logo-on-dark" src="./assets/brand/horain-espino-on-dark.svg" alt="Horain" width="97" height="28">
-      <img class="logo logo-on-light" src="./assets/brand/horain-espino.svg" alt="Horain" width="96" height="26">
+      <span class="brand footer-brand">
+        <span class="brand-name">dither</span>
+        <span class="brand-by" data-i18n="brand.by">by</span>
+        <img class="logo logo-on-dark" src="./assets/brand/horain-espino-on-dark.svg" alt="Horain" width="97" height="28">
+        <img class="logo logo-on-light" src="./assets/brand/horain-espino.svg" alt="Horain" width="96" height="26">
+      </span>
       <div id="visit-counter" class="visit-counter" hidden></div>
       <nav class="footer-links" aria-label="Footer" data-i18n-attr="aria-label:footer.nav">
-        <a href="https://github.com/ortzigaraio/Ascii-dithering-Image-to-art-" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/ortzigaraio/Dither-art" target="_blank" rel="noopener noreferrer">GitHub</a>
         <a href="https://ortzigar.org" target="_blank" rel="noopener noreferrer" data-i18n="footer.madeBy">made by ortzigar.org</a>
         <span data-i18n="footer.license">MIT license</span>
       </nav>
@@ -194,6 +200,6 @@
   <input type="file" id="file-input" hidden
          accept="image/png,image/jpeg,image/webp,image/gif,image/avif,image/bmp,video/mp4,video/webm,video/quicktime,.png,.jpg,.jpeg,.webp,.gif,.avif,.bmp,.mp4,.webm,.mov">
 
-  <noscript><p class="noscript">HORAIN needs JavaScript to run. Everything stays in your browser.</p></noscript>
+  <noscript><p class="noscript">Dither needs JavaScript to run. Everything stays in your browser.</p></noscript>
 </body>
 </html>
