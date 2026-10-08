@@ -4,6 +4,7 @@
 //   { id, kind: 'image'|'video'|'webcam'|'demo', name, width, height,
 //     version,     // bumps when the picture itself changes (cache key)
 //     animated,    // true when frame(time) returns different pixels over time
+//     frameId?,    // optional: changes whenever the pixels do (video frame number); overrides `time` in the cache key
 //     frame(time)  -> CanvasImageSource (valid until the next call)
 //     dispose() }
 

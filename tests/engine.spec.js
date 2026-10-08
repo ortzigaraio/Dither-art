@@ -717,6 +717,126 @@ test.describe('engine', () => {
     expect(res.meta).toEqual({ quality: 'full', isExport: true });
   });
 
+  test('pipeline: sources can declare frameId so paused video still updates the cache', async ({ page }) => {
+    const res = await page.evaluate(async () => {
+      const { createPipeline } = await import('/src/engine/pipeline.js');
+      const { defaultsOf } = await import('/src/state.js');
+      const { IMAGE_PARAMS } = await import('/src/engine/preprocess.js');
+      const { COLOR_PARAMS } = await import('/src/engine/color.js');
+      const mode = {
+        id: 'probe', params: [], uses: ['image'],
+        resolution: () => ({ width: 4, height: 4 }),
+        render(ctx) {
+          ctx.out.canvas.width = 4;
+          ctx.out.canvas.height = 4;
+          return { luma: ctx.luma()[0] };
+        },
+      };
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 16;
+      const paint = (v) => { const g = canvas.getContext('2d'); g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(0, 0, 16, 16); };
+      const mk = (extra) => ({ id: 'm', kind: 'video', width: 16, height: 16, version: 1, animated: false, frame: () => canvas, ...extra });
+      const params = { global: defaultsOf(IMAGE_PARAMS), color: defaultsOf(COLOR_PARAMS), depth: {}, postfx: {}, mode: {} };
+      const theme = { ink: '#fff', bg: '#000' };
+      const run = async (pipe, source) => (await pipe.render({ source, mode, params, theme })).meta.luma;
+
+      // With frameId: new pixels are picked up although `time` and `version` did not change
+      const withId = mk({ frameId: 0 });
+      const p1 = createPipeline();
+      paint(0);
+      const a = await run(p1, withId);
+      paint(255);
+      withId.frameId = 1;
+      const b = await run(p1, withId);
+      // Without it a static source stays cached
+      const plain = mk({});
+      const p2 = createPipeline();
+      paint(0);
+      const c = await run(p2, plain);
+      paint(255);
+      const d = await run(p2, plain);
+      return { a, b, c, d };
+    });
+    expect(res.a).toBeLessThan(0.05);
+    expect(res.b).toBeGreaterThan(0.95);
+    expect(res.c).toBeLessThan(0.05);
+    expect(res.d).toBeLessThan(0.05); // cached: static sources are not re-read
+  });
+
+  test('pipeline: WebGL2 modes get their own surface and rebuild after a context loss', async ({ page }) => {
+    const guard = watchPage(page);
+    const res = await page.evaluate(async () => {
+      const { createPipeline } = await import('/src/engine/pipeline.js');
+      const { DemoSource } = await import('/src/io/sources.js');
+      const { defaultsOf } = await import('/src/state.js');
+      const { IMAGE_PARAMS } = await import('/src/engine/preprocess.js');
+      const { COLOR_PARAMS } = await import('/src/engine/color.js');
+      let inits = 0;
+      let disposes = 0;
+      const mode = {
+        id: 'glprobe', surface: 'gl', params: [], uses: ['image'],
+        resolution: () => ({ width: 4, height: 4 }),
+        init() { inits++; return {}; },
+        render(ctx) {
+          const { gl } = ctx;
+          ctx.out.canvas.width = 16;
+          ctx.out.canvas.height = 16;
+          gl.viewport(0, 0, 16, 16);
+          gl.clearColor(1, 0, 0, 1);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          return { has2d: !!ctx.out.ctx2d, sameGl: ctx.gl === ctx.out.gl };
+        },
+        dispose() { disposes++; },
+      };
+      let invalidated = 0;
+      const pipe = createPipeline({ onInvalidate: () => { invalidated++; } });
+      const src = await DemoSource.create({ animated: false });
+      const params = { global: defaultsOf(IMAGE_PARAMS), color: defaultsOf(COLOR_PARAMS), depth: {}, postfx: {}, mode: {} };
+      const theme = { ink: '#fff', bg: '#000' };
+      const redAt = (canvas) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 16;
+        const g = c.getContext('2d');
+        g.drawImage(canvas, 0, 0);
+        return Array.from(g.getImageData(8, 8, 1, 1).data);
+      };
+      const r1 = await pipe.render({ source: src, mode, params, theme });
+      const first = { px: redAt(r1.canvas), has2d: r1.meta.has2d, sameGl: r1.meta.sameGl, inits };
+
+      // lose and restore the context, as a GPU reset would
+      const gl = r1.canvas.getContext('webgl2');
+      const ext = gl.getExtension('WEBGL_lose_context');
+      const lost = new Promise((r) => r1.canvas.addEventListener('webglcontextlost', r, { once: true }));
+      ext.loseContext();
+      await lost;
+      // restoreContext() is only allowed once the browser has finished dispatching the lost event (a task later)
+      await new Promise((r) => setTimeout(r, 0));
+      const restored = new Promise((r) => r1.canvas.addEventListener('webglcontextrestored', r, { once: true }));
+      ext.restoreContext();
+      await restored;
+      await new Promise((r) => setTimeout(r, 20));
+      const r2 = await pipe.render({ source: src, mode, params, theme });
+      const second = { px: redAt(r2.canvas), inits, disposes, invalidated };
+
+      // a 2D mode still works on the same pipeline
+      const mode2d = { id: 'flat', params: [], uses: ['image'], resolution: () => ({ width: 4, height: 4 }), render(ctx) { ctx.out.canvas.width = 16; ctx.out.canvas.height = 16; ctx.out.ctx2d.fillStyle = '#0f0'; ctx.out.ctx2d.fillRect(0, 0, 16, 16); return {}; } };
+      const r3 = await pipe.render({ source: src, mode: mode2d, params, theme });
+      const third = redAt(r3.canvas);
+      pipe.dispose();
+      return { first, second, third };
+    });
+    expect(res.first.px).toEqual([255, 0, 0, 255]);
+    expect(res.first.has2d).toBe(false);
+    expect(res.first.sameGl).toBe(true);
+    expect(res.first.inits).toBe(1);
+    expect(res.second.px).toEqual([255, 0, 0, 255]);
+    expect(res.second.inits).toBe(2); // state rebuilt after the restore
+    expect(res.second.disposes).toBe(1);
+    expect(res.second.invalidated).toBeGreaterThanOrEqual(1);
+    expect(res.third).toEqual([0, 255, 0, 255]);
+    await guard.assertClean(expect);
+  });
+
   test('pipeline: a failing mode falls back to the source and reports the error', async ({ page }) => {
     const guard = watchPage(page);
     const res = await page.evaluate(async () => {
