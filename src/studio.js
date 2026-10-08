@@ -310,8 +310,7 @@ export function createStudio({ onChangeFile }) {
       active = on;
       if (on) {
         controls.refresh();
-        viewer.fit();
-        scheduler.markDirty();
+        scheduler.markDirty(); // the viewer refits by itself when it was in "fit" mode and its box changed
       }
       scheduler.poke();
     },
