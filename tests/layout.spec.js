@@ -98,6 +98,18 @@ test.describe('responsive layout', () => {
     await expect(page.locator('#dz-pick')).toBeInViewport();
   });
 
+  test('phones start with a lighter default resolution (80 columns) that "reset" restores', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => localStorage.clear());
+    await gotoApp(page);
+    await loadFixture(page);
+    expect(await page.locator('#viewer-canvas').getAttribute('data-cols')).toBe('80');
+    await page.locator('[data-param="cols"] .ctl-num').fill('150');
+    await page.locator('[data-param="cols"] .ctl-num').press('Enter');
+    await page.locator('[data-group="image"] .group-reset').click();
+    await expect(page.locator('[data-param="cols"] .ctl-num')).toHaveValue('80');
+  });
+
   test('the mobile toolbar and header fit one row each at 360px', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await gotoApp(page);

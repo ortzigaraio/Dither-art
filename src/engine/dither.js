@@ -236,10 +236,14 @@ export function thresholdFn(algorithm, seed = 0) {
 /**
  * Quantise a 0..1 buffer to `levels` evenly spaced levels.
  * Returns Uint16Array of level indices (0..levels-1).
- * @param {Float32Array|number[]} buffer w*h values, not modified
+ * As in PLAN.md 5.3, `levels` may also be a palette ([[r,g,b], ...]): `buffer` is then an RGBA pixel buffer and
+ * the result holds palette indices (see quantizePalette).
+ * @param {Float32Array|Uint8ClampedArray|number[]} buffer w*h values (or RGBA bytes for a palette), not modified
+ * @param {number|number[][]} levels
  * @param {{ serpentine?: boolean, seed?: number, bias?: number }} [opts]
  */
 export function quantize(buffer, w, h, levels, algorithm = 'none', opts = {}) {
+  if (Array.isArray(levels)) return quantizePalette(buffer, w, h, levels, algorithm, opts);
   const { serpentine = false, seed = 0, bias = 0 } = opts;
   const out = new Uint16Array(w * h);
   const n = Math.max(1, Math.floor(levels));

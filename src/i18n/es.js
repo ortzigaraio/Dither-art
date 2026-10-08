@@ -68,6 +68,7 @@ export default {
   'studio.tab.export': 'Exportar',
   'studio.resetGroup': 'Restaurar este grupo',
   'studio.help': 'Ayuda',
+  'studio.dblReset': 'Doble clic: restaurar el valor por defecto',
   'studio.reset': 'Restaurar valor por defecto',
   'studio.editValue': 'Valor de {label}',
   'studio.themeColor': 'color del tema',
