@@ -673,6 +673,114 @@ test.describe('engine', () => {
     expect(res.dithered.median).toBeLessThan(33);
   });
 
+  test('ascii: the output keeps the source aspect for every font, cell size, line height and spacing', async ({ page }) => {
+    const res = await page.evaluate(async () => {
+      const { createPipeline } = await import('/src/engine/pipeline.js');
+      const ascii = (await import('/src/modes/ascii.js')).default;
+      const { DemoSource } = await import('/src/io/sources.js');
+      const { ensureFonts, FONTS } = await import('/src/engine/glyphs.js');
+      const { defaultsOf } = await import('/src/state.js');
+      const { IMAGE_PARAMS } = await import('/src/engine/preprocess.js');
+      const { COLOR_PARAMS } = await import('/src/engine/color.js');
+      for (const f of Object.keys(FONTS)) await ensureFonts(f, ' .:-=+*#%@');
+      const src = await DemoSource.create({ animated: false });
+      const pipe = createPipeline();
+      const theme = { ink: '#fff', bg: '#000' };
+      const target = src.width / src.height;
+      const worst = [];
+      for (const font of Object.keys(FONTS)) {
+        for (const cellSize of [6, 8, 12, 17, 32]) {
+          for (const lineHeight of [0.8, 1, 1.4]) {
+            for (const letterSpacing of [-2, 0, 4]) {
+              for (const scale of [1, 2]) {
+                const params = {
+                  global: { ...defaultsOf(IMAGE_PARAMS), cols: 120 }, color: defaultsOf(COLOR_PARAMS), depth: {}, postfx: {},
+                  mode: { ...defaultsOf(ascii.params), font, cellSize, lineHeight, letterSpacing },
+                };
+                const r = await pipe.render({ source: src, mode: ascii, params, theme, outScale: scale });
+                const aspect = r.width / r.height;
+                worst.push({
+                  font, cellSize, lineHeight, letterSpacing, scale, err: Math.abs(aspect / target - 1), rows: r.meta.rows,
+                  // at scale 1 the cell is exact; at other scales each cell side is rounded to a whole pixel
+                  cellRounding: r.outScale === 1 ? 0 : 0.5 / r.meta.cellW + 0.5 / r.meta.cellH,
+                });
+              }
+            }
+          }
+        }
+      }
+      // The only error left is rounding: half a row out of `rows` (plus half a pixel per cell side when scaled)
+      for (const w of worst) w.excess = w.err - (0.5 / w.rows + 0.005 + w.cellRounding);
+      worst.sort((a, b) => b.excess - a.excess);
+      // rows must not depend on the output scale
+      const rowsByKey = new Map();
+      let rowsStable = true;
+      for (const w of worst) {
+        const k = `${w.font}|${w.cellSize}|${w.lineHeight}|${w.letterSpacing}`;
+        if (rowsByKey.has(k) && rowsByKey.get(k) !== w.rows) rowsStable = false;
+        rowsByKey.set(k, w.rows);
+      }
+      return { worst: worst.slice(0, 3), n: worst.length, rowsStable };
+    });
+    expect(res.n).toBe(6 * 5 * 3 * 3 * 2);
+    expect(res.rowsStable).toBe(true);
+    // cells are whole pixels, but the picture keeps the source aspect up to the rounding of the row count
+    expect(res.worst[0].excess, JSON.stringify(res.worst[0])).toBeLessThanOrEqual(0);
+  });
+
+  test('ascii: directional edge characters follow the edge (| for vertical, - for horizontal, \\ and /)', async ({ page }) => {
+    const res = await page.evaluate(async () => {
+      const { createPipeline } = await import('/src/engine/pipeline.js');
+      const ascii = (await import('/src/modes/ascii.js')).default;
+      const { ensureFonts } = await import('/src/engine/glyphs.js');
+      const { defaultsOf } = await import('/src/state.js');
+      const { IMAGE_PARAMS } = await import('/src/engine/preprocess.js');
+      const { COLOR_PARAMS } = await import('/src/engine/color.js');
+      await ensureFonts('geist-mono', ' .:-=+*#%@|/\\');
+      // 300x500 maps onto an (almost) square grid of cells: 60 x 60 with Geist Mono at cell size 12
+      const W = 300;
+      const H = 500;
+      const make = (draw) => {
+        const c = document.createElement('canvas');
+        c.width = W;
+        c.height = H;
+        const g = c.getContext('2d');
+        g.fillStyle = '#000';
+        g.fillRect(0, 0, W, H);
+        g.fillStyle = '#fff';
+        draw(g);
+        return { id: 's', kind: 'image', width: W, height: H, version: Math.random(), animated: false, frame: () => c, dispose() {} };
+      };
+      const sources = {
+        vertical: make((g) => g.fillRect(W / 2, 0, W / 2, H)),
+        horizontal: make((g) => g.fillRect(0, H / 2, W, H / 2)),
+        backslash: make((g) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); g.lineTo(W, H); g.closePath(); g.fill(); }), // boundary (0,0) -> (W,H)
+        slash: make((g) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0); g.lineTo(0, H); g.closePath(); g.fill(); }), // boundary (W,0) -> (0,H)
+      };
+      const out = {};
+      for (const [name, source] of Object.entries(sources)) {
+        const pipe = createPipeline();
+        const params = {
+          global: { ...defaultsOf(IMAGE_PARAMS), cols: 60, edges: 6 }, color: defaultsOf(COLOR_PARAMS), depth: {}, postfx: {},
+          mode: { ...defaultsOf(ascii.params), edgeChars: true, edgeThreshold: 0.25 },
+        };
+        const r = await pipe.render({ source, mode: ascii, params, theme: { ink: '#fff', bg: '#000' } });
+        const text = ascii.toText(pipe.getState('ascii'), 'txt');
+        const count = (re) => (text.match(re) || []).length;
+        out[name] = { rows: r.meta.rows, v: count(/\|/g), h: count(/-/g), bs: count(/\\/g), s: count(/\//g) };
+      }
+      return out;
+    });
+    const dominant = (o) => Object.entries({ v: o.v, h: o.h, bs: o.bs, s: o.s }).sort((a, b) => b[1] - a[1])[0][0];
+    for (const [name, o] of Object.entries(res)) expect(o.rows, name).toBeGreaterThan(45);
+    expect(dominant(res.vertical)).toBe('v');
+    expect(dominant(res.horizontal)).toBe('h');
+    expect(dominant(res.backslash)).toBe('bs');
+    expect(dominant(res.slash)).toBe('s');
+    expect(res.vertical.v).toBeGreaterThan(40);
+    expect(res.horizontal.h).toBeGreaterThan(40);
+  });
+
   test('pipeline: draft quality, automatic quality and exports use the right working resolution', async ({ page }) => {
     const res = await page.evaluate(async () => {
       const { createPipeline } = await import('/src/engine/pipeline.js');
