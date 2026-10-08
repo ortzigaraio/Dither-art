@@ -1,6 +1,6 @@
 // Responsive layout, accessibility basics, theme contrast and motion preferences (PLAN.md 4.3, 1.7).
 import { test, expect } from '@playwright/test';
-import { watchPage, gotoApp, loadFixture, settle, canvasStats } from './helpers.js';
+import { watchPage, gotoApp, loadFixture, settle, canvasStats, openChooser } from './helpers.js';
 
 const noHScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 0);
 
@@ -209,7 +209,7 @@ test.describe('accessibility basics', () => {
   test('keyboard reaches the dropzone and opens the picker', async ({ page }) => {
     await gotoApp(page);
     await page.locator('#dz-pick').focus();
-    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.keyboard.press('Enter')]);
+    const chooser = await openChooser(page, () => page.keyboard.press('Enter'));
     expect(chooser).toBeTruthy();
     const ring = await page.locator('#dz-pick').evaluate((el) => getComputedStyle(el, '::after').outlineStyle);
     expect(ring).toBe('solid');
