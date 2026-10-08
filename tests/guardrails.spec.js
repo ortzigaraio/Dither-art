@@ -236,6 +236,18 @@ test.describe('18.1 file input', () => {
     await guard.assertClean(expect);
   });
 
+  test('a hostile file name is shown as text, never as markup', async ({ page }) => {
+    const guard = watchPage(page);
+    await gotoApp(page);
+    const name = '"><img src=x onerror=window.__pwned=1>.png';
+    await page.setInputFiles('#file-input', { name, mimeType: 'image/png', buffer: readFileSync(FIXTURE_PNG) });
+    await page.waitForSelector('body[data-view="studio"]');
+    await expect(page.locator('[data-group="input"] .src-name')).toHaveText(name);
+    const probe = await page.evaluate(() => ({ pwned: window.__pwned, imgs: document.querySelectorAll('#controls img, #toasts img').length }));
+    expect(probe).toEqual({ pwned: undefined, imgs: 0 });
+    await guard.assertClean(expect);
+  });
+
   test('an animated GIF warns that only the first frame is used', async ({ page }) => {
     const guard = watchPage(page);
     await gotoApp(page);
@@ -405,6 +417,96 @@ test.describe('18.2 runtime robustness', () => {
     await setControl(page, 'brightness', 120);
     await waitForRender(page, n2);
     await expect(page.locator('#chip-error')).toBeHidden();
+  });
+
+  test('slow renders lower the working resolution automatically (CALIDAD AUTO) but exports stay full quality', async ({ page }) => {
+    test.setTimeout(120_000);
+    const guard = watchPage(page);
+    await gotoApp(page);
+    await loadFixture(page);
+    await page.evaluate(async () => {
+      const { default: ascii } = await import('/src/modes/ascii.js');
+      const orig = ascii.render;
+      ascii.render = function slow(ctx, state) {
+        if (!ctx.isExport) { const t = performance.now(); while (performance.now() - t < 230); }
+        return orig.call(this, ctx, state);
+      };
+    });
+    await expect(page.locator('#chip-auto')).toBeHidden();
+    for (let i = 0; i < 8; i++) {
+      const n = await renderCount(page);
+      await setControl(page, 'brightness', 100 + ((i % 2) ? 5 : 10) + i);
+      await waitForRender(page, n);
+    }
+    await expect(page.locator('#chip-auto')).toBeVisible();
+    const cols = Number(await page.locator('#viewer-canvas').getAttribute('data-cols'));
+    expect(cols).toBeLessThan(120);
+    // the export is still full resolution: 120 columns
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-export="txt"]')]);
+    const lines = readFileSync(await dl.path(), 'utf8').slice(0, -1).split('\n');
+    expect(Array.from(lines[0])).toHaveLength(120);
+    await guard.assertClean(expect);
+  });
+
+  test('dragging a file over the page shows the overlay with animated marching ants', async ({ page }) => {
+    await gotoApp(page);
+    await page.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File([new Uint8Array(8)], 'x.png', { type: 'image/png' }));
+      document.body.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      document.getElementById('dropzone').dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    });
+    await expect(page.locator('body')).toHaveClass(/is-dragging/);
+    await expect(page.locator('#drop-overlay')).toBeVisible();
+    await expect(page.locator('#dropzone')).toHaveClass(/is-dragover/);
+    const anim = await page.locator('#dropzone .dz-ants rect').evaluate((el) => getComputedStyle(el).animationName);
+    expect(anim).toBe('ants');
+    const overlayAnim = await page.locator('.drop-overlay-box rect').evaluate((el) => getComputedStyle(el).animationName);
+    expect(overlayAnim).toBe('ants');
+    // leaving the window clears it
+    await page.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File([new Uint8Array(8)], 'x.png', { type: 'image/png' }));
+      document.body.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    });
+    await expect(page.locator('body')).not.toHaveClass(/is-dragging/);
+  });
+
+  test('the studio renders only when something changed (idle = no frames)', async ({ page }) => {
+    await gotoApp(page);
+    await loadFixture(page);
+    const n = await settle(page);
+    await page.waitForTimeout(700);
+    expect(await renderCount(page)).toBe(n);
+    await setControl(page, 'brightness', 140);
+    await page.waitForFunction((b) => Number(document.getElementById('viewer-canvas').dataset.frame) > b, n);
+  });
+
+  test('dragging a slider renders in draft quality and releasing it renders in full quality', async ({ page }) => {
+    await gotoApp(page);
+    await loadFixture(page);
+    await page.evaluate(async () => {
+      const { default: ascii } = await import('/src/modes/ascii.js');
+      const orig = ascii.render;
+      window.__qualities = [];
+      ascii.render = function spy(ctx, state) {
+        window.__qualities.push(ctx.quality);
+        return orig.call(this, ctx, state);
+      };
+    });
+    const range = page.locator('[data-param="brightness"] .range');
+    const box = await range.boundingBox();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2, { steps: 6 });
+    await page.waitForTimeout(150);
+    const during = await page.evaluate(() => window.__qualities.slice());
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+    const after = await page.evaluate(() => window.__qualities.slice());
+    expect(during.length).toBeGreaterThan(0);
+    expect(during.every((q) => q === 'draft')).toBe(true);
+    expect(after[after.length - 1]).toBe('full');
   });
 
   test('the hard column limit holds even if the state says otherwise', async ({ page }) => {

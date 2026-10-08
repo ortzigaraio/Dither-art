@@ -541,6 +541,15 @@ test.describe('viewer', () => {
     await expect(page.locator('#vw-split')).toHaveAttribute('aria-pressed', 'true');
     const orig = await canvasStats(page, '#viewer-original');
     expect(orig.variance).toBeGreaterThan(0);
+    // the original really is on top on the left of the handle and the art on the right
+    const hit = await page.evaluate(() => {
+      const w = document.getElementById('viewer-world').getBoundingClientRect();
+      const y = w.top + w.height / 2;
+      const left = document.elementFromPoint(w.left + w.width * 0.2, y);
+      const right = document.elementFromPoint(w.left + w.width * 0.8, y);
+      return { left: left && left.id, right: right && right.id };
+    });
+    expect(hit).toEqual({ left: 'viewer-original', right: 'viewer-canvas' });
     const h = await page.locator('#split-handle').boundingBox();
     const w = await page.locator('#viewer-world').boundingBox();
     const startPct = await page.evaluate(() => document.getElementById('split-handle').getAttribute('aria-valuenow'));
