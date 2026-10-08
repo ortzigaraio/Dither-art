@@ -23,9 +23,8 @@ HORAIN: a static GitHub Pages site that turns images, video and webcam input int
 
 ## Run & test
 - Serve: `python3 -m http.server 8080` from the repo root, then open http://localhost:8080/
-- Smoke tests: `cd tests && npm install && npx playwright test`. The browser is preinstalled, so never run `playwright install`.
-  Launch with `executablePath: '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell'`
-  (if that path is missing, check `ls /opt/pw-browsers`).
+- Smoke tests: `cd tests && npm install && npx playwright test`. Pin `@playwright/test` to exactly `1.56.1`, because its Chromium
+  (revision 1194) is preinstalled under `/opt/pw-browsers` and `PLAYWRIGHT_BROWSERS_PATH` already points there. Never run `playwright install`.
 - The test Chromium can't encode H.264, so test video export with WebM and skip MP4 when `canEncodeVideo('avc')` is false.
   The sandbox also has no CDN access, which is why everything lives in `vendor/`.
 - Before every commit: there must be no console errors and no CSP violations, and every registered mode must render a non-blank canvas.

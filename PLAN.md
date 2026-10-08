@@ -922,10 +922,9 @@ Cada fase termina con: smoke test Playwright verde (sección 13), sin errores de
 
 ## 13. Pruebas (`tests/`)
 
-- `tests/package.json` con `@playwright/test` **1.63.0** como devDependency. Servir la raíz con `python3 -m http.server 8080`.
-- En el entorno de Claude Code el navegador ya está instalado — **no ejecutar `playwright install`**. En `playwright.config.js`:
-  `use: { launchOptions: { executablePath: process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell' } }`
-  (si esa ruta no existe, buscar con `ls /opt/pw-browsers`).
+- `tests/package.json` con `@playwright/test` **1.56.1** (exacta: es la versión cuyo Chromium, revisión 1194, ya está instalado en
+  `/opt/pw-browsers`; `PLAYWRIGHT_BROWSERS_PATH` ya apunta ahí). **No ejecutar `playwright install`.** Servir la raíz con
+  `python3 -m http.server 8080` (o `webServer` en `playwright.config.js`).
 - Ese Chromium **no codifica H.264**: los tests de exportación usan **WebM**; MP4 se prueba con `canEncodeVideo('avc')` y se
   salta (`test.skip`) si no está disponible, nunca se marca como pasado.
 - El entorno de pruebas **no tiene acceso a CDNs** (jsDelivr, unpkg, Hugging Face): por eso todo está en `vendor/`. La IA de
