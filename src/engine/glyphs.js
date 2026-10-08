@@ -117,13 +117,41 @@ export function fontRatios(fontId) {
   return r;
 }
 
-/** Unrounded cell aspect (width / height) used to derive the number of rows (PLAN.md 5.1). */
-export function cellAspect(fontId, lineHeight, letterSpacingEm = 0) {
+/**
+ * Cell size in whole pixels at scale 1. The grid of rows and columns is derived from this, so the picture keeps
+ * the source aspect exactly (the cell is rounded, the glyph is scaled to fill it) and every preview / export scale
+ * shares the same number of rows (PLAN.md 5.1).
+ */
+export function baseCell(fontId, cellSize, lineHeight, letterSpacing = 0) {
   const { advance } = fontRatios(fontId);
-  return (advance + letterSpacingEm) / lineHeight;
+  return {
+    w: Math.max(1, Math.round(advance * cellSize + letterSpacing)),
+    h: Math.max(1, Math.round(cellSize * lineHeight)),
+  };
 }
 
-/** Integer cell metrics in output pixels for a given font size. */
+/** Cell aspect (width / height) used to derive the number of rows. */
+export function cellAspect(fontId, cellSize, lineHeight, letterSpacing = 0) {
+  const c = baseCell(fontId, cellSize, lineHeight, letterSpacing);
+  return c.w / c.h;
+}
+
+/**
+ * Pixel layout of a cell at a given output scale. The cell is the scale-1 cell times the scale (rounded) and the
+ * font size follows the cell width, so glyphs always fill their cell without being stretched.
+ */
+export function cellLayout(fontId, cellSize, lineHeight, letterSpacing, scale) {
+  const { advance, cap } = fontRatios(fontId);
+  const base = baseCell(fontId, cellSize, lineHeight, letterSpacing);
+  const cellW = Math.max(1, Math.round(base.w * scale));
+  const cellH = Math.max(1, Math.round(base.h * scale));
+  // The font follows the real cell width, so rounding the cell never stretches the glyph
+  const fontPx = Math.max(1, (cellSize * cellW) / base.w);
+  const baseline = Math.round(cellH / 2 + (cap * fontPx) / 2);
+  return { fontPx, cellW, cellH, baseline, advance };
+}
+
+/** Integer cell metrics in output pixels for a given font size (used for density measurement). */
 export function cellMetrics(fontId, fontPx, lineHeight, letterSpacingPx) {
   const { advance, cap } = fontRatios(fontId);
   const cellW = Math.max(1, Math.round(advance * fontPx + letterSpacingPx));
@@ -255,13 +283,14 @@ const atlasCache = new Map();
 
 /**
  * @param {string[]} chars unique characters
+ * @param {{ fontPx: number, cellW: number, cellH: number, baseline: number }} layout from cellLayout()
  * @returns {{ canvas: HTMLCanvasElement, alpha: Uint8Array, width: number, index: Map<string, number>,
  *   cols: number, cellW: number, cellH: number, baseline: number }}
  */
-export function getAtlas(chars, fontId, fontPx, lineHeight, letterSpacingPx) {
-  const m = cellMetrics(fontId, fontPx, lineHeight, letterSpacingPx);
+export function getAtlas(chars, fontId, layout) {
+  const m = layout;
   const ready = fontsReady(fontId, chars.join(''));
-  const key = [fontId, m.fontPx, m.cellW, m.cellH, m.baseline, chars.join(''), ready].join('\u0001');
+  const key = [fontId, m.fontPx.toFixed(3), m.cellW, m.cellH, m.baseline, chars.join(''), ready].join('\u0001');
   const hit = atlasCache.get(key);
   if (hit) {
     atlasCache.delete(key);

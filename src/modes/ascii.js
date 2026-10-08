@@ -3,8 +3,8 @@
 // error between gradient levels. Optional directional characters follow Sobel edges.
 
 import {
-  GRADIENT_OPTIONS, FONT_OPTIONS, FONTS, EDGE_CHARS, NO_GLYPH, buildGradient, getAtlas, drawGlyphGrid, cellAspect, fontStack,
-  fontsReady, requestFonts, fontRatios,
+  GRADIENT_OPTIONS, FONT_OPTIONS, FONTS, EDGE_CHARS, NO_GLYPH, buildGradient, getAtlas, drawGlyphGrid, cellAspect, cellLayout,
+  fontStack, fontsReady, requestFonts, baseCell,
 } from '../engine/glyphs.js';
 import { quantize } from '../engine/dither.js';
 import {
@@ -113,7 +113,7 @@ export default {
   resolution(params, srcW, srcH) {
     const p = params.mode;
     const cols = Math.max(1, Math.min(LIMITS.maxCols, Math.round(params.global.cols)));
-    const aspect = cellAspect(p.font, p.lineHeight, p.letterSpacing / p.cellSize);
+    const aspect = cellAspect(p.font, p.cellSize, p.lineHeight, p.letterSpacing);
     const rows = Math.max(1, Math.round(cols * (srcH / srcW) * aspect));
     return { width: cols, height: rows };
   },
@@ -171,17 +171,14 @@ export default {
     const t2 = performance.now();
     // ---- atlas (scale reduced when the output would exceed the size cap: PLAN.md 18.2) ----
     const cap = ctx.isExport ? LIMITS.maxExportImageSide : MAX_PREVIEW_SIDE;
-    const adv = fontRatios(fontId).advance;
-    let scale = Math.min(
-      outScale,
-      cap / (cols * Math.max(0.1, adv * p.cellSize + p.letterSpacing)),
-      cap / (rows * p.cellSize * p.lineHeight),
-    );
-    let atlas = getAtlas(atlasChars, fontId, p.cellSize * scale, p.lineHeight, p.letterSpacing * scale);
-    for (let guard = 0; guard < 8 && (cols * atlas.cellW > cap || rows * atlas.cellH > cap) && scale > 0.05; guard++) {
-      scale *= 0.95; // cell sizes are whole pixels, so rounding can still overshoot
-      atlas = getAtlas(atlasChars, fontId, p.cellSize * scale, p.lineHeight, p.letterSpacing * scale);
+    const base = baseCell(fontId, p.cellSize, p.lineHeight, p.letterSpacing);
+    let scale = Math.min(outScale, cap / (cols * base.w), cap / (rows * base.h));
+    let layout = cellLayout(fontId, p.cellSize, p.lineHeight, p.letterSpacing, scale);
+    for (let guard = 0; guard < 8 && (cols * layout.cellW > cap || rows * layout.cellH > cap) && scale > 0.05; guard++) {
+      scale *= 0.95; // cells are whole pixels, so rounding can still overshoot
+      layout = cellLayout(fontId, p.cellSize, p.lineHeight, p.letterSpacing, scale);
     }
+    const atlas = getAtlas(atlasChars, fontId, layout);
     const { cellW, cellH } = atlas;
     const glyph = state.glyph && state.glyph.length === n ? state.glyph : (state.glyph = new Uint16Array(n));
     const index = atlas.index;
