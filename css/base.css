@@ -42,6 +42,9 @@ a:hover { text-decoration-thickness: 2px; }
 
 [hidden] { display: none !important; }
 
+/* The skip link targets <main>; it needs no ring of its own */
+main:focus { outline: none; }
+
 /* Focus ring: always visible for keyboard users */
 :focus { outline: none; }
 :focus-visible {
