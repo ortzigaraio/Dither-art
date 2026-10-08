@@ -669,6 +669,50 @@ test.describe('engine', () => {
     expect(res.dithered.median).toBeLessThan(33);
   });
 
+  test('pipeline: draft quality, automatic quality and exports use the right working resolution', async ({ page }) => {
+    const res = await page.evaluate(async () => {
+      const { createPipeline } = await import('/src/engine/pipeline.js');
+      const ascii = (await import('/src/modes/ascii.js')).default;
+      const { DemoSource } = await import('/src/io/sources.js');
+      const { defaultsOf } = await import('/src/state.js');
+      const { IMAGE_PARAMS } = await import('/src/engine/preprocess.js');
+      const { COLOR_PARAMS } = await import('/src/engine/color.js');
+      const mock = {
+        id: 'mock', params: [], uses: ['image'],
+        resolution: () => ({ width: 100, height: 50 }),
+        render(ctx) {
+          ctx.out.canvas.width = ctx.width;
+          ctx.out.canvas.height = ctx.height;
+          ctx.out.ctx2d.fillStyle = '#fff';
+          ctx.out.ctx2d.fillRect(0, 0, ctx.width, ctx.height);
+          return { quality: ctx.quality, isExport: ctx.isExport };
+        },
+      };
+      const src = await DemoSource.create({ animated: false });
+      const pipe = createPipeline();
+      const base = { source: src, theme: { ink: '#fff', bg: '#000' } };
+      const params = (mode) => ({ global: defaultsOf(IMAGE_PARAMS), color: defaultsOf(COLOR_PARAMS), depth: {}, postfx: {}, mode: mode ? defaultsOf(mode.params) : {} });
+      const w = async (args, mode = mock) => (await pipe.render({ ...base, mode, params: params(mode === mock ? null : mode), ...args })).workWidth;
+      return {
+        full: await w({ quality: 'full' }),
+        draft: await w({ quality: 'draft' }),
+        auto: await w({ quality: 'full', autoScale: 0.5 }),
+        draftAuto: await w({ quality: 'draft', autoScale: 0.5 }),
+        exportIgnoresDraft: await w({ quality: 'draft', isExport: true, autoScale: 0.25 }),
+        asciiDraft: await w({ quality: 'draft' }, ascii),
+        asciiFull: await w({ quality: 'full' }, ascii),
+        meta: (await pipe.render({ ...base, mode: mock, params: params(null), quality: 'draft', isExport: true })).meta,
+      };
+    });
+    expect(res.full).toBe(100);
+    expect(res.draft).toBe(50); // half resolution while a slider is being dragged (PLAN.md 4.5)
+    expect(res.auto).toBe(50);
+    expect(res.draftAuto).toBe(25);
+    expect(res.exportIgnoresDraft).toBe(100); // exports are always full quality
+    expect(res.asciiDraft).toBe(res.asciiFull); // ASCII is cheap and opts out of draft
+    expect(res.meta).toEqual({ quality: 'full', isExport: true });
+  });
+
   test('pipeline: a failing mode falls back to the source and reports the error', async ({ page }) => {
     const guard = watchPage(page);
     const res = await page.evaluate(async () => {
