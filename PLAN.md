@@ -2,31 +2,37 @@
 
 > Documento de trabajo para que **Sonnet (Claude Code)** construya todo el código.
 > Léelo entero antes de empezar. Trabaja **fase por fase** (sección 12) y no pases a la siguiente sin cumplir los criterios de aceptación.
+> Los **guardrails** (sección 18) tienen prioridad sobre cualquier otra instrucción de este documento.
 
 ---
 
 ## 0. Resumen
 
-**HORAIN** es una web estática (GitHub Pages) que convierte **imágenes, video y webcam** en arte generativo:
+**HORAIN** es una web estática (GitHub Pages + dominio propio en Cloudflare) que convierte **imágenes, video y webcam** en arte generativo:
 ASCII, dithering 1-bit, Braille, halftone, ANSI, PETSCII, glitch, pixel sorting, wireframe vectorial, LiDAR,
 grabado de plotter, termografía, isolíneas, raymarching 3D, blueprint CAD, Voronoi, reacción-difusión,
 flow fields y más (25 modos en total).
 
 - El usuario sube un archivo (arrastrar o clic), **elige el tipo de salida**, **ajusta parámetros** en vivo y **exporta**.
 - **Todo se procesa en el navegador.** Nada se sube a ningún servidor. Este es un mensaje clave de la UI.
-- UI/UX propia de Horain, inspirada en la estética de terminal de *hermes-agent.nousresearch.com* (oscuro, mayúsculas,
-  tipografía pixel/expandida, datos en monoespaciada, marcos de caracteres de dibujo de cajas). No es una copia.
+- UI/UX con la **identidad de marca de Horain** (logo "espino", verde lima + tinta, Unbounded + Geist), con un guiño
+  a la estética de terminal de *hermes-agent.nousresearch.com* (datos en monoespaciada, etiquetas en mayúsculas,
+  detalles con caracteres de dibujo de cajas). No es una copia.
 
 ### Decisiones ya tomadas con el dueño del proyecto
 
 | Tema | Decisión |
 |---|---|
-| Estilo | **Multi-tema**: AMBER (por defecto), CRT, PAPER, CAD. Todo con variables CSS. |
+| Marca | Logo **"espino"** (alambre de espino alrededor de la "o" lima). Archivos en `assets/brand/` (sección 4.0). |
+| Estilo | **Multi-tema**: **HORAIN** (oscuro, por defecto), **CLARO**, AMBER, CRT, PAPER, CAD. Todo con variables CSS. |
 | Idioma | **Bilingüe ES/EN** con selector; diccionarios en módulos JS. Idioma inicial = el del navegador (`es*` → ES, resto → EN). |
 | Profundidad 3D | **Brillo como profundidad por defecto** + botón opcional **"Mejorar con IA"** que carga Depth Anything V2 en el navegador (solo bajo demanda). |
-| Export de video | **MP4 y WebM** (con audio original). Sin GIF por ahora. |
+| Export de video | **MP4 y WebM** (con audio original). **Aviso** (no bloqueo) a partir de 2 min. GIF en el futuro (dejar el hueco). |
 | Export de imagen | PNG siempre; SVG en modos vectoriales; TXT / HTML / ANSI en modos de texto; copiar al portapapeles. |
-| Hosting | GitHub Pages, **sin paso de build**: HTML + CSS + ES modules nativos. |
+| Hosting | GitHub Pages (repo público), **sin paso de build**: HTML + CSS + ES modules nativos. |
+| Dominio | Subdominio de **ortzigar.org** gestionado en Cloudflare (propuesta: `horain.ortzigar.org`). Pasos en `DEPLOY.md`. |
+| Visitas | **Contador de visitas público** en el pie de página, con un Cloudflare Worker + D1 propio (sección 17). Sin cookies ni IPs guardadas. |
+| Guardrails | Límites de seguridad, privacidad, rendimiento, marca y desarrollo (sección 18). |
 
 ---
 
@@ -34,19 +40,20 @@ flow fields y más (25 modos en total).
 
 1. **Sin frameworks ni bundler.** Vanilla JS (ES2022, ES modules), CSS plano, WebGL2, Canvas2D, Web Workers.
    La página tiene que funcionar sirviendo la carpeta tal cual (`python3 -m http.server`) y en GitHub Pages.
-2. **Dependencias externas solo por CDN con versión exacta** a través de un `<script type="importmap">` en `index.html`
-   (ver sección 3). Nunca `@latest` ni rangos. Si cambias una versión, que tenga al menos 2 semanas de publicada.
-3. **Rutas relativas siempre** (`./src/...`), porque Pages sirve el sitio bajo `/<repo>/`.
+2. **Librerías de terceros ya incluidas en `vendor/`** (sección 3). Se importan con **rutas relativas**; no hay import map.
+   No añadas dependencias nuevas sin anotarlo en la sección "Desviaciones" al final de este documento.
+3. **Rutas relativas siempre** (`./src/...`). Debe funcionar igual en `https://<usuario>.github.io/<repo>/` y en la raíz del dominio propio.
 4. Cada **modo** es un módulo independiente que cumple la interfaz de la sección 6. La UI de parámetros se genera
    **automáticamente desde el esquema** de cada modo; no escribas HTML a mano para los controles de cada modo.
 5. Todo texto visible pasa por `t('clave')` (i18n). Nada de strings sueltos en la UI.
 6. Rendimiento: nunca bloquees el hilo principal más de ~50 ms. Lo pesado (difusión de error a alta resolución,
    pixel sort, Voronoi, IA de profundidad) va en Web Workers, con cancelación por `jobId`.
 7. Accesibilidad: todos los controles con `<label>`, navegables con teclado, foco visible, `prefers-reduced-motion`
-   respetado (sin animaciones de fondo en el hero), contraste AA en los 4 temas.
+   respetado (sin animaciones de fondo en el hero), contraste AA en todos los temas.
 8. Comentarios en el código: breves y solo donde el algoritmo no sea obvio (citar el nombre del algoritmo/paper).
 9. Commits pequeños por fase/modo, mensajes en inglés tipo `feat(mode): add braille renderer`.
-10. Antes de cada commit: abrir la página con Playwright (sección 13) y comprobar que **no hay errores en consola**.
+10. Antes de cada commit: abrir la página con Playwright (sección 13) y comprobar que **no hay errores en consola**
+    (incluidas violaciones de CSP).
 
 ---
 
@@ -54,22 +61,27 @@ flow fields y más (25 modos en total).
 
 ```
 /
-├─ index.html                 # única página; importmap; layout (hero + estudio)
+├─ index.html                 # única página; CSP en <meta>; layout (hero + estudio)
 ├─ .nojekyll                  # Pages no debe procesar con Jekyll
-├─ README.md                  # qué es, cómo usar, cómo desarrollar, créditos de algoritmos
+├─ README.md                  # qué es, cómo usar, cómo desarrollar, privacidad, créditos de algoritmos y fuentes
 ├─ PLAN.md                    # este documento
-├─ CLAUDE.md                  # reglas cortas para agentes (ya existe)
+├─ CLAUDE.md                  # reglas cortas para agentes
+├─ DEPLOY.md                  # publicar en Pages + dominio en Cloudflare + desplegar el contador (pasos manuales del dueño)
 ├─ assets/
-│  ├─ favicon.svg             # glifo "H" en estilo pixel
+│  ├─ brand/                  # YA EXISTE — logos oficiales (no modificar, ver 4.0)
+│  ├─ fonts/                  # YA EXISTE — fuentes autoalojadas + fonts.css + licencias OFL
 │  └─ og-image.png            # se genera en la fase 7 con la propia app
+├─ vendor/                    # YA EXISTE — mediabunny, d3-delaunay (+ deps). Ver vendor/README.md
+├─ worker/counter/            # YA EXISTE — Cloudflare Worker del contador de visitas (sección 17)
 ├─ css/
-│  ├─ tokens.css              # temas (variables), tipografías, escalas
+│  ├─ tokens.css              # temas (variables), tipografías, radios, escalas
 │  ├─ base.css                # reset, tipografía, utilidades
 │  ├─ layout.css              # hero, estudio (3 columnas), responsive
-│  └─ components.css          # botones, sliders, selects, toggles, dropzone, toasts, modal
+│  └─ components.css          # botones, sliders, selects, toggles, dropzone, toasts, modal, contador
 ├─ src/
-│  ├─ main.js                 # arranque: carga fuentes, i18n, tema, estado, UI, loop
-│  ├─ state.js                # store global con pub/sub, persistencia localStorage, hash compartible
+│  ├─ config.js               # URL del contador, URL del sitio, límites (sección 18) — un solo sitio para ajustes
+│  ├─ main.js                 # arranque: fuentes, i18n, tema, estado, UI, loop, manejadores globales de error
+│  ├─ state.js                # store global con pub/sub, persistencia localStorage, hash compartible (validado)
 │  ├─ scheduler.js            # bucle rAF: render solo si "dirty" / frame de video nuevo / modo animado
 │  ├─ i18n/
 │  │  ├─ i18n.js              # t(), setLang(), aplica data-i18n al DOM
@@ -78,20 +90,22 @@ flow fields y más (25 modos en total).
 │  ├─ ui/
 │  │  ├─ header.js            # logo, selector de tema, ES|EN, enlace GitHub
 │  │  ├─ hero.js              # demo animada + dropzone + galería de modos
-│  │  ├─ dropzone.js          # drag&drop, clic, pegar (Ctrl+V), webcam, demo
+│  │  ├─ dropzone.js          # drag&drop, clic, pegar (Ctrl+V), webcam, demo — con validación (18.1)
 │  │  ├─ modeList.js          # lista de modos agrupados por categoría con badges
 │  │  ├─ controls.js          # esquema de parámetros → DOM (slider, select, color, toggle, text, button)
 │  │  ├─ viewer.js            # canvas de salida, zoom/pan, split antes/después, fullscreen, stats
 │  │  ├─ transport.js         # play/pausa, scrubber, loop, velocidad, mute (video)
 │  │  ├─ exportPanel.js       # botones de exportación según capacidades del modo + diálogo de video
 │  │  ├─ presets.js           # guardar/cargar presets, aleatorio ("Sorpréndeme"), compartir URL
+│  │  ├─ visitCounter.js      # contador de visitas del pie (sección 17)
 │  │  ├─ shortcuts.js         # atajos de teclado
 │  │  └─ toast.js             # notificaciones y errores
 │  ├─ io/
 │  │  ├─ sources.js           # ImageSource, VideoSource, WebcamSource, DemoSource (procedural)
+│  │  ├─ validate.js          # tipo real por "magic bytes", tamaños y dimensiones máximas (18.1)
 │  │  ├─ exportImage.js       # PNG (escala 1x/2x/4x/ancho custom), copiar imagen
-│  │  ├─ exportText.js        # TXT, HTML coloreado, ANSI (escapes 24-bit / 256 / 16), .ans CP437
-│  │  ├─ exportSVG.js         # helpers de SVG (paths, capas, unidades mm para plotter)
+│  │  ├─ exportText.js        # TXT, HTML coloreado (escapado), ANSI (24-bit / 256 / 16), .ans CP437
+│  │  ├─ exportSVG.js         # helpers de SVG (paths, capas, unidades mm para plotter), texto escapado
 │  │  ├─ exportVideo.js       # MP4/WebM con Mediabunny (offline, frame a frame) + fallback MediaRecorder
 │  │  └─ download.js          # descarga de Blob con nombre "horain-<modo>-<fecha>.<ext>"
 │  ├─ engine/
@@ -99,13 +113,13 @@ flow fields y más (25 modos en total).
 │  │  ├─ preprocess.js        # filtros de color (semántica CSS), nitidez, bordes, umbral
 │  │  ├─ analysis.js          # buffers cacheados: rgba, luma, sobel (mag/ángulo), depth
 │  │  ├─ dither.js            # difusión de error (todas las matrices) + Bayer + ruido azul
-│  │  ├─ palettes.js          # paletas retro y LUTs térmicas
+│  │  ├─ palettes.js          # paletas retro y LUTs térmicas (incluye paleta "Horain")
 │  │  ├─ color.js             # modos de color de salida, mezcla, conversión rgb/hsl/lab
 │  │  ├─ glyphs.js            # charsets, medición de densidad de glifos, atlas de glifos
 │  │  ├─ noise.js             # Perlin/Simplex 2D/3D propios (sin dependencia)
 │  │  ├─ geometry.js          # marching squares, Chaikin, clipping de líneas, orden de trazos
 │  │  ├─ math3d.js            # vec3/mat4, perspectiva/ortográfica, cámara orbital
-│  │  ├─ gl.js                # helpers WebGL2: programa, quad, texturas, FBO ping-pong, readPixels
+│  │  ├─ gl.js                # helpers WebGL2: programa, quad, texturas, FBO ping-pong, readPixels, context lost
 │  │  ├─ depth.js             # profundidad por brillo + puente con depth.worker (IA)
 │  │  └─ postfx.js            # CRT, scanlines, glow, aberración cromática, viñeta, grano (shader)
 │  ├─ workers/
@@ -124,35 +138,35 @@ flow fields y más (25 modos en total).
    └─ fixtures/               # imagen y video de prueba generados (ver 13)
 ```
 
+Añade un `.gitignore` con `node_modules/`, `tests/test-results/`, `tests/playwright-report/` y `tests/screenshots/`.
+
 ---
 
-## 3. Dependencias (importmap en `index.html`)
+## 3. Dependencias (ya incluidas en `vendor/`)
 
-```html
-<script type="importmap">
-{
-  "imports": {
-    "mediabunny": "https://cdn.jsdelivr.net/npm/mediabunny@1.59.1/+esm",
-    "d3-delaunay": "https://cdn.jsdelivr.net/npm/d3-delaunay@6.0.4/+esm",
-    "@huggingface/transformers": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0/+esm"
-  }
-}
-</script>
-```
+No hay CDN en tiempo de ejecución salvo la IA opcional: mejor privacidad, CSP estricta (`'self'`) y funciona en entornos
+de pruebas sin acceso a CDNs. Detalle de versiones, licencias y cambios locales en `vendor/README.md`.
 
-- **mediabunny** — lectura y escritura de MP4/WebM con WebCodecs. Se importa **de forma diferida** (`await import('mediabunny')`) solo al exportar video.
-- **d3-delaunay** — Voronoi/Delaunay para stippling y low-poly.
-- **@huggingface/transformers** — solo dentro de `depth.worker.js` y solo cuando el usuario pulsa "Mejorar con IA".
-  Los workers no heredan el importmap: en el worker importa con la URL completa del CDN.
+| Librería | Import | Uso |
+|---|---|---|
+| mediabunny 1.59.1 | `await import('../../vendor/mediabunny/1.59.1/mediabunny.min.mjs')` (relativo al módulo que importa) | Leer/escribir MP4 y WebM con WebCodecs. **Import diferido**, solo al exportar video. |
+| d3-delaunay 6.0.4 | `import { Delaunay } from '../../vendor/d3-delaunay/6.0.4/index.js'` | Voronoi/Delaunay (stipple, celdas, low-poly). Funciona también dentro de workers. |
+| @huggingface/transformers 4.3.0 | `import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0/+esm'` **solo en `depth.worker.js`** | Profundidad con IA, solo bajo demanda. Es la **única** excepción de CDN. |
+
 - Ruido Perlin/Simplex, matrices de dithering, marching squares, matemáticas 3D: **implementación propia** (son pocas líneas).
 
-Fuentes (Google Fonts, `display=swap`):
-- **JetBrains Mono** (400, 700): UI de datos, valores, y fuente por defecto del render ASCII.
-- **Silkscreen** (400, 700): logo, títulos de sección, etiquetas de botones grandes (pixel).
-- **Archivo** con eje `wdth` (125) en 600/800: titulares expandidos en mayúsculas del hero.
-- Opciones extra para el render ASCII (cargadas bajo demanda): **IBM Plex Mono**, **VT323**, **Space Mono**.
+**Fuentes** (autoalojadas, `<link rel="stylesheet" href="./assets/fonts/fonts.css">`, todas SIL OFL):
 
-> Antes de medir glifos o dibujar texto en canvas: `await document.fonts.load('16px "JetBrains Mono"')`.
+| Familia (`font-family`) | Uso |
+|---|---|
+| `Unbounded` (variable 200–900) | **Display de la marca**: titulares, nombres de modo grandes, números grandes del contador. Peso 600. |
+| `Geist` (variable 100–900) | **Texto de UI**: etiquetas, botones, párrafos. Etiquetas de sección en mayúsculas 600 con `letter-spacing: .08em`. |
+| `Geist Mono` (variable 100–900, incluye cajas y bloques U+2500–259F) | Valores numéricos, lecturas técnicas y **fuente por defecto del render ASCII**. |
+| `JetBrains Mono`, `VT323`, `IBM Plex Mono`, `Space Mono` | Opciones extra del render ASCII. |
+
+> Antes de medir glifos o dibujar texto en canvas: `await document.fonts.load('16px "Geist Mono"', caracteresDelSet)`.
+> Pila de fuentes del render: `"<elegida>", "Geist Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace` (los símbolos
+> matemáticos, flechas y katakana caerán en fuentes del sistema; centrar cada glifo en su celda).
 > Braille, bloques, ANSI y PETSCII **no dependen de la fuente**: se dibujan proceduralmente en el canvas
 > (puntos y rectángulos). Solo la exportación de texto usa los caracteres Unicode.
 
@@ -160,47 +174,86 @@ Fuentes (Google Fonts, `display=swap`):
 
 ## 4. Identidad visual y UX
 
+### 4.0 Marca Horain (fuente: `assets/brand/horain-design-system.pdf`)
+
+| Archivo | Uso |
+|---|---|
+| `assets/brand/horain-espino.svg` | Logo principal (texto tinta `#15181E`) sobre fondos **claros**. |
+| `assets/brand/horain-espino-on-dark.svg` | Logo (texto blanco) sobre fondos **oscuros**. |
+| `assets/brand/horain-icon.svg` | Icono de app (cuadrado redondeado tinta + ojo lima + espino blanco) → **favicon**, `apple-touch-icon` (exportar PNG 180×180), icono del manifest. |
+| `assets/brand/wire-valla.svg` | Línea de alambre "valla" → separadores de sección (como `mask-image` repetida en horizontal, color = `currentColor`). |
+
+Paleta de marca (extraída del PDF):
+
+| Token | Hex | Uso |
+|---|---|---|
+| `--horain-lime` | `#C4F169` | Acento principal: la "o" del logo, botones primarios, foco, valores activos. |
+| `--horain-ink` | `#15181E` | Tinta / fondo oscuro. |
+| `--horain-gray` | `#66696F` | Texto secundario en claro, etiquetas. |
+| `--horain-paper` | `#F7F8FA` | Fondo claro. |
+| `--horain-mist` | `#EEF0F3` | Paneles claros. |
+| `--horain-lime-pale` | `#EDFAD1` | Fondos suaves de acento en el tema claro. |
+
+**Motivos de marca** (úsalos con moderación):
+- **El ojo**: círculo lima con un punto tinta desplazado (la "o" del logo). Es el **thumb de los sliders** (14 px), el indicador
+  del modo activo y el **indicador de carga** (el punto "mira" alrededor dentro del círculo).
+- **El espino**: anillo de alambre girando despacio alrededor del ojo = estado "procesando / exportando" (reutiliza el arte de `horain-icon.svg`).
+- **La valla**: separador entre secciones de la landing y bajo el titular del hero.
+- El logo **siempre** es el SVG (nunca se reescribe con una fuente). Ver guardrails de marca (18.4).
+
 ### 4.1 Temas (`css/tokens.css`)
 
-Se aplican con `<html data-theme="amber|crt|paper|cad">`. Guardar elección en `localStorage` (envuelto en try/catch).
+Se aplican con `<html data-theme="horain|claro|amber|crt|paper|cad" data-tone="dark|light">`. `data-tone` decide qué logo se ve
+(`horain-espino-on-dark.svg` en temas oscuros, `horain-espino.svg` en claros). Guardar elección en `localStorage` (con try/catch).
+Por defecto: `horain`; si el sistema pide claro (`prefers-color-scheme: light`) y el usuario no eligió nada, `claro`.
 
-| Token | AMBER (defecto) | CRT | PAPER | CAD |
-|---|---|---|---|---|
-| `--bg` | `#0B0B0A` | `#050A06` | `#EFECE4` | `#0D2A4A` |
-| `--panel` | `#141311` | `#0B140D` | `#E6E2D6` | `#10335A` |
-| `--panel-2` | `#1C1A17` | `#102016` | `#DCD7C8` | `#163E6B` |
-| `--fg` | `#E8E4D8` | `#C8F7D2` | `#111111` | `#E6F0FF` |
-| `--fg-2` (secundario) | `#8A8578` | `#5F8F6A` | `#5B5850` | `#8FB0D9` |
-| `--accent` | `#FFB000` | `#39FF6A` | `#E5402A` | `#7FD4FF` |
-| `--accent-ink` (texto sobre acento) | `#0B0B0A` | `#050A06` | `#FFFFFF` | `#0D2A4A` |
-| `--line` (bordes 1px) | `#2A2824` | `#183020` | `#C9C4B5` | `#2C5A8C` |
-| `--danger` | `#FF5A3C` | `#FF5A3C` | `#B3261E` | `#FF7A6B` |
+| Token | HORAIN (defecto) | CLARO | AMBER | CRT | PAPER | CAD |
+|---|---|---|---|---|---|---|
+| `--bg` | `#15181E` | `#F7F8FA` | `#0B0B0A` | `#050A06` | `#EFECE4` | `#0D2A4A` |
+| `--panel` | `#1B1F26` | `#FFFFFF` | `#141311` | `#0B140D` | `#E6E2D6` | `#10335A` |
+| `--panel-2` | `#232830` | `#EEF0F3` | `#1C1A17` | `#102016` | `#DCD7C8` | `#163E6B` |
+| `--fg` | `#F7F8FA` | `#15181E` | `#E8E4D8` | `#C8F7D2` | `#111111` | `#E6F0FF` |
+| `--fg-2` (secundario) | `#A3A7AE` | `#5F636A` | `#8A8578` | `#5F8F6A` | `#5B5850` | `#8FB0D9` |
+| `--accent` (rellenos) | `#C4F169` | `#C4F169` | `#FFB000` | `#39FF6A` | `#E5402A` | `#7FD4FF` |
+| `--accent-text` (texto/líneas en acento) | `#C4F169` | `#4A7300` | `#FFB000` | `#39FF6A` | `#B3261E` | `#7FD4FF` |
+| `--accent-ink` (texto sobre acento) | `#15181E` | `#15181E` | `#0B0B0A` | `#050A06` | `#FFFFFF` | `#0D2A4A` |
+| `--accent-soft` | `rgba(196,241,105,.12)` | `#EDFAD1` | `rgba(255,176,0,.12)` | `rgba(57,255,106,.10)` | `rgba(229,64,42,.10)` | `rgba(127,212,255,.12)` |
+| `--line` (bordes 1px) | `#2C313A` | `#DCDFE4` | `#2A2824` | `#183020` | `#C9C4B5` | `#2C5A8C` |
+| `--danger` | `#FF6B5A` | `#C62828` | `#FF5A3C` | `#FF5A3C` | `#B3261E` | `#FF7A6B` |
+| `--out-ink` (tinta de salida por defecto) | `#C4F169` | `#15181E` | `#FFB000` | `#39FF6A` | `#111111` | `#E6F0FF` |
+| `--out-bg` (fondo de salida por defecto) | `#15181E` | `#F7F8FA` | `#0B0B0A` | `#050A06` | `#EFECE4` | `#0D2A4A` |
 
-Extras por tema: CRT añade overlay de scanlines muy sutil (`repeating-linear-gradient`, opacidad ≤ 0.06) en el fondo;
-CAD añade cuadrícula de fondo (líneas cada 8px y mayores cada 64px en `--line`). Todos: grano/ruido SVG muy sutil sobre `body`.
-Con `prefers-reduced-motion` nada de esto se anima.
+Nunca uses lima como color de **texto** sobre fondo claro (contraste insuficiente): en claro, el texto de acento es `--accent-text`.
+Extras por tema: CRT añade overlay de scanlines muy sutil (`repeating-linear-gradient`, opacidad ≤ 0.06);
+CAD añade cuadrícula de fondo (líneas cada 8 px y mayores cada 64 px en `--line`). Con `prefers-reduced-motion` nada se anima.
 
-**El color por defecto de la salida** de cada modo sigue el tema (tinta = `--accent`, fondo = `--bg`) hasta que el usuario elija otro.
+**El color por defecto de la salida** de cada modo sigue el tema (`--out-ink` / `--out-bg`) hasta que el usuario elija otro.
+
+Radios (de la marca: icono redondeado y cápsula del logo): `--radius-sm: 6px` (inputs), `--radius-md: 12px` (paneles, tarjetas),
+`--radius-pill: 999px` (botones y chips).
 
 ### 4.2 Lenguaje visual
 
-- Etiquetas de sección en **MAYÚSCULAS** con `letter-spacing: .08em`, numeradas: `01 / ENTRADA`, `02 / SALIDA`, `03 / AJUSTES`.
-- Marcos y separadores con **caracteres de dibujo de cajas** (`┌─┐│└┘├┤`) solo en elementos decorativos; los
-  contenedores reales usan bordes CSS de 1px `--line` (nunca esquinas redondeadas > 2px).
-- Botones tipo `[ EXPORTAR ]`: fondo transparente, borde 1px, hover = fondo `--accent` y texto `--accent-ink`.
-- Valores numéricos siempre en JetBrains Mono y alineados a la derecha.
+- **Titulares** en Unbounded 600, **en minúsculas** como el logo, tracking −0.02em (`convierte imágenes y video en arte`).
+- **Etiquetas de sección** en Geist 600 MAYÚSCULAS, `letter-spacing: .08em`, color `--fg-2`, numeradas: `01 / ENTRADA`, `02 / SALIDA`, `03 / AJUSTES`
+  (como las etiquetas `WIRE="ESPINO"` del PDF de marca).
+- Toque terminal: lecturas técnicas en Geist Mono (`160×72 · 58 fps · 12 ms`), detalles decorativos con
+  **caracteres de dibujo de cajas** (`┌─┐│└┘├┤`) en el hero y en el dropzone. Los contenedores reales usan bordes CSS de 1 px `--line`.
+- Botones: cápsula. **Primario** = fondo `--accent`, texto `--accent-ink`. **Secundario** = borde 1 px `--line`, hover borde `--accent-text`.
+- Valores numéricos siempre en Geist Mono y alineados a la derecha.
 - Micro-interacciones: al cambiar de modo, el título del modo hace un efecto "scramble" de caracteres (≤ 300 ms).
 
 ### 4.3 Layout
 
 **Vista Inicio (sin archivo cargado)**
-1. Header fijo: logo `HORAIN` (Silkscreen) · `ESTUDIO` · `MODOS` · `ACERCA` · selector de tema `◐ AMBER ▾` · `ES | EN` · GitHub.
+1. Header fijo: **logo espino** (SVG, alto 28 px) · `ESTUDIO` · `MODOS` · `ACERCA` · selector de tema `◐ HORAIN ▾` · `ES | EN` · GitHub.
 2. Hero: canvas a ancho completo que ejecuta **el propio motor** sobre la fuente Demo (procedural) y rota de modo cada 4 s.
-   Titular expandido: **"CONVIERTE IMÁGENES Y VIDEO EN ARTE"** / **"TURN IMAGES & VIDEO INTO ART"**.
-   Subtítulo: "25 estilos · 100% en tu navegador · nada se sube".
+   Titular: **"convierte imágenes y video en arte"** / **"turn images & video into art"**.
+   Subtítulo: "25 estilos · 100% en tu navegador · nada se sube". Debajo, una **valla** como separador.
 3. **Dropzone** grande debajo del titular (ver 4.4).
 4. `MODOS`: rejilla de tarjetas (una por modo) con miniatura renderizada en vivo desde la fuente Demo (pequeña, perezosa con `IntersectionObserver`), nombre, descripción de una línea y badges. Clic → abre el estudio con ese modo y la demo.
-5. `ACERCA`: 3 bloques cortos (Privado · Imagen + Video · Exporta PNG/SVG/TXT/MP4/WebM) y créditos de algoritmos.
+5. `ACERCA`: 3 bloques cortos (Privado · Imagen + Video · Exporta PNG/SVG/TXT/MP4/WebM), créditos de algoritmos y fuentes.
+6. **Pie**: logo pequeño, **contador de visitas** (sección 17), enlace a GitHub, "hecho por ortzigar.org", licencia.
 
 **Vista Estudio (con fuente cargada)** — `<body class="has-source">`; el hero se colapsa y el estudio ocupa la pantalla.
 
@@ -235,9 +288,11 @@ Escritorio (≥ 1100 px), 3 columnas:
 └────────────────────────────────────────────────────────────┘
 ```
 - EN: **"Upload a file by dragging and dropping it here, or click here to select file"**.
-- Borde discontinuo animado (marching ants) en estado `dragover`, color `--accent`.
+- Borde discontinuo animado (marching ants) en estado `dragover`, color `--accent-text`.
 - Todo el documento acepta soltar archivos (no solo la caja). `Ctrl/Cmd+V` pega imágenes del portapapeles.
-- Errores: tipo no soportado, video que el navegador no puede decodificar (p. ej. HEVC `.mov` en Chrome) → toast explicando y sugiriendo MP4 H.264.
+- Validación y límites antes de decodificar (18.1). Errores: tipo no soportado, archivo demasiado grande, video que el navegador
+  no puede decodificar (p. ej. HEVC `.mov` en Chrome) → toast explicando y sugiriendo MP4 H.264.
+- Debajo, en pequeño: "Tus archivos no salen de tu dispositivo." / "Your files never leave your device."
 - En el estudio, un botón compacto `[ CAMBIAR ARCHIVO ]` reabre el selector.
 
 ### 4.5 Controles (estilo panel de asciiart.eu, con look Horain)
@@ -248,10 +303,10 @@ Brillo                                   62%
 ━━━━━━━━━━━━━━━━━━●━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 - Etiqueta a la izquierda; valor a la derecha (clic → input numérico editable; Enter confirma).
-- `input[type=range]` nativo estilizado (pista 2px `--line`, tramo recorrido `--accent`, thumb cuadrado 12px).
+- `input[type=range]` nativo estilizado (pista 2 px `--line`, tramo recorrido `--accent`, thumb = **el ojo**: círculo lima 14 px con punto tinta).
 - Doble clic en la etiqueta = restaurar valor por defecto. Icono `?` con tooltip explicativo (i18n).
-- Toggle con apariencia `[x] Invertir` / `[ ] Invertir`. Select con flecha `▾`. Color con muestra cuadrada + hex editable.
-- Cada grupo es un `<details>` con cabecera `── AJUSTES DE IMAGEN ─────── [↺]` (↺ restaura el grupo).
+- Toggle tipo interruptor en cápsula (lima cuando está activo). Select con flecha `▾`. Color con muestra + hex editable.
+- Cada grupo es un `<details>` con cabecera `AJUSTES DE IMAGEN ──────── ↺` (↺ restaura el grupo).
 - Controles que el modo actual no usa: ocultos (no deshabilitados).
 - Mientras se arrastra un slider se renderiza en **calidad borrador** (mitad de resolución); al soltar, calidad completa.
 
@@ -261,8 +316,9 @@ Brillo                                   62%
 - Rueda / pinch = zoom (10 %–800 %), arrastrar = pan, botones `AJUSTAR` y `1:1`, `F` = pantalla completa.
 - **Split antes/después**: línea vertical arrastrable que muestra el original a un lado.
 - Esquina inferior derecha en mono: `160×72 · 58 fps · 12 ms` (resolución de trabajo, fps, tiempo de render).
+  Si la calidad se reduce automáticamente (18.2), chip `CALIDAD AUTO ↓`.
 - Modos 3D: arrastrar = orbitar cámara (pan con Shift), rueda = zoom de cámara (no del visor). Botón para alternar.
-- Overlay "RENDERIZANDO… 43%" para trabajos en worker.
+- Overlay con **el ojo + espino girando** y "renderizando… 43 %" para trabajos en worker.
 
 ### 4.7 Atajos
 
@@ -373,7 +429,7 @@ Sierra /32:         X 5 3     Sierra 2 filas /16:  X 4 3     Sierra Lite /4:   X
 | `ink` | color de tinta (defecto: `--accent` del tema) |
 | `bg` | color de fondo (defecto: `--bg` del tema) + toggle `Fondo transparente` |
 | `gradStops` | 2–3 colores |
-| `palette` | 1-bit Mac, Game Boy DMG, CGA, EGA 16, C64, PICO-8, Endesga 32, Sweetie 16, Amber CRT, Green CRT, Ironbow, Personalizada (lista de hex) |
+| `palette` | **Horain** (`#15181E`, `#66696F`, `#C4F169`, `#EDFAD1`, `#F7F8FA`), 1-bit Mac, Game Boy DMG, CGA, EGA 16, C64, PICO-8, Endesga 32, Sweetie 16, Amber CRT, Green CRT, Ironbow, Personalizada (lista de hex) |
 | `colorBoost` | 0–200 % (saturación extra solo en salida) |
 
 Cada modo declara qué `colorMode` admite (p. ej. PETSCII solo `Paleta`).
@@ -740,7 +796,7 @@ fija + modo animado, **duración**.
 **Ruta principal — Mediabunny `Conversion` con `video.process`** (render offline frame a frame, determinista, conserva audio):
 ```js
 const { Input, Output, Conversion, BlobSource, BufferTarget, ALL_FORMATS,
-        Mp4OutputFormat, WebMOutputFormat, QUALITY_HIGH } = await import('mediabunny');
+        Mp4OutputFormat, WebMOutputFormat, QUALITY_HIGH } = await import('../../vendor/mediabunny/1.59.1/mediabunny.min.mjs');
 
 const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
 const output = new Output({
@@ -810,13 +866,15 @@ Reproduce el video en tiempo real a 1× mientras graba. También se usa para **g
 
 ## 12. Fases (orden de implementación)
 
-Cada fase termina con: smoke test Playwright verde (sección 13), sin errores de consola, commit y push.
+Cada fase termina con: smoke test Playwright verde (sección 13), sin errores de consola, guardrails revisados (18), commit y push.
 
-### Fase 0 — Esqueleto y despliegue
-- `index.html`, CSS de tokens/base/layout/components, `.nojekyll`, header con selector de tema (4 temas) y ES|EN,
-  i18n funcionando, layout de las vistas Inicio y Estudio (vacías), dropzone funcional (archivo, soltar, pegar, demo).
-- **Aceptación**: el sitio carga en Pages; cambiar tema e idioma funciona y se recuerda; soltar una imagen pasa a la
-  vista Estudio y la muestra en el visor sin procesar.
+### Fase 0 — Esqueleto, marca y despliegue
+- `index.html` (con CSP en `<meta>`, 18.3), `fonts.css` enlazado, CSS de tokens/base/layout/components con los **6 temas** (4.1),
+  `.nojekyll`, `.gitignore`, `src/config.js`, header con **logo espino** que cambia según `data-tone`, favicon y `apple-touch-icon`
+  desde `horain-icon.svg`, selector de tema y ES|EN, i18n funcionando, layout de las vistas Inicio y Estudio (vacías),
+  dropzone funcional (archivo, soltar, pegar, demo) **con validación** (18.1), manejadores globales de error (18.2).
+- **Aceptación**: el sitio carga sin errores ni violaciones de CSP; cambiar tema e idioma funciona y se recuerda; soltar una
+  imagen pasa a la vista Estudio y la muestra en el visor sin procesar; un `.txt` renombrado a `.png` se rechaza con un toast.
 
 ### Fase 1 — Motor + ASCII completo (MVP)
 - `pipeline`, `preprocess` (todos los ajustes de 5.2), `analysis`, `dither` (todas las matrices), `glyphs` (densidad, atlas),
@@ -824,64 +882,78 @@ Cada fase termina con: smoke test Playwright verde (sección 13), sin errores de
 - Modo **ASCII** completo con todos sus parámetros (7.1). Exportar PNG / TXT / HTML / ANSI / copiar.
 - **Aceptación**: el panel reproduce el de referencia (Characters, Brightness, Contrast, Saturation, Hue, Grayscale,
   Sepia, Invert, Thresholding, Sharpness, Edge Detection, ASCII gradient, Space Density, Quality Enhancements (JJN, etc.),
-  Transparent frame) y cada control cambia el resultado en vivo; 160 columnas ≥ 30 fps en portátil medio.
+  Transparent frame) y cada control cambia el resultado en vivo; 160 columnas ≥ 30 fps en portátil medio; el HTML exportado
+  escapa los caracteres `& < > " '` del gradiente personalizado.
 
 ### Fase 2 — Video y webcam
 - `VideoSource`, `WebcamSource`, `transport.js`, `exportVideo.js` (Mediabunny MP4/WebM con audio + fallback MediaRecorder),
-  diálogo y progreso, grabación de webcam.
-- **Aceptación**: un MP4 H.264 con audio de 10 s se exporta a MP4 y a WebM en ASCII con audio sincronizado y la
-  duración correcta; cancelar funciona; en un navegador sin WebCodecs se usa el fallback.
+  diálogo y progreso, aviso > 2 min, grabación de webcam.
+- **Aceptación**: un video con audio de 10 s se exporta en ASCII con audio sincronizado y la duración correcta (MP4 donde el
+  navegador codifique H.264; WebM siempre); cancelar funciona y libera memoria; sin WebCodecs se usa el fallback.
 
 ### Fase 3 — Modos de texto y píxel
 - Braille, ANSI, PETSCII, Matrix, Retrato tipográfico, Dithering 1-bit, Halftone, Pixel art, LED, Termografía, Glitch, Pixel sort.
-- `heavy.worker.js` con cancelación por `jobId`. `modeList.js` con categorías y badges.
+- `heavy.worker.js` con cancelación por `jobId` y watchdog (18.2). `modeList.js` con categorías y badges.
 
 ### Fase 4 — Modos vectoriales + SVG
 - `geometry.js`, `exportSVG.js` (mm, páginas, capas, orden de trazos). Grabado/Crosshatch, Isolíneas, Voronoi/Stipple/Low-poly,
   Flow fields, Blueprint CAD, Vectrex, Espiral.
-- **Aceptación**: los SVG abren bien en Inkscape/navegador y en modo plotter no tienen rellenos.
+- **Aceptación**: los SVG abren bien en Inkscape/navegador, en modo plotter no tienen rellenos, y el texto del cajetín está escapado.
 
 ### Fase 5 — Profundidad y 3D
 - `depth.js` (brillo + IA en worker con progreso y caché), `math3d.js`, cámara orbital. LiDAR (+PLY), Wireframe oculto (+SVG),
-  Raymarch ASCII, Volumen texto ASCII/Braille.
-- **Aceptación**: los 4 modos funcionan con profundidad por brillo sin descargar nada; "Mejorar con IA" descarga una vez,
-  muestra progreso, y mejora visiblemente el relieve.
+  Raymarch ASCII, Volumen texto ASCII/Braille. Manejo de pérdida de contexto WebGL (18.2).
+- **Aceptación**: los 4 modos funcionan con profundidad por brillo sin descargar nada; "Mejorar con IA" pide confirmación,
+  descarga una vez, muestra progreso y mejora visiblemente el relieve (no comprobable en el entorno de pruebas sin CDN: dejar
+  el camino probado con un mock del worker).
 
 ### Fase 6 — Simulación
 - Reacción-difusión GPU + Autómatas celulares. Presets.
 
-### Fase 7 — Landing, pulido y calidad
-- Hero con demo animada rotando modos, galería de modos con miniaturas en vivo, sección Acerca, presets curados,
-  compartir URL, Sorpréndeme, Post-FX global, atajos y su ayuda, `og-image.png` (generada con la app), favicon,
-  revisión de accesibilidad y móvil, README final con capturas.
-- **Aceptación**: Lighthouse accesibilidad ≥ 95; sin scroll horizontal a 360 px; todos los modos visitados en el smoke test.
+### Fase 7 — Landing, contador, pulido y calidad
+- Hero con demo animada rotando modos, galería de modos con miniaturas en vivo, sección Acerca, **pie con contador de visitas**
+  (17, cliente `visitCounter.js`; el Worker ya existe en `worker/counter/`), presets curados, compartir URL (validado, 18.3),
+  Sorpréndeme, Post-FX global, atajos y su ayuda, `og-image.png` (generada con la app, con el logo), metadatos Open Graph/Twitter
+  con `siteUrl` de `config.js`, `site.webmanifest` con el icono, revisión de accesibilidad y móvil, README final con capturas.
+- **Aceptación**: Lighthouse accesibilidad ≥ 95; sin scroll horizontal a 360 px; todos los modos visitados en el smoke test;
+  con `counterUrl` vacío el contador no aparece y no hay errores; con un servidor de prueba local el contador muestra el número.
 
 ---
 
 ## 13. Pruebas (`tests/`)
 
-- `tests/package.json` con `@playwright/test` como devDependency. Servir la raíz con `python3 -m http.server 8080`.
-- Fixtures **generados** (sin archivos con licencia): `make-fixtures.mjs` crea `fixture.png` (degradados + formas + texto)
-  y `fixture.mp4` de 3 s con audio (con Mediabunny desde la propia página de test o con `ffmpeg` si está disponible).
+- `tests/package.json` con `@playwright/test` **1.63.0** como devDependency. Servir la raíz con `python3 -m http.server 8080`.
+- En el entorno de Claude Code el navegador ya está instalado — **no ejecutar `playwright install`**. En `playwright.config.js`:
+  `use: { launchOptions: { executablePath: process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell' } }`
+  (si esa ruta no existe, buscar con `ls /opt/pw-browsers`).
+- Ese Chromium **no codifica H.264**: los tests de exportación usan **WebM**; MP4 se prueba con `canEncodeVideo('avc')` y se
+  salta (`test.skip`) si no está disponible, nunca se marca como pasado.
+- El entorno de pruebas **no tiene acceso a CDNs** (jsDelivr, unpkg, Hugging Face): por eso todo está en `vendor/`. La IA de
+  profundidad se prueba con un worker simulado.
+- Fixtures **generados** (sin archivos con licencia): `make-fixtures.mjs` crea `fixture.png` (degradados + formas + texto) y
+  `fixture.webm` de 3 s con audio (con Mediabunny en una página de test: `CanvasSource` + `AudioBufferSource` de un tono).
 - `smoke.spec.js`:
-  1. Carga la página, sin errores de consola.
+  1. Carga la página: sin errores de consola ni violaciones de CSP (`securitypolicyviolation`).
   2. Carga `fixture.png` vía `setInputFiles`; para **cada modo** del registro: seleccionarlo, esperar render, comprobar que el
      canvas no es uniforme (varianza de píxeles > 0) y guardar captura en `tests/screenshots/<modo>.png`.
-  3. Cambiar tema e idioma; comprobar textos.
+  3. Cambiar tema (los 6) e idioma; comprobar textos y que el logo correcto es visible.
   4. ASCII: exportar TXT y verificar que tiene `rows` líneas de `cols` caracteres.
-  5. (Fase 2+) Cargar `fixture.mp4`, exportar WebM corto y verificar que el blob tiene tamaño > 0 y tipo correcto.
-- En el entorno de Claude Code: Chromium ya está instalado en `/opt/pw-browsers` — **no ejecutar `playwright install`**.
+  5. Guardrails: archivo falso (texto con extensión `.png`) rechazado; hash `#s=` manipulado (valores fuera de rango, claves
+     extrañas, `<script>`) se ignora o se recorta sin errores; texto con `<img onerror>` en el retrato tipográfico sale escapado en HTML/SVG.
+  6. (Fase 2+) Cargar `fixture.webm`, exportar WebM corto y verificar que el blob tiene tamaño > 0 y tipo correcto.
 
 Matriz manual antes de cerrar cada fase: Chrome/Edge (principal), Firefox, Safari 17+ (si es posible), Chrome Android.
 
 ---
 
-## 14. GitHub Pages
+## 14. GitHub Pages y dominio
 
-1. Settings → Pages → *Deploy from a branch* → `main` / `/ (root)`.
-2. `.nojekyll` en la raíz.
-3. Sin cabeceras COOP/COEP (Pages no las permite): transformers.js funciona sin `SharedArrayBuffer` (wasm de un hilo o WebGPU).
-4. Todas las rutas relativas; probar en `https://<usuario>.github.io/Ascii-dithering-Image-to-art-/`.
+Los pasos manuales (repo público, activar Pages, DNS en Cloudflare, verificar dominio, HTTPS, desplegar el contador) están en
+**`DEPLOY.md`**. Para el código basta con:
+1. `.nojekyll` en la raíz.
+2. Sin cabeceras COOP/COEP (Pages no las permite): transformers.js funciona sin `SharedArrayBuffer` (wasm de un hilo o WebGPU).
+3. Rutas relativas: debe funcionar en `https://ortzigaraio.github.io/Ascii-dithering-Image-to-art-/` y en `https://horain.ortzigar.org/`.
+4. **No crear el archivo `CNAME`**: lo crea GitHub al configurar el dominio en Settings → Pages (ver guardrail 18.5).
 
 ---
 
@@ -902,10 +974,123 @@ cancelar trabajos obsoletos.
 
 ---
 
-## 16. Pendiente de confirmar con el dueño (no bloquea las fases 0–2)
+## 16. Respuestas del dueño (resueltas)
 
-- ¿Logo/wordmark de Horain propio? (si no, wordmark en Silkscreen + favicon "H" pixel).
-- ¿Dominio propio (CNAME) o `github.io`?
-- ¿Analítica? (por defecto: ninguna).
-- ¿Límite de duración de video para exportar? (por defecto: aviso a partir de 2 min, sin bloqueo).
-- ¿Añadir GIF en el futuro? (la arquitectura de `exportVideo.js` lo permite con un tercer formato).
+| Pregunta | Respuesta |
+|---|---|
+| ¿Logo propio? | Sí: logo **espino** (`assets/brand/`). Colores y tipografías de marca en 4.0. |
+| ¿Dominio? | Repo público + Pages + **subdominio de ortzigar.org** vía Cloudflare (propuesto `horain.ortzigar.org`; ver `DEPLOY.md`). |
+| ¿Estadísticas? | **Contador de visitas público** (sección 17). |
+| ¿Límite de video? | **Aviso** a partir de 2 min, sin bloqueo (más los límites técnicos de 18.1). |
+| ¿GIF? | Más adelante; `exportVideo.js` debe tener una tabla de formatos donde añadir `gif` sea un caso más. |
+
+---
+
+## 17. Contador de visitas
+
+**Backend (ya escrito)**: `worker/counter/` — Cloudflare Worker + base de datos D1. Lo despliega el dueño (`DEPLOY.md`).
+- `POST /hit` → suma 1 al total y al día actual, devuelve `{ "total": n, "today": m }`.
+- `GET /count` → devuelve los mismos números sin sumar.
+- Sin cookies, **sin guardar IPs** ni user-agents; solo dos contadores. CORS solo para los orígenes permitidos
+  (`ALLOWED_ORIGINS`), límite de peticiones por IP con el binding de rate limiting (si está configurado), `Cache-Control: no-store`.
+
+**Cliente** (`src/ui/visitCounter.js`, fase 7):
+- `config.counterUrl` vacío → el contador **no se muestra** (y no se hace ninguna petición).
+- Una visita = un navegador por día: si `localStorage['horain.visit']` ≠ fecha de hoy (UTC) → `POST /hit` y guardar la fecha;
+  si ya contó hoy → `GET /count`. Si el navegador envía **Global Privacy Control** (`navigator.globalPrivacyControl === true`)
+  → solo `GET /count` (se muestra, no se cuenta).
+- `fetch` con `AbortController` (timeout 4 s), `credentials: 'omit'`, `cache: 'no-store'`. Cualquier fallo → ocultar el contador en silencio.
+- Diseño: odómetro retro en el pie, `VISITAS` en Geist 600 mayúsculas + 6 dígitos (relleno con ceros) en **Unbounded 600**, cada dígito
+  en una celda `--panel-2` con borde `--line`; los dígitos ruedan (CSS transform) desde 0 al valor al entrar en pantalla
+  (sin animación con `prefers-reduced-motion`). Debajo, en `--fg-2`: "hoy: 42". `aria-label="Visitas totales: 1234"`.
+- Mencionarlo en `ACERCA`/privacidad: "Contamos visitas de forma anónima: un número, sin cookies ni datos personales."
+
+`src/config.js` exporta `counterUrl: ''` (vacío hasta que el dueño despliegue el Worker; luego `'https://count.ortzigar.org'`, ya permitido en la CSP)
+y `siteUrl: 'https://horain.ortzigar.org/'` (para Open Graph y `<link rel="canonical">`).
+
+---
+
+## 18. Guardrails
+
+Reglas de seguridad y calidad. **Tienen prioridad** sobre el resto del plan. Los valores numéricos viven en `src/config.js`
+(`LIMITS`) para poder ajustarlos en un solo sitio.
+
+### 18.1 Entrada de archivos
+
+| Regla | Valor |
+|---|---|
+| Tipos aceptados | Imagen: PNG, JPEG, WebP, GIF (1.er frame), AVIF, BMP. Video: MP4, WebM, MOV (QuickTime). **No** SVG, PDF, HEIC ni otros. |
+| Validación de tipo | Por **magic bytes** (`io/validate.js`, leer los primeros 32 bytes), no por extensión ni por `file.type`. |
+| Tamaño máximo de imagen | 50 MB de archivo y 100 megapíxeles; si el lado mayor > 4096 px se reduce para trabajar. |
+| Tamaño máximo de video | 2 GB de archivo (aviso a partir de 500 MB). Duración: **aviso** a partir de 2 min (sin bloqueo). |
+| Decodificación | Siempre dentro de `try/catch`; un archivo corrupto muestra un toast y deja la app usable. |
+| Un archivo a la vez | Soltar varios → se usa el primero y se avisa. |
+
+### 18.2 Robustez y rendimiento en ejecución
+
+- Manejadores globales `error` y `unhandledrejection` → toast + registro en consola; la app nunca queda en blanco.
+- Cada `mode.render()` va en `try/catch`: si falla, se muestra la fuente original con un chip `ERROR EN EL MODO` y el resto sigue funcionando.
+- **Watchdog**: trabajos de worker > 30 s → ofrecer cancelar. Render de preview > 200 ms durante 5 frames seguidos → bajar la
+  resolución de trabajo automáticamente (chip `CALIDAD AUTO ↓`); al exportar, siempre calidad completa.
+- Límites duros de parámetros (aunque el estado diga otra cosa): columnas ≤ 600, partículas ≤ 50 000, puntos Voronoi ≤ 50 000,
+  pasos de reacción-difusión por frame ≤ 60, resolución de exportación ≤ 8192 px de imagen y ≤ 3840×2160 de video.
+- Memoria: `ImageBitmap.close()`, `VideoFrame/VideoSample.close()`, `URL.revokeObjectURL()` al cambiar de fuente, liberar
+  texturas/FBO de WebGL al cambiar de modo, `getUserMedia` se detiene (`track.stop()`) al salir de la cámara.
+- WebGL: escuchar `webglcontextlost` / `webglcontextrestored`, recrear recursos y avisar. Sin WebGL2 → los modos GPU se muestran
+  deshabilitados con explicación.
+- Sin WebCodecs → fallback MediaRecorder. Sin `getUserMedia` → se oculta el botón de cámara. Sin `OffscreenCanvas` → ruta en hilo principal.
+- Pestaña oculta (`visibilitychange`) o visor fuera de pantalla → pausar el bucle. Móvil: fps máximo 30 y valores por defecto más bajos.
+- Exportación: un único trabajo a la vez, botón cancelar que limpia todo, confirmación con tamaño estimado si > 2 min o > 1080p.
+
+### 18.3 Seguridad y privacidad
+
+- **Nada de lo que el usuario carga sale del navegador.** Las únicas peticiones de red permitidas son: archivos del propio sitio,
+  el contador (`config.counterUrl`, sin datos del usuario) y, solo tras pulsar "Mejorar con IA", jsDelivr + Hugging Face.
+- **CSP** en `<meta http-equiv="Content-Security-Policy">` (primera etiqueta del `<head>`, antes de cualquier script):
+  ```
+  default-src 'self';
+  script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval';
+  worker-src 'self' blob:;
+  style-src 'self' 'unsafe-inline';
+  font-src 'self';
+  img-src 'self' blob: data:;
+  media-src 'self' blob:;
+  connect-src 'self' blob: data: https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://count.ortzigar.org;
+  object-src 'none'; base-uri 'self'; form-action 'none'
+  ```
+  Comprobar en los tests que no hay violaciones (`securitypolicyviolation`). Si la descarga del modelo de IA necesita otro host,
+  añadir solo ese host y anotarlo en "Desviaciones".
+- **XSS**: nunca `innerHTML` con texto del usuario (nombre de archivo, gradiente personalizado, texto del retrato tipográfico, campos
+  del cajetín, presets importados, estado del hash). Usar `textContent`/`setAttribute`. Las exportaciones HTML y SVG escapan
+  `& < > " '` con una función común `escapeXml()` en `io/exportText.js`.
+- **Estado externo** (hash `#s=`, presets JSON importados, `localStorage`): `JSON.parse` en `try/catch` y validación contra el esquema:
+  solo claves conocidas, números recortados a `min/max`, enums de una lista blanca, strings ≤ 500 caracteres. Nunca `eval` ni `new Function`.
+- Enlaces externos con `rel="noopener noreferrer"`.
+- Sin cookies, sin analítica de terceros, sin fuentes ni scripts de Google en tiempo de ejecución.
+- No hay contenido generado por usuarios publicado en el sitio (nada se comparte en servidor), así que no hace falta moderación.
+- **Secretos**: nunca en el repo. `config.counterUrl` es pública (no es un secreto). Los tokens de Cloudflare solo en la máquina del dueño.
+
+### 18.4 Marca
+
+- El logo siempre es uno de los SVG de `assets/brand/`; **no** recolorear, deformar, recortar, animar las letras ni reescribirlo con una fuente.
+- Usar `horain-espino-on-dark.svg` en temas oscuros y `horain-espino.svg` en claros. Alto mínimo 24 px. Espacio libre alrededor ≥ alto de la "o".
+- No colocar el logo sobre el canvas de arte ni sobre fondos con mucho ruido.
+- No modificar ni borrar nada dentro de `assets/brand/`.
+
+### 18.5 Desarrollo (agentes)
+
+- Trabajar **solo** en la rama asignada. Nunca hacer push a `main`, nunca `push --force`, nunca reescribir historia.
+- No borrar ni reescribir `PLAN.md`, `CLAUDE.md`, `DEPLOY.md`, `assets/brand/`, `assets/fonts/`, `vendor/` ni `worker/counter/`
+  (sí se pueden **añadir** notas en "Desviaciones" al final de este plan).
+- No añadir frameworks, bundlers ni dependencias nuevas; no cargar nada de CDNs salvo la excepción de la IA.
+- No crear `CNAME` ni tocar configuración de DNS, Cloudflare o GitHub Pages: eso lo hace el dueño siguiendo `DEPLOY.md`.
+- No desactivar, saltar ni debilitar tests, la CSP o la validación para "poner verde". Si algo no se puede resolver tras 3 intentos,
+  anotarlo en "Desviaciones" con el motivo y seguir con la siguiente tarea.
+- No subir archivos binarios > 1 MB (salvo los ya existentes); los fixtures se generan.
+- Antes de cada commit: smoke test verde, sin errores de consola ni violaciones de CSP, `git status` limpio de basura (`node_modules`, capturas).
+
+---
+
+## 19. Desviaciones
+
+Registro de cambios respecto a este plan, decididos durante la implementación (fecha, qué, por qué). Vacío por ahora.
