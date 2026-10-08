@@ -4,8 +4,9 @@ import { t, initI18n, onLangChange } from './i18n/i18n.js';
 import { initHeader, setActiveNav } from './ui/header.js';
 import { initDropzone } from './ui/dropzone.js';
 import { toast, toastError, toastWarn } from './ui/toast.js';
-import { createViewer } from './ui/viewer.js';
-import { createInputGroup } from './ui/inputPanel.js';
+import { createHome } from './ui/hero.js';
+import { createStudio } from './studio.js';
+import { MODES } from './modes/index.js';
 import { validateFile, FileError } from './io/validate.js';
 import { ImageSource, DemoSource } from './io/sources.js';
 
@@ -35,7 +36,8 @@ const $ = (sel) => document.querySelector(sel);
 const app = {
   source: null,
   view: 'home',
-  viewer: null,
+  studio: null,
+  home: null,
   dropzone: null,
 };
 
@@ -46,7 +48,8 @@ function setView(view) {
   $('#studio').hidden = view !== 'studio';
   document.body.classList.toggle('has-source', !!app.source);
   setActiveNav(view === 'studio' ? 'studio' : null);
-  if (view === 'studio') requestAnimationFrame(() => app.viewer?.fit());
+  app.studio?.setActive(view === 'studio');
+  app.home?.setActive(view === 'home');
 }
 
 function scrollToHash(id) {
@@ -71,18 +74,9 @@ function navigate(target) {
   requestAnimationFrame(() => scrollToHash(target));
 }
 
-function renderInputPanel() {
-  const host = $('#controls');
-  host.textContent = '';
-  if (app.source) host.appendChild(createInputGroup(app.source, { onChange: () => app.dropzone.openPicker() }));
-}
-
 function setSource(source) {
-  const old = app.source;
   app.source = source;
-  old?.dispose();
-  renderInputPanel();
-  app.viewer.showSource(source);
+  app.studio.setSource(source); // the studio disposes the previous source
   setView('studio');
 }
 
@@ -125,21 +119,27 @@ async function openDemo() {
 }
 
 function updateHeroSub() {
-  const n = 1;
+  const n = MODES.length;
   $('#hero-sub').textContent = t(n === 1 ? 'hero.sub.one' : 'hero.sub', { n });
+}
+
+async function openMode(modeId) {
+  app.studio.store.setModeId(modeId);
+  if (app.source) setView('studio');
+  else await openDemo();
 }
 
 function boot() {
   initI18n();
-  app.viewer = createViewer();
+  app.studio = createStudio({ onChangeFile: () => app.dropzone.openPicker() });
+  app.home = createHome({ onOpenMode: openMode });
   initHeader({ onNavigate: navigate });
   app.dropzone = initDropzone({ onFile: openFile, onDemo: openDemo });
   updateHeroSub();
-  onLangChange(() => {
-    updateHeroSub();
-    renderInputPanel();
-  });
+  onLangChange(updateHeroSub);
+  app.studio.mount();
   setView('home');
+  app.home.init().catch((err) => console.warn('[horain] home init failed', err));
   document.documentElement.dataset.ready = 'true';
 }
 
