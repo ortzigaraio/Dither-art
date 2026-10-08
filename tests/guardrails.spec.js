@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import {
-  watchPage, gotoApp, loadFixture, renderCount, waitForRender, setControl, getControl, settle, FIXTURE_PNG,
+  watchPage, gotoApp, loadFixture, renderCount, waitForRender, setControl, getControl, settle, FIXTURE_PNG, openChooser,
 } from './helpers.js';
 
 const b64url = (obj) => Buffer.from(typeof obj === 'string' ? obj : JSON.stringify(obj)).toString('base64url');
@@ -365,7 +365,7 @@ test.describe('18.1 file input', () => {
   test('"change file" reopens the picker and a new file replaces the old one', async ({ page }) => {
     await gotoApp(page);
     await loadFixture(page);
-    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#change-file')]);
+    const chooser = await openChooser(page, () => page.click('#change-file'));
     await chooser.setFiles({ name: 'second.png', mimeType: 'image/png', buffer: readFileSync(FIXTURE_PNG) });
     await expect(page.locator('[data-group="input"] .src-name')).toHaveText('second.png');
   });

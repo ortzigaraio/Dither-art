@@ -165,3 +165,15 @@ export async function resetAll(page) {
   }
   await settle(page);
 }
+
+/**
+ * Run `action` (a click or key press) and return the file chooser it opens.
+ * The extra round trip makes sure Playwright has switched file-chooser interception on before the action runs:
+ * without it, about one run in six races the browser and the event never arrives.
+ */
+export async function openChooser(page, action) {
+  const chooser = page.waitForEvent('filechooser', { timeout: 10_000 });
+  await page.evaluate(() => 0);
+  await action();
+  return chooser;
+}
