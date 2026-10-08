@@ -16,7 +16,7 @@ import { themeOutputColors, onThemeChange } from './ui/header.js';
 import { scramble } from './ui/scramble.js';
 import { toast, toastError, toastWarn } from './ui/toast.js';
 import { exportName, downloadBlob } from './io/download.js';
-import { canvasToBlob, fitExportScale, copyImageBlob, copyText } from './io/exportImage.js';
+import { canvasToBlob, fitExportScale, shrinkToLimit, copyImageBlob, copyText } from './io/exportImage.js';
 import { LIMITS } from './config.js';
 
 const isMobile = () => window.matchMedia('(max-width: 699px)').matches;
@@ -168,9 +168,20 @@ export function createStudio({ onChangeFile }) {
 
   async function pngBlob(scale) {
     const probe = await renderExport(1);
-    const fit = fitExportScale(probe.result.width, probe.result.height, scale);
-    const out = fit.scale === 1 ? probe : await renderExport(fit.scale);
-    if (fit.clamped) toast(t('export.scaleClamped', { px: Math.max(out.result.width, out.result.height) }), { type: 'warn' });
+    let fit = fitExportScale(probe.result.width, probe.result.height, scale);
+    let out = fit.scale === 1 ? probe : await renderExport(fit.scale);
+    let clamped = fit.clamped;
+    // Cell sizes are rounded per scale, so the estimate can overshoot slightly: verify and shrink
+    for (let i = 0; i < 4; i++) {
+      const longest = Math.max(out.result.width, out.result.height);
+      if (longest <= LIMITS.maxExportImageSide) break;
+      clamped = true;
+      out = await renderExport(shrinkToLimit(fit.scale, longest));
+      fit = { scale: fit.scale * 0.9 };
+    }
+    if (Math.max(out.result.width, out.result.height) > LIMITS.maxExportImageSide) throw new Error('export too large');
+    if (out.result.outScale < scale * 0.999) clamped = true; // the mode itself rendered smaller than requested
+    if (clamped) toast(t('export.scaleClamped', { px: Math.max(out.result.width, out.result.height) }), { type: 'warn' });
     return canvasToBlob(out.result.canvas, 'image/png');
   }
 

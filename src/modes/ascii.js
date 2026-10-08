@@ -4,7 +4,7 @@
 
 import {
   GRADIENT_OPTIONS, FONT_OPTIONS, FONTS, EDGE_CHARS, NO_GLYPH, buildGradient, getAtlas, drawGlyphGrid, cellAspect, fontStack,
-  fontsReady, requestFonts,
+  fontsReady, requestFonts, fontRatios,
 } from '../engine/glyphs.js';
 import { quantize } from '../engine/dither.js';
 import {
@@ -14,6 +14,7 @@ import { gridToText } from '../io/exportText.js';
 import { LIMITS } from '../config.js';
 
 const COLOR_MODES = ['mono', 'original', 'gradient', 'palette'];
+const MAX_PREVIEW_SIDE = 4096;
 
 function edgeIndex(angle) {
   // The edge runs perpendicular to the gradient. Image y points down, so +45 deg reads as '\'.
@@ -168,8 +169,19 @@ export default {
     }
 
     const t2 = performance.now();
-    // ---- atlas ----
-    const atlas = getAtlas(atlasChars, fontId, p.cellSize * outScale, p.lineHeight, p.letterSpacing * outScale);
+    // ---- atlas (scale reduced when the output would exceed the size cap: PLAN.md 18.2) ----
+    const cap = ctx.isExport ? LIMITS.maxExportImageSide : MAX_PREVIEW_SIDE;
+    const adv = fontRatios(fontId).advance;
+    let scale = Math.min(
+      outScale,
+      cap / (cols * Math.max(0.1, adv * p.cellSize + p.letterSpacing)),
+      cap / (rows * p.cellSize * p.lineHeight),
+    );
+    let atlas = getAtlas(atlasChars, fontId, p.cellSize * scale, p.lineHeight, p.letterSpacing * scale);
+    for (let guard = 0; guard < 8 && (cols * atlas.cellW > cap || rows * atlas.cellH > cap) && scale > 0.05; guard++) {
+      scale *= 0.95; // cell sizes are whole pixels, so rounding can still overshoot
+      atlas = getAtlas(atlasChars, fontId, p.cellSize * scale, p.lineHeight, p.letterSpacing * scale);
+    }
     const { cellW, cellH } = atlas;
     const glyph = state.glyph && state.glyph.length === n ? state.glyph : (state.glyph = new Uint16Array(n));
     const index = atlas.index;
@@ -229,7 +241,7 @@ export default {
 
     const t4 = performance.now();
     return {
-      cols, rows, cellW, cellH, transparent: cr.bgTransparent,
+      cols, rows, cellW, cellH, transparent: cr.bgTransparent, effectiveScale: scale,
       timings: { levels: t1 - t0, glyphs: t2 - t1, colors: t3 - t2, composite: t4 - t3 },
     };
   },
