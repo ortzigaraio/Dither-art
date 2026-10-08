@@ -169,7 +169,7 @@ export function createPipeline({ onInvalidate } = {}) {
       meta = (r && typeof r.then === 'function' ? await r : r) || {};
     } catch (err) {
       error = err;
-      console.error(`[horain] mode "${mode.id}" failed to render`, err);
+      console.error(`[dither] mode "${mode.id}" failed to render`, err);
       drawFallback(frame, crop);
     }
 

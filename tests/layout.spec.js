@@ -5,7 +5,7 @@ import { watchPage, gotoApp, loadFixture, settle, canvasStats } from './helpers.
 const noHScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 0);
 
 test.describe('responsive layout', () => {
-  for (const width of [360, 390, 600, 768, 1024, 1100, 1440]) {
+  for (const width of [320, 360, 390, 600, 700, 768, 820, 900, 960, 1024, 1100, 1440]) {
     test(`no horizontal scroll at ${width}px (home and studio)`, async ({ page }) => {
       const guard = watchPage(page);
       await page.setViewportSize({ width, height: width < 700 ? 800 : 900 });
@@ -326,6 +326,68 @@ test.describe('home view', () => {
     const h = await page.locator('.site-header .logo:visible').evaluate((el) => el.getBoundingClientRect().height);
     expect(h).toBeGreaterThanOrEqual(24);
   });
+
+  test('the product is Dither by Horain: name, lockup, links and file names', async ({ page }) => {
+    await gotoApp(page);
+    await expect(page).toHaveTitle('Dither by Horain');
+    await expect(page.locator('.site-header .brand')).toHaveAttribute('aria-label', 'Dither by Horain');
+    await expect(page.locator('.site-header .brand-name')).toHaveText('dither');
+    await expect(page.locator('.site-header .brand-by')).toHaveText('by');
+    // "dither" is set in the display face, the logo itself stays the official SVG, and "by" sits between them
+    const order = await page.evaluate(() => Array.from(document.querySelectorAll('.site-header .brand > *'))
+      .filter((e) => getComputedStyle(e).display !== 'none').map((e) => e.className.split(' ')[0]));
+    expect(order).toEqual(['brand-name', 'brand-by', 'logo']);
+    const nameFont = await page.locator('.site-header .brand-name').evaluate((el) => getComputedStyle(el).fontFamily);
+    expect(nameFont).toContain('Unbounded');
+    // clear space between "by" and the logo is at least the height of the "o" (about half the logo height)
+    const gap = await page.evaluate(() => {
+      const by = document.querySelector('.site-header .brand-by').getBoundingClientRect();
+      const logo = Array.from(document.querySelectorAll('.site-header .logo')).find((e) => getComputedStyle(e).display !== 'none').getBoundingClientRect();
+      return { gap: logo.left - by.right, logoH: logo.height };
+    });
+    expect(gap.gap).toBeGreaterThanOrEqual(gap.logoH * 0.45);
+    // the footer repeats the lockup, links point to the Dither repo, config agrees with the markup
+    await expect(page.locator('.site-footer .brand-name')).toHaveText('dither');
+    const cfg = await page.evaluate(async () => (await import('/src/config.js')).config);
+    expect(cfg).toMatchObject({ productName: 'Dither', fileSlug: 'dither', siteUrl: 'https://dither.ortzigar.org/', repoUrl: 'https://github.com/ortzigaraio/Dither-art' });
+    const hrefs = await page.locator('a[href*="github.com"]').evaluateAll((els) => els.map((e) => e.href));
+    expect(hrefs.length).toBeGreaterThanOrEqual(2);
+    for (const h of hrefs) expect(h).toBe(cfg.repoUrl);
+    // the visible name never replaces the logo: no text node spells the Horain logo anywhere in the header
+    const logoCount = await page.locator('.site-header img.logo').count();
+    expect(logoCount).toBe(2);
+  });
+
+  for (const width of [320, 340, 360, 390]) {
+    test(`mobile header keeps the lockup and the theme/language controls on one row at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 740 });
+      await gotoApp(page);
+      await page.evaluate(() => document.fonts.ready);
+      const rects = await page.evaluate(() => {
+        const r = (s) => {
+          const e = Array.from(document.querySelectorAll(s)).find((x) => getComputedStyle(x).display !== 'none');
+          const b = e.getBoundingClientRect();
+          return { l: b.left, r: b.right, t: b.top, b: b.bottom };
+        };
+        return { name: r('.site-header .brand-name'), logo: r('.site-header .logo'), picker: r('.theme-picker'), lang: r('.lang-toggle'), vw: window.innerWidth };
+      });
+      expect(rects.name.l).toBeGreaterThanOrEqual(15);
+      expect(rects.logo.r).toBeLessThanOrEqual(rects.picker.l);
+      expect(rects.picker.r).toBeLessThanOrEqual(rects.lang.l);
+      expect(rects.lang.r).toBeLessThanOrEqual(rects.vw - 15); // 16px gutter on both sides
+      expect(Math.abs(rects.name.t - rects.lang.t)).toBeLessThan(20); // same row
+      // the theme select still covers the compact picker so the native chooser opens on tap
+      const cover = await page.evaluate(() => {
+        const p = document.querySelector('.theme-picker').getBoundingClientRect();
+        const s = document.getElementById('theme-select').getBoundingClientRect();
+        return { pw: p.width, sw: s.width, ph: p.height, sh: s.height };
+      });
+      expect(cover.sw).toBeGreaterThanOrEqual(cover.pw - 2);
+      expect(cover.sh).toBeGreaterThanOrEqual(cover.ph - 2);
+      await page.selectOption('#theme-select', 'amber');
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'amber');
+    });
+  }
 
   test('typography follows the brand: Unbounded lowercase titles, Geist uppercase labels, Geist Mono values', async ({ page }) => {
     await gotoApp(page);

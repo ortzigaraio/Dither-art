@@ -1,4 +1,6 @@
-// Blob download with the "horain-<mode>-<YYYYMMDD-HHMMSS>.<ext>" naming scheme (PLAN.md 9.1).
+// Blob download with the "<slug>-<mode>-<YYYYMMDD-HHMMSS>.<ext>" naming scheme (PLAN.md 9.1; slug = config.fileSlug).
+
+import { config } from '../config.js';
 
 export function timestamp(d = new Date()) {
   const p = (n, l = 2) => String(n).padStart(l, '0');
@@ -6,7 +8,7 @@ export function timestamp(d = new Date()) {
 }
 
 export function exportName(modeId, ext) {
-  return `horain-${modeId}-${timestamp()}.${ext}`;
+  return `${config.fileSlug}-${modeId}-${timestamp()}.${ext}`;
 }
 
 export function downloadBlob(blob, name) {

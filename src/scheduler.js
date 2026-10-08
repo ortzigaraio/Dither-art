@@ -34,7 +34,7 @@ export function createScheduler({ render, isAnimated = () => false, isActive = (
     try {
       await render(now / 1000);
     } catch (err) {
-      console.error('[horain] render loop error', err);
+      console.error('[dither] render loop error', err);
     } finally {
       inflight = false;
       if (lastRun) {

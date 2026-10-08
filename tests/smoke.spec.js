@@ -177,7 +177,7 @@ test.describe('4. ASCII exports', () => {
     expect(cols).toBe(120);
     expect(rows).toBeGreaterThan(10);
     const { name, buf } = await download(page, '[data-export="txt"]');
-    expect(name).toMatch(/^horain-ascii-\d{8}-\d{6}\.txt$/);
+    expect(name).toMatch(/^dither-ascii-\d{8}-\d{6}\.txt$/);
     const text = buf.toString('utf8');
     expect(text.endsWith('\n')).toBe(true);
     const lines = text.slice(0, -1).split('\n');
@@ -279,7 +279,7 @@ test.describe('4. ASCII exports', () => {
     await loadFixture(page);
     const dims = (buf) => ({ w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) });
     let { name, buf } = await download(page, '[data-export="png"]');
-    expect(name).toMatch(/^horain-ascii-\d{8}-\d{6}\.png$/);
+    expect(name).toMatch(/^dither-ascii-\d{8}-\d{6}\.png$/);
     expect(buf.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
     const one = dims(buf);
     await page.locator('[data-export="png-scale"]').selectOption('2');

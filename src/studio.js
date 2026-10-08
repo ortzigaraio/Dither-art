@@ -145,7 +145,7 @@ export function createStudio({ onChangeFile }) {
     try {
       await fn();
     } catch (err) {
-      console.warn('[horain] export failed', err);
+      console.warn('[dither] export failed', err);
       toastError(t('export.failed'));
     } finally {
       exporting = false;

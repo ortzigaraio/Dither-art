@@ -827,6 +827,12 @@ body.is-dragging .drop-overlay { display: flex; }
 }
 .sheet-tab[aria-selected="true"] { color: var(--accent-text); border-bottom-color: var(--accent-text); }
 
+/* Phones: the theme picker shrinks to its glyph; the (invisible) select still covers it for the native picker */
+@media (max-width: 699px) {
+  .theme-picker { padding: 0 10px; gap: 4px; }
+  .theme-select { position: absolute; inset: 0; width: 100%; opacity: 0; }
+}
+
 @media (max-width: 699px) {
   .sheet-tabs { display: flex; }
   .studio-panel[data-tab="image"] .group:not([data-tab="image"]),
@@ -834,7 +840,7 @@ body.is-dragging .drop-overlay { display: flex; }
   .studio-panel[data-tab="color"] .group:not([data-tab="color"]),
   .studio-panel[data-tab="export"] .group:not([data-tab="export"]) { display: none; }
   .viewer-toolbar { padding: 8px var(--gutter); }
-  .viewer-toolbar #vw-full { display: none; }
+  .viewer-toolbar .vw-full { display: none; }
   .viewer-chips { left: var(--gutter); top: 54px; }
 }
 
