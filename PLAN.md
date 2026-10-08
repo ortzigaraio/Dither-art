@@ -1,4 +1,4 @@
-# HORAIN — Plan de implementación
+# DITHER (by Horain) — Plan de implementación
 
 > Documento de trabajo para que **Sonnet (Claude Code)** construya todo el código.
 > Léelo entero antes de empezar. Trabaja **fase por fase** (sección 12) y no pases a la siguiente sin cumplir los criterios de aceptación.
@@ -8,7 +8,13 @@
 
 ## 0. Resumen
 
-**HORAIN** es una web estática (GitHub Pages + dominio propio en Cloudflare) que convierte **imágenes, video y webcam** en arte generativo:
+> **Aclaración del dueño**: este repo (`Dither-art`, `dither.ortzigar.org`) es una herramienta independiente, **Dither**, creada para
+> diseñar y probar la UI/UX que luego usará la web app **Horain**, que vive en otro repo. Dither usa la marca de Horain (logo espino,
+> colores, tipografías). El nombre visible del producto es **Dither**, con "by Horain" junto al logo. Donde este documento diga
+> "HORAIN" como nombre de la app, léase Dither; el logo, los temas y los tokens siguen siendo los de Horain y deben poder
+> reutilizarse tal cual en el otro repo (mantén `css/tokens.css` y `css/components.css` independientes de la lógica).
+
+**Dither** es una web estática (GitHub Pages + dominio propio en Cloudflare) que convierte **imágenes, video y webcam** en arte generativo:
 ASCII, dithering 1-bit, Braille, halftone, ANSI, PETSCII, glitch, pixel sorting, wireframe vectorial, LiDAR,
 grabado de plotter, termografía, isolíneas, raymarching 3D, blueprint CAD, Voronoi, reacción-difusión,
 flow fields y más (25 modos en total).
