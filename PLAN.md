@@ -30,7 +30,7 @@ flow fields y más (25 modos en total).
 | Export de video | **MP4 y WebM** (con audio original). **Aviso** (no bloqueo) a partir de 2 min. GIF en el futuro (dejar el hueco). |
 | Export de imagen | PNG siempre; SVG en modos vectoriales; TXT / HTML / ANSI en modos de texto; copiar al portapapeles. |
 | Hosting | GitHub Pages (repo público), **sin paso de build**: HTML + CSS + ES modules nativos. |
-| Dominio | Subdominio de **ortzigar.org** gestionado en Cloudflare (propuesta: `horain.ortzigar.org`). Pasos en `DEPLOY.md`. |
+| Dominio | Subdominio de **ortzigar.org** gestionado en Cloudflare (`dither.ortzigar.org`, ya configurado). Pasos en `DEPLOY.md`. |
 | Visitas | **Contador de visitas público** en el pie de página, con un Cloudflare Worker + D1 propio (sección 17). Sin cookies ni IPs guardadas. |
 | Guardrails | Límites de seguridad, privacidad, rendimiento, marca y desarrollo (sección 18). |
 
@@ -951,7 +951,7 @@ Los pasos manuales (repo público, activar Pages, DNS en Cloudflare, verificar d
 **`DEPLOY.md`**. Para el código basta con:
 1. `.nojekyll` en la raíz.
 2. Sin cabeceras COOP/COEP (Pages no las permite): transformers.js funciona sin `SharedArrayBuffer` (wasm de un hilo o WebGPU).
-3. Rutas relativas: debe funcionar en `https://ortzigaraio.github.io/Ascii-dithering-Image-to-art-/` y en `https://horain.ortzigar.org/`.
+3. Rutas relativas: debe funcionar en `https://ortzigaraio.github.io/Dither-art/` y en `https://dither.ortzigar.org/`.
 4. **No crear el archivo `CNAME`**: lo crea GitHub al configurar el dominio en Settings → Pages (ver guardrail 18.5).
 
 ---
@@ -978,7 +978,7 @@ cancelar trabajos obsoletos.
 | Pregunta | Respuesta |
 |---|---|
 | ¿Logo propio? | Sí: logo **espino** (`assets/brand/`). Colores y tipografías de marca en 4.0. |
-| ¿Dominio? | Repo público + Pages + **subdominio de ortzigar.org** vía Cloudflare (propuesto `horain.ortzigar.org`; ver `DEPLOY.md`). |
+| ¿Dominio? | Repo público + Pages + **subdominio de ortzigar.org** vía Cloudflare (`dither.ortzigar.org`, ya configurado; ver `DEPLOY.md`). |
 | ¿Estadísticas? | **Contador de visitas público** (sección 17). |
 | ¿Límite de video? | **Aviso** a partir de 2 min, sin bloqueo (más los límites técnicos de 18.1). |
 | ¿GIF? | Más adelante; `exportVideo.js` debe tener una tabla de formatos donde añadir `gif` sea un caso más. |
@@ -1005,7 +1005,7 @@ cancelar trabajos obsoletos.
 - Mencionarlo en `ACERCA`/privacidad: "Contamos visitas de forma anónima: un número, sin cookies ni datos personales."
 
 `src/config.js` exporta `counterUrl: ''` (vacío hasta que el dueño despliegue el Worker; luego `'https://count.ortzigar.org'`, ya permitido en la CSP)
-y `siteUrl: 'https://horain.ortzigar.org/'` (para Open Graph y `<link rel="canonical">`).
+y `siteUrl: 'https://dither.ortzigar.org/'` (para Open Graph y `<link rel="canonical">`).
 
 ---
 
