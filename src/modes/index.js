@@ -2,11 +2,13 @@
 // The order below is the order of the list in the UI (grouped by category).
 
 import ascii from './ascii.js';
+import braille from './braille.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
 export const MODES = [
   ascii,
+  braille,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
@@ -26,6 +28,16 @@ function checkMode(mode) {
     if (ids.has(p.id)) fail(`duplicate param "${p.id}"`);
     ids.add(p.id);
   }
+  // exports and badges must agree with what the mode can actually produce (the export panel offers exactly these)
+  const ex = mode.exports || [];
+  const need = { txt: 'toText', html: 'toText', ansi: 'toText', ans: 'toBinary', svg: 'toSVG', json: 'toJSON' };
+  for (const [fmt, fn] of Object.entries(need)) {
+    if (ex.includes(fmt) && typeof mode[fn] !== 'function') fail(`exports "${fmt}" needs ${fn}()`);
+  }
+  const badges = mode.badges || [];
+  if (ex.includes('txt') && !badges.includes('TXT')) fail('exports txt but has no TXT badge');
+  if (ex.includes('svg') && !badges.includes('SVG')) fail('exports svg but has no SVG badge');
+  if (mode.animated && !badges.includes('ANIM')) fail('animated but has no ANIM badge');
   return mode;
 }
 MODES.forEach(checkMode);

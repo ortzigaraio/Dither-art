@@ -64,7 +64,7 @@ export const isThreshold = (algo) => isOrdered(algo) || algo === 'blue-noise' ||
 
 /** Flatten a kernel into typed arrays so the hot loop allocates nothing. */
 const compiled = new Map();
-function compileKernel(name) {
+export function compileKernel(name) {
   let k = compiled.get(name);
   if (!k) {
     const { taps, div } = KERNELS[name];

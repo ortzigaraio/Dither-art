@@ -228,10 +228,21 @@ export function createStudio({ onChangeFile }) {
 
     text: (format, opts = {}) => withExport(t('viewer.rendering'), async () => {
       const { state, mode: m } = await renderExport(1);
-      const text = m.toText(state, format, opts);
-      const ext = format === 'ansi' ? 'ansi.txt' : format;
-      const type = format === 'html' ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8';
-      const name = downloadBlob(new Blob([text], { type }), exportName(m.id, ext));
+      if (!m.exports?.includes(format)) throw new Error(`${m.id} does not export ${format}`);
+      let blob;
+      let ext = format;
+      if (format === 'ans') {
+        blob = new Blob([m.toBinary(state, 'ans')], { type: 'application/octet-stream' });
+      } else if (format === 'svg') {
+        blob = new Blob([m.toSVG(state, opts)], { type: 'image/svg+xml;charset=utf-8' });
+      } else if (format === 'json') {
+        blob = new Blob([m.toJSON(state)], { type: 'application/json;charset=utf-8' });
+      } else {
+        ext = format === 'ansi' ? 'ansi.txt' : format;
+        const type = format === 'html' ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8';
+        blob = new Blob([m.toText(state, format, opts)], { type });
+      }
+      const name = downloadBlob(blob, exportName(m.id, ext));
       toast(t('export.saved', { name }));
     }),
 

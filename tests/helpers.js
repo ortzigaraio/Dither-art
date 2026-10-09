@@ -121,8 +121,8 @@ export async function canvasStats(page, selector = '#viewer-canvas') {
 }
 
 /** Set a control (found by data-param) the way a user would. */
-export async function setControl(page, id, value) {
-  const row = page.locator(`#controls [data-param="${id}"]`);
+export async function setControl(page, id, value, group = null) {
+  const row = page.locator(`#controls ${group ? `[data-group="${group}"] ` : ''}[data-param="${id}"]`);
   await row.waitFor({ state: 'attached' });
   const cls = await row.getAttribute('class');
   if (cls.includes('ctl-range')) {
@@ -239,4 +239,86 @@ export async function captureDownload(page, action, timeout = 60_000) {
   const { readFileSync } = await import('node:fs');
   const path = await download.path();
   return { name: download.suggestedFilename(), bytes: readFileSync(path) };
+}
+
+// ---------------------------------------------------------------------------
+// Mode probes (Phase 3): render a synthetic source with any mode inside the page and read back what matters
+// ---------------------------------------------------------------------------
+
+/**
+ * Render `spec.mode` once (or at several times) on a synthetic picture and return serialisable results.
+ * spec: { mode, width, height, rects: [[css colour, x, y, w, h]] (pixels when spec.abs, else fractions),
+ *         params: { global, color, mode }, theme, time, times, outScale, fonts: [[fontId, chars]],
+ *         outputs: ['txt','html','ansi','svg','json','ans'] (text outputs, 'ans' as a byte array),
+ *         pixels: [[fx, fy]] sampled from the output, hash: true }
+ */
+export async function renderMode(page, spec) {
+  return page.evaluate(async (s) => {
+    const { createPipeline } = await import('/src/engine/pipeline.js');
+    const { getMode } = await import('/src/modes/index.js');
+    const { ensureFonts } = await import('/src/engine/glyphs.js');
+    const { defaultsOf } = await import('/src/state.js');
+    const { IMAGE_PARAMS } = await import('/src/engine/preprocess.js');
+    const { COLOR_PARAMS } = await import('/src/engine/color.js');
+    for (const [font, chars] of s.fonts || []) await ensureFonts(font, chars);
+    if (s.faces) for (const f of s.faces) await document.fonts.load(f.css, f.text || 'M');
+    const width = s.width || 300;
+    const height = s.height || 200;
+    const c = document.createElement('canvas');
+    c.width = width;
+    c.height = height;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    for (const [colour, x, y, w, h] of s.rects || []) {
+      g.fillStyle = colour;
+      if (s.abs) g.fillRect(x, y, w, h);
+      else g.fillRect(x * width, y * height, w * width, h * height);
+    }
+    const source = {
+      id: 'probe', kind: s.kind || 'image', width, height, version: Math.random(), animated: false, frame: () => c, dispose() {},
+    };
+    const mode = getMode(s.mode);
+    const pipe = createPipeline();
+    const p = s.params || {};
+    const params = {
+      global: { ...defaultsOf(IMAGE_PARAMS), ...(p.global || {}) },
+      color: { ...defaultsOf(COLOR_PARAMS), ...(p.color || {}) },
+      depth: {}, postfx: {},
+      mode: { ...defaultsOf(mode.params), ...(p.mode || {}) },
+    };
+    const theme = s.theme || { ink: '#c4f169', bg: '#15181e' };
+    const times = s.times || [s.time ?? 0];
+    const frames = [];
+    let last = null;
+    for (const time of times) {
+      last = await pipe.render({
+        source, mode, params, time, theme, outScale: s.outScale || 1, isExport: !!s.isExport, quality: 'full',
+      });
+      const out = document.createElement('canvas');
+      out.width = last.width;
+      out.height = last.height;
+      const og = out.getContext('2d', { willReadFrequently: true });
+      og.drawImage(last.canvas, 0, 0);
+      const data = og.getImageData(0, 0, out.width, out.height).data;
+      let h = 2166136261;
+      for (let i = 0; i < data.length; i++) h = Math.imul(h ^ data[i], 16777619);
+      frames.push({ hash: (h >>> 0).toString(16), pixels: (s.pixels || []).map(([fx, fy]) => {
+        const x = Math.min(out.width - 1, Math.floor(fx * out.width));
+        const y = Math.min(out.height - 1, Math.floor(fy * out.height));
+        return Array.from(og.getImageData(x, y, 1, 1).data);
+      }) });
+    }
+    const state = pipe.getState(mode.id);
+    const outputs = {};
+    for (const f of s.outputs || []) {
+      if (f === 'ans') outputs.ans = Array.from(mode.toBinary(state, 'ans'));
+      else if (f === 'svg') outputs.svg = mode.toSVG(state, {});
+      else if (f === 'json') outputs.json = mode.toJSON(state);
+      else outputs[f] = mode.toText(state, f, s.textOpts || {});
+    }
+    return {
+      meta: JSON.parse(JSON.stringify(last.meta || {})), width: last.width, height: last.height, error: last.error ? String(last.error) : null,
+      frames, outputs,
+    };
+  }, spec);
 }
