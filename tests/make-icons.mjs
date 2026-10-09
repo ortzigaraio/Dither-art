@@ -10,7 +10,7 @@ const svg = 'data:image/svg+xml;base64,' + readFileSync(resolve(here, '../assets
 const outDir = resolve(here, '../assets/icons');
 mkdirSync(outDir, { recursive: true });
 
-const sizes = [{ name: 'apple-touch-icon.png', px: 180 }];
+const sizes = [{ name: 'apple-touch-icon.png', px: 180 }, { name: 'icon-192.png', px: 192 }, { name: 'icon-512.png', px: 512 }];
 
 const browser = await chromium.launch();
 try {
