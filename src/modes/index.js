@@ -21,6 +21,7 @@ import flowfield from './flowfield.js';
 import blueprint from './blueprint.js';
 import vectrex from './vectrex.js';
 import spiral from './spiral.js';
+import lidar from './lidar.js';
 import { hasWebGL2 } from '../engine/gl.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
@@ -46,6 +47,7 @@ export const MODES = [
   blueprint,
   vectrex,
   spiral,
+  lidar,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
