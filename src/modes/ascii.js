@@ -50,7 +50,7 @@ export default {
   animated: false,
   uses: ['image', 'color'],
   colorModes: COLOR_MODES,
-  exports: ['png', 'txt', 'html', 'ansi'],
+  exports: ['png', 'txt', 'html', 'ansi', 'video'],
   draftScale: 1, // cheap enough to render at full quality while dragging
 
   params: [

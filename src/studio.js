@@ -11,7 +11,11 @@ import { createViewer } from './ui/viewer.js';
 import { createControls } from './ui/controls.js';
 import { createModeList } from './ui/modeList.js';
 import { createExportGroup } from './ui/exportPanel.js';
-import { createInputGroup } from './ui/inputPanel.js';
+import { createInputGroup, describeSource } from './ui/inputPanel.js';
+import { createTransport } from './ui/transport.js';
+import { openExportDialog } from './ui/exportDialog.js';
+import * as vx from './io/exportVideo.js';
+import { WebcamSource } from './io/sources.js';
 import { themeOutputColors, onThemeChange } from './ui/header.js';
 import { scramble } from './ui/scramble.js';
 import { toast, toastError, toastWarn } from './ui/toast.js';
@@ -46,6 +50,10 @@ export function createStudio({ onChangeFile }) {
   let autoScale = 1;
   let slowFrames = 0;
   let exporting = false;
+  let activeExport = null;   // { abort() } of the running video export
+  let recorder = null;       // { rec, t0 } while the webcam is being recorded
+  let resumeOnShow = false;  // playback to restart when the tab or the view comes back
+  let exportSeq = 0;
 
   const mode = () => getMode(store.state.modeId);
   const paramsNow = () => {
@@ -83,7 +91,8 @@ export function createStudio({ onChangeFile }) {
     if (!source) return;
     const m = mode();
     const animated = !!(source.animated || m.animated);
-    const time = animated ? nowSec : 0;
+    // A video file is rendered at its own clock, so animated modes follow the picture; everything else uses the loop clock
+    const time = source.kind === 'video' ? source.shownTime : animated ? nowSec : 0;
     lastTime = time;
     const result = await pipeline.render({
       source,
@@ -106,6 +115,7 @@ export function createStudio({ onChangeFile }) {
         g.restore();
       },
     });
+    if (recorder && !result.error) recorder.rec.push(result.canvas, (performance.now() - recorder.t0) / 1000);
     viewer.setStats({
       res: `${result.meta?.cols ?? result.workWidth}×${result.meta?.rows ?? result.workHeight}`,
       fps: animated ? scheduler.fps : 0,
@@ -222,6 +232,8 @@ export function createStudio({ onChangeFile }) {
       }
     }),
 
+    video: () => startVideoExport(),
+
     share: async () => {
       const hash = store.shareHash();
       try { history.replaceState(null, '', hash); } catch { /* sandboxed frame */ }
@@ -230,6 +242,211 @@ export function createStudio({ onChangeFile }) {
       else toastWarn(t('export.shareFailed'));
     },
   };
+
+
+  // ---- video export and webcam recording (PLAN.md 9.2) ---------------------------------------------
+  const playsAsVideo = (src) => !!src && (src.kind === 'video' || src.kind === 'webcam');
+  const videoJobKind = () => (source?.kind === 'video' ? 'file' : source?.kind === 'webcam' ? 'live' : 'timeline');
+  /** Pictures export as video only when something moves: the mode or the source itself is animated. */
+  const canExportVideo = () => !!source && mode().exports?.includes('video')
+    && (source.kind === 'video' || !!(mode().animated || source.animated));
+
+  function suspendPlayback() {
+    if (source?.kind === 'video' && !source.paused) {
+      resumeOnShow = true;
+      source.pause();
+    }
+  }
+  function resumePlayback() {
+    if (resumeOnShow && source?.kind === 'video') source.play();
+    resumeOnShow = false;
+  }
+  // The loop (and with it the video) sleeps while the tab is hidden (PLAN.md 18.2)
+  document.addEventListener('visibilitychange', () => (document.hidden ? suspendPlayback() : resumePlayback()));
+
+  /** A canvas the engine can treat as a source: the exporter paints each decoded frame into it. */
+  function makeFrameSource(from) {
+    const k = Math.min(1, 1920 / Math.max(from.width, from.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(from.width * k));
+    canvas.height = Math.max(1, Math.round(from.height * k));
+    return {
+      id: 'export-frames', kind: 'video', name: from.name, width: canvas.width, height: canvas.height,
+      version: -(++exportSeq), animated: false, frameId: 0, canvas, ctx: canvas.getContext('2d'),
+      frame: () => canvas,
+      dispose() { canvas.width = canvas.height = 1; },
+    };
+  }
+
+  /** Frame renderer for the exporter: its own pipeline, always full quality, with parameters frozen at the start. */
+  function makeVideoRenderer(settings, natural) {
+    const pipe = createPipeline();
+    const m = mode();
+    const params = structuredClone(paramsNow());
+    const th = { ...theme };
+    const frameSrc = source.kind === 'video' ? makeFrameSource(source) : null;
+    const target = frameSrc || source;
+    const scale = settings.outH / natural;
+    return {
+      bg: th.bg,
+      frameSrc,
+      async render(time, paint) {
+        if (paint && frameSrc) {
+          paint(frameSrc.ctx, frameSrc.canvas.width, frameSrc.canvas.height);
+          frameSrc.frameId++;
+        }
+        const r = await pipe.render({ source: target, mode: m, params, time, quality: 'full', isExport: true, outScale: scale, theme: th });
+        if (r.error) throw r.error;
+        return r.canvas;
+      },
+      dispose() {
+        pipe.dispose();
+        frameSrc?.dispose();
+      },
+    };
+  }
+
+  async function openVideoDialog(kind, onStart) {
+    if (exporting || recorder) { toast(t('export.busy'), { type: 'warn' }); return; }
+    exporting = true; // blocks other exports while the dialog is open
+    let dialogOpen = false;
+    try {
+      const probe = await renderExport(1);
+      const aspect = probe.result.width / probe.result.height;
+      const natural = Math.max(2, probe.result.height / (probe.result.outScale || 1));
+      const caps = await vx.detectCapabilities(Math.round(natural * aspect), Math.round(natural));
+      openExportDialog({
+        kind, source, aspect, naturalHeight: natural, caps,
+        onStart: (settings, ctl) => onStart(settings, ctl, { natural, caps }),
+        onClose: () => { exporting = false; },
+      });
+      dialogOpen = true;
+    } catch (err) {
+      console.warn('[dither] could not prepare the video export', err);
+      toastError(t('export.failed'));
+    } finally {
+      if (!dialogOpen) exporting = false;
+    }
+  }
+
+  function startVideoExport() {
+    if (!canExportVideo()) { toast(t('export.nothing'), { type: 'warn' }); return; }
+    const kind = videoJobKind();
+    if (kind === 'live') { toggleRecording(); return; }
+    openVideoDialog(kind, async (settings, ctl, { natural, caps }) => {
+      const ac = new AbortController();
+      ctl.signal.addEventListener('abort', () => ac.abort());
+      activeExport = ac;
+      const renderer = makeVideoRenderer(settings, natural);
+      const m = mode();
+      try {
+        const job = {
+          format: settings.format, fps: settings.effectiveFps, quality: settings.quality,
+          outW: settings.outW, outH: settings.outH, bg: renderer.bg, render: renderer.render,
+          signal: ac.signal, onProgress: (p, info) => ctl.progress(p, info.remaining),
+        };
+        let res;
+        if (kind === 'file') {
+          res = await vx.exportFromFile({
+            ...job, fps: settings.fps, file: source.file, includeAudio: settings.includeAudio, trim: settings.trim,
+          }, caps);
+        } else {
+          res = await vx.exportTimeline({ ...job, duration: settings.duration }, caps);
+        }
+        const name = downloadBlob(res.blob, exportName(m.id, res.ext));
+        toast(t('export.saved', { name }));
+        if (res.fellBack) toastWarn(t('export.fellBack'));
+        if (res.audioDropped) toastWarn(t('export.audioDropped'));
+      } catch (err) {
+        if (err instanceof vx.ExportCanceled) toast(t('export.canceled'));
+        else {
+          console.warn('[dither] video export failed', err);
+          toastError(t('export.failed'));
+        }
+      } finally {
+        activeExport = null;
+        renderer.dispose();
+      }
+    });
+  }
+
+  function toggleRecording() {
+    if (recorder) { stopRecording(); return; }
+    if (source?.kind !== 'webcam') return;
+    openVideoDialog('live', async (settings, ctl, { caps }) => {
+      const rec = await vx.createLiveRecorder({
+        format: settings.format, fps: settings.effectiveFps, quality: settings.quality,
+        outW: settings.outW, outH: settings.outH, bg: theme.bg,
+      }, caps);
+      recorder = { rec, t0: performance.now(), mode: mode() };
+      exporting = false;
+      transport.setRecording(true);
+      scheduler.markDirty();
+      ctl.close();
+    });
+  }
+
+  async function stopRecording() {
+    const r = recorder;
+    if (!r) return;
+    recorder = null;
+    transport.setRecording(false);
+    exporting = true;
+    viewer.setBusy(true, t('vx.saving'));
+    try {
+      const res = await r.rec.finish();
+      if (!res.blob.size) throw new Error('empty recording');
+      const name = downloadBlob(res.blob, exportName(r.mode.id, res.ext));
+      toast(t('export.saved', { name }));
+    } catch (err) {
+      console.warn('[dither] recording failed', err);
+      toastError(t('export.failed'));
+    } finally {
+      exporting = false;
+      viewer.setBusy(false);
+    }
+  }
+
+  function cancelRecording() {
+    const r = recorder;
+    if (!r) return;
+    recorder = null;
+    transport.setRecording(false);
+    r.rec.cancel();
+  }
+
+  async function switchCamera(id) {
+    if (source?.kind !== 'webcam' || !id || id === source.deviceId) return;
+    try {
+      await source.useDevice(id);
+      pipeline.invalidate();
+      scheduler.markDirty();
+    } catch (err) {
+      console.warn('[dither] could not switch camera', err);
+      toastError(t('err.cameraBusy'));
+      transport.setCameras(await WebcamSource.listCameras());
+    }
+  }
+
+  function refreshInputInfo() {
+    const node = document.getElementById('src-dims');
+    if (!node || !source) return;
+    const text = describeSource(source);
+    if (node.textContent !== text) node.textContent = text;
+  }
+
+  const transport = createTransport({
+    host: document.getElementById('transport'),
+    onRecordToggle: toggleRecording,
+    onCameraChange: switchCamera,
+  });
+
+  /** Every new decoded picture: render it (the scheduler coalesces) and keep the clock and info in step. */
+  function onSourceFrame() {
+    scheduler.markDirty();
+    transport.tick();
+    refreshInputInfo();
+  }
 
   // ---- controls and mode list ----------------------------------------------------------------
   const controls = createControls({
@@ -245,7 +462,7 @@ export function createStudio({ onChangeFile }) {
     },
     extra: {
       input: () => (source ? createInputGroup(source, { onChange: onChangeFile }) : null),
-      export: () => createExportGroup(mode(), actions),
+      export: () => createExportGroup(mode(), actions, { video: canExportVideo() }),
     },
   });
 
@@ -293,8 +510,19 @@ export function createStudio({ onChangeFile }) {
 
     setSource(next) {
       const old = source;
+      activeExport?.abort(); // an export of the old file has nothing left to read
+      cancelRecording();
+      resumeOnShow = false;
       source = next;
       old?.dispose();
+      if (playsAsVideo(next)) {
+        next.onFrame = onSourceFrame;
+        if (next.kind === 'webcam') {
+          next.onEnded = () => { toastWarn(t('cam.ended')); cancelRecording(); };
+          WebcamSource.listCameras().then((list) => { if (source === next) transport.setCameras(list); });
+        }
+      }
+      transport.setSource(next);
       pipeline.invalidate();
       viewer.reset();
       previewScale = Math.round(dpr());
@@ -308,6 +536,8 @@ export function createStudio({ onChangeFile }) {
     /** The studio only renders while its view is on screen. */
     setActive(on) {
       active = on;
+      if (!on) suspendPlayback();
+      else resumePlayback();
       if (on) {
         controls.refresh();
         scheduler.markDirty(); // the viewer refits by itself when it was in "fit" mode and its box changed

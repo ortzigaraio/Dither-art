@@ -7,9 +7,10 @@ import { toast, toastError, toastWarn } from './ui/toast.js';
 import { createHome } from './ui/hero.js';
 import { createStudio } from './studio.js';
 import { MODES } from './modes/index.js';
+import { LIMITS } from './config.js';
 import { blueNoise } from './engine/dither.js';
 import { validateFile, FileError } from './io/validate.js';
-import { ImageSource, DemoSource } from './io/sources.js';
+import { ImageSource, VideoSource, WebcamSource, DemoSource } from './io/sources.js';
 
 // ---------------------------------------------------------------------------
 // Global error handlers (PLAN.md 18.2): never leave the page blank.
@@ -92,7 +93,17 @@ async function openFile(file) {
   try {
     const info = await validateFile(file);
     if (info.kind === 'video') {
-      toastWarn(t('err.videoSoon'));
+      if (info.warnings.includes('bigVideo')) toast(t('info.bigVideo'));
+      const video = await VideoSource.fromFile(file, info);
+      if (token !== loadToken) {
+        video.dispose();
+        return;
+      }
+      if (Number.isFinite(video.duration) && video.duration > LIMITS.videoWarnSeconds) {
+        toastWarn(t('info.longVideo', { min: Math.round(LIMITS.videoWarnSeconds / 60) }));
+      }
+      setSource(video);
+      video.play();
       return;
     }
     const source = await ImageSource.fromFile(file, info);
@@ -105,6 +116,21 @@ async function openFile(file) {
     setSource(source);
   } catch (err) {
     if (!(err instanceof FileError)) console.warn('[dither] could not open file:', err);
+    toastError(fileErrorMessage(err));
+  }
+}
+
+async function openCamera() {
+  const token = ++loadToken;
+  try {
+    const cam = await WebcamSource.open();
+    if (token !== loadToken) {
+      cam.dispose();
+      return;
+    }
+    setSource(cam);
+  } catch (err) {
+    if (!(err instanceof FileError)) console.warn('[dither] camera failed', err);
     toastError(fileErrorMessage(err));
   }
 }
@@ -136,6 +162,10 @@ function boot() {
   app.home = createHome({ onOpenMode: openMode });
   initHeader({ onNavigate: navigate });
   app.dropzone = initDropzone({ onFile: openFile, onDemo: openDemo });
+  // No getUserMedia (old browser, insecure origin): no camera button (PLAN.md 18.2)
+  if (navigator.mediaDevices?.getUserMedia) {
+    app.dropzone.addAction({ id: 'camera', labelKey: 'dz.camera', run: openCamera });
+  }
   updateHeroSub();
   onLangChange(updateHeroSub);
   app.studio.mount();

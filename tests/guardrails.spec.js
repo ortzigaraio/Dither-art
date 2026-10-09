@@ -257,12 +257,12 @@ test.describe('18.1 file input', () => {
     await guard.assertClean(expect);
   });
 
-  test('video files are recognised but explain that video is not available yet', async ({ page }) => {
+  test('a video with a valid header but no decodable stream is rejected with an explanation', async ({ page }) => {
     const guard = watchPage(page);
     await gotoApp(page);
     const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom'), Buffer.from([0, 0, 2, 0]), Buffer.from('isomiso2')]);
     await page.setInputFiles('#file-input', { name: 'clip.mp4', mimeType: 'video/mp4', buffer: mp4 });
-    await expect(page.locator('.toast')).toContainText(/video/i);
+    await expect(page.locator('.toast')).toContainText(/could not open the video/i);
     await expect(page.locator('body')).toHaveAttribute('data-view', 'home');
     await guard.assertClean(expect);
   });

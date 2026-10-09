@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 export const FIXTURE_PNG = resolve(here, 'fixtures/fixture.png');
+export const FIXTURE_WEBM = resolve(here, 'fixtures/fixture.webm');
 export const SCREENSHOT_DIR = resolve(here, 'screenshots');
 
 /**
@@ -176,4 +177,66 @@ export async function openChooser(page, action) {
   await page.evaluate(() => 0);
   await action();
   return chooser;
+}
+
+// ---------------------------------------------------------------------------
+// Video helpers (Phase 2)
+// ---------------------------------------------------------------------------
+
+/** Open the fixture video and wait for the first rendered frame (it starts playing by itself, muted). */
+export async function loadVideo(page, file = FIXTURE_WEBM) {
+  await page.setInputFiles('#file-input', file);
+  await page.waitForSelector('body[data-view="studio"]');
+  await page.waitForFunction(() => document.getElementById('transport').dataset.kind === 'video');
+  await page.waitForFunction(() => Number(document.getElementById('viewer-canvas').dataset.frame || 0) > 0);
+}
+
+/** Transport state as the DOM shows it. */
+export async function transportState(page) {
+  return page.evaluate(() => {
+    const d = document.getElementById('transport').dataset;
+    return { kind: d.kind, state: d.state, time: Number(d.time || 0), recording: d.recording };
+  });
+}
+
+export async function pauseVideo(page) {
+  if ((await transportState(page)).state !== 'paused') await page.click('#tp-play');
+  await page.waitForFunction(() => document.getElementById('transport').dataset.state === 'paused');
+  await settle(page);
+}
+
+/**
+ * Inspect an exported file with Mediabunny inside the page (the same library, an independent read of the bytes).
+ * Returns the duration, the tracks and their sizes.
+ */
+export async function inspectMedia(page, bytes) {
+  return page.evaluate(async (b64) => {
+    const mb = await import('/vendor/mediabunny/1.59.1/mediabunny.min.mjs');
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const input = new mb.Input({ source: new mb.BlobSource(new Blob([arr])), formats: mb.ALL_FORMATS });
+    try {
+      const video = await input.getPrimaryVideoTrack();
+      const audio = await input.getPrimaryAudioTrack();
+      return {
+        format: (await input.getFormat()).name,
+        duration: await input.computeDuration(),
+        video: video ? { codec: await video.getCodec(), width: video.displayWidth, height: video.displayHeight } : null,
+        audio: audio ? { codec: await audio.getCodec(), channels: audio.numberOfChannels, rate: audio.sampleRate } : null,
+      };
+    } finally {
+      input.dispose();
+    }
+  }, Buffer.from(bytes).toString('base64'));
+}
+
+/** Click a download-triggering action and return { name, bytes }. */
+export async function captureDownload(page, action, timeout = 60_000) {
+  const dl = page.waitForEvent('download', { timeout });
+  await action();
+  const download = await dl;
+  const { readFileSync } = await import('node:fs');
+  const path = await download.path();
+  return { name: download.suggestedFilename(), bytes: readFileSync(path) };
 }
