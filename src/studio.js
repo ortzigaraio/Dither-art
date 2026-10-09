@@ -166,6 +166,8 @@ export function createStudio({ onChangeFile }) {
         g.restore();
       },
     });
+    // source time of the picture on screen (the transport clock can already show the next decoded frame)
+    document.getElementById('viewer-canvas').dataset.srcTime = time.toFixed(3);
     if (recorder && !result.error) recorder.rec.push(result.canvas, (performance.now() - recorder.t0) / 1000);
     viewer.setStats({
       res: `${result.meta?.cols ?? result.workWidth}×${result.meta?.rows ?? result.workHeight}`,
@@ -222,8 +224,11 @@ export function createStudio({ onChangeFile }) {
   async function renderExport(outScale = 1) {
     const pipe = getExportPipeline();
     const base = exportBase();
-    const result = await pipe.render({ ...base, outScale });
+    let result = await pipe.render({ ...base, outScale });
+    // the shared worker was restarted under this job by another caller: render again
+    for (let i = 0; i < 2 && result.retry; i++) result = await pipe.render({ ...base, outScale });
     if (result.lost) throw new Error('WebGL context lost');
+    if (result.aborted) throw new Error('render interrupted');
     if (result.error) throw result.error;
     return { result, state: pipe.getState(base.mode.id), mode: base.mode };
   }
@@ -379,8 +384,11 @@ export function createStudio({ onChangeFile }) {
           paint(frameSrc.ctx, frameSrc.canvas.width, frameSrc.canvas.height);
           frameSrc.frameId++;
         }
-        const r = await pipe.render({ source: target, mode: m, params, time, quality: 'full', isExport: true, outScale: scale, theme: th });
+        const args = { source: target, mode: m, params, time, quality: 'full', isExport: true, outScale: scale, theme: th };
+        let r = await pipe.render(args);
+        for (let i = 0; i < 2 && r.retry; i++) r = await pipe.render(args); // worker restarted by another caller
         if (r.lost) throw new Error('WebGL context lost');
+        if (r.aborted) throw new Error('render interrupted');
         if (r.error) throw r.error;
         return r.canvas;
       },
