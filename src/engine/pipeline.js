@@ -48,6 +48,7 @@ export function createPipeline({ onInvalidate } = {}) {
   }
 
   let lastKey = '';
+  let pending = null; // AbortController of the render in flight
   let lastPre = { imageData: null, usedFilterPath: 'none' };
   let frameCounter = 0;
 
@@ -97,7 +98,8 @@ export function createPipeline({ onInvalidate } = {}) {
     // Working resolution
     const qs = isExport || quality === 'full' ? 1 : (mode.draftScale ?? 0.5);
     const scale = Math.max(0.05, qs * (isExport ? 1 : autoScale));
-    const res = mode.resolution(params, crop.sw, crop.sh);
+    const isVideo = source.kind === 'video' || source.kind === 'webcam';
+    const res = mode.resolution(params, crop.sw, crop.sh, { isExport, isVideo });
     let W = Math.max(1, Math.round(res.width * scale));
     let H = Math.max(1, Math.round(res.height * scale));
     W = Math.min(W, MAX_WORK_SIDE);
@@ -136,6 +138,9 @@ export function createPipeline({ onInvalidate } = {}) {
       try { out = glSurface(); } catch (err) { glError = err; }
     }
 
+    // Heavy modes pass ctx.signal to the worker runner: abortPending() (a parameter changed) stops a stale job
+    const abortCtl = new AbortController();
+    pending = abortCtl;
     const ctx = {
       source: ws.canvas,
       width: W,
@@ -149,8 +154,9 @@ export function createPipeline({ onInvalidate } = {}) {
       time,
       dt,
       frameIndex: frameCounter++,
-      isVideo: source.kind === 'video' || source.kind === 'webcam',
+      isVideo,
       isExport,
+      signal: abortCtl.signal,
       quality: isExport ? 'full' : quality,
       params,
       theme,
@@ -168,6 +174,9 @@ export function createPipeline({ onInvalidate } = {}) {
       const r = mode.render(ctx, state);
       meta = (r && typeof r.then === 'function' ? await r : r) || {};
     } catch (err) {
+      if (err?.name === 'AbortError' && abortCtl.signal.aborted) {
+        return { aborted: true, canvas: null, width: 0, height: 0, meta: {}, error: null, ms: performance.now() - t0 };
+      }
       error = err;
       console.error(`[dither] mode "${mode.id}" failed to render`, err);
       drawFallback(frame, crop);
@@ -206,6 +215,8 @@ export function createPipeline({ onInvalidate } = {}) {
 
   return {
     render,
+    /** Cancel the render in flight (its heavy jobs reject with AbortError and render() resolves `{ aborted: true }`). */
+    abortPending() { pending?.abort(); },
     /** Drop cached preprocessing (e.g. after the source changed in place). */
     invalidate() { lastKey = ''; },
     /** Mode state, used by exports (toText/toSVG) after a render. */

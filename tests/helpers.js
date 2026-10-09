@@ -264,7 +264,7 @@ export async function captureDownload(page, action, timeout = 60_000) {
  * spec: { mode, width, height, rects: [[css colour, x, y, w, h]] (pixels when spec.abs, else fractions),
  *         params: { global, color, mode }, theme, time, times, outScale, fonts: [[fontId, chars]],
  *         outputs: ['txt','html','ansi','svg','json','ans'] (text outputs, 'ans' as a byte array),
- *         pixels: [[fx, fy]] sampled from the output, means: [[fx0, fy0, fx1, fy1]] mean luma of regions }
+ *         colors: true (distinct colours of the output), pixels: [[fx, fy]] sampled from the output, means: [[fx0, fy0, fx1, fy1]] mean luma of regions }
  */
 export async function renderMode(page, spec) {
   return page.evaluate(async (s) => {
@@ -322,10 +322,16 @@ export async function renderMode(page, spec) {
         for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const o = (y * out.width + x) * 4; sum += (0.2126 * data[o] + 0.7152 * data[o + 1] + 0.0722 * data[o + 2]) / 255; cnt++; }
         return cnt ? sum / cnt : 0;
       });
+      let colors = null;
+      if (s.colors) { // distinct opaque colours as #rrggbb (capped), for "only these inks appear" checks
+        const set = new Set();
+        for (let i = 0; i < data.length && set.size < 300; i += 4) set.add(`${data[i + 3] === 255 ? '' : 'a'}#${((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]).toString(16).padStart(6, '0')}`);
+        colors = Array.from(set).sort();
+      }
       let cr = 0, cg = 0, cb = 0;
       for (let i = 0; i < data.length; i += 4) { cr += data[i]; cg += data[i + 1]; cb += data[i + 2]; }
       const px = data.length / 4;
-      frames.push({ hash: (h >>> 0).toString(16), means, channels: [cr / px / 255, cg / px / 255, cb / px / 255], pixels: (s.pixels || []).map(([fx, fy]) => {
+      frames.push({ hash: (h >>> 0).toString(16), means, colors, channels: [cr / px / 255, cg / px / 255, cb / px / 255], pixels: (s.pixels || []).map(([fx, fy]) => {
         const x = Math.min(out.width - 1, Math.floor(fx * out.width));
         const y = Math.min(out.height - 1, Math.floor(fy * out.height));
         return Array.from(og.getImageData(x, y, 1, 1).data);

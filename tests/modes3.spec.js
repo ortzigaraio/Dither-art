@@ -33,20 +33,26 @@ test.describe('mode list', () => {
       }));
       return {
         groups, select, categories: CATEGORIES,
-        modes: MODES.map((m) => ({ id: m.id, category: m.category, badges: m.badges, exports: m.exports, animated: m.animated })),
+        modes: MODES.map((m) => ({ id: m.id, category: m.category, badges: m.badges, exports: m.exports, animated: m.animated, animatedWhen: !!m.animatedWhen })),
       };
     });
-    expect(info.groups.map((g) => g.heading)).toEqual(['Text']); // only the text category has modes so far
-    const textModes = info.modes.filter((m) => m.category === 'text');
-    expect(info.groups[0].items.map((i) => i.id)).toEqual(textModes.map((m) => m.id));
-    expect(info.select[0].ids).toEqual(textModes.map((m) => m.id));
-    expect(info.groups[0].items.map((i) => i.id)).toEqual(expect.arrayContaining(['ascii', 'braille', 'ansi', 'petscii', 'matrix', 'typoportrait']));
+    const headings = { text: 'Text', pixel: 'Pixel', vector: 'Vector', '3d': '3D', sim: 'Simulation' };
+    const present = info.categories.filter((c) => info.modes.some((m) => m.category === c));
+    expect(info.groups.map((g) => g.heading)).toEqual(present.map((c) => headings[c]));
+    present.forEach((cat, gi) => {
+      const ofCat = info.modes.filter((m) => m.category === cat);
+      expect(info.groups[gi].items.map((i) => i.id), `${cat} items`).toEqual(ofCat.map((m) => m.id));
+      expect(info.select[gi].ids, `${cat} select`).toEqual(ofCat.map((m) => m.id));
+    });
+    const textItems = info.groups[0].items.map((i) => i.id);
+    expect(textItems).toEqual(expect.arrayContaining(['ascii', 'braille', 'ansi', 'petscii', 'matrix', 'typoportrait']));
+    const allItems = info.groups.flatMap((g) => g.items);
     for (const m of info.modes) {
-      const item = info.groups[0].items.find((i) => i.id === m.id);
+      const item = allItems.find((i) => i.id === m.id);
       expect(item.badges, `${m.id} badges`).toEqual(m.badges);
       expect(m.badges.includes('TXT'), `${m.id} TXT badge`).toBe(m.exports.includes('txt'));
       expect(m.badges.includes('SVG'), `${m.id} SVG badge`).toBe(m.exports.includes('svg'));
-      expect(m.badges.includes('ANIM'), `${m.id} ANIM badge`).toBe(!!m.animated);
+      expect(m.badges.includes('ANIM'), `${m.id} ANIM badge`).toBe(!!(m.animated || m.animatedWhen));
     }
     await guard.assertClean(expect);
   });

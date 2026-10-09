@@ -7,6 +7,7 @@ import ansi from './ansi.js';
 import petscii from './petscii.js';
 import matrix from './matrix.js';
 import typoportrait from './typoportrait.js';
+import dither1bit from './dither1bit.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -17,6 +18,7 @@ export const MODES = [
   petscii,
   matrix,
   typoportrait,
+  dither1bit,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
@@ -45,7 +47,7 @@ function checkMode(mode) {
   const badges = mode.badges || [];
   if (ex.includes('txt') && !badges.includes('TXT')) fail('exports txt but has no TXT badge');
   if (ex.includes('svg') && !badges.includes('SVG')) fail('exports svg but has no SVG badge');
-  if (mode.animated && !badges.includes('ANIM')) fail('animated but has no ANIM badge');
+  if ((mode.animated || mode.animatedWhen) && !badges.includes('ANIM')) fail('animated but has no ANIM badge');
   return mode;
 }
 MODES.forEach(checkMode);

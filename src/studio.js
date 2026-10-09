@@ -111,10 +111,13 @@ export function createStudio({ onChangeFile }) {
     toastWarn(t('heavy.slow', { s: LIMITS.workerWatchdogMs / 1000 }), { timeout: 0, action: { label: t('heavy.cancel'), onClick: cancel } });
   });
 
+  /** A mode moves always (`animated`) or only with some settings (`animatedWhen(modeParams)`, e.g. Glitch "animate"). */
+  const modeMoves = (m, modeParams = store.state.modes[m.id]) => !!(m.animated || m.animatedWhen?.(modeParams || {}));
+
   async function renderFrame(nowSec) {
     if (!source) return;
     const m = mode();
-    const animated = !!(source.animated || m.animated);
+    const animated = !!(source.animated || modeMoves(m));
     // A video file is rendered at its own clock, so animated modes follow the picture; everything else uses the loop clock
     const time = source.kind === 'video' ? source.shownTime : animated ? nowSec : 0;
     lastTime = time;
@@ -128,6 +131,7 @@ export function createStudio({ onChangeFile }) {
       autoScale,
       theme,
     });
+    if (result.aborted) return; // a parameter changed while a heavy job ran: the loop renders again (dirty)
 
     lastLogical = { w: result.width / result.outScale, h: result.height / result.outScale };
     viewer.present(result, {
@@ -163,7 +167,7 @@ export function createStudio({ onChangeFile }) {
 
   const scheduler = createScheduler({
     render: renderFrame,
-    isAnimated: () => active && !!source && !!(source.animated || mode().animated),
+    isAnimated: () => active && !!source && !!(source.animated || modeMoves(mode())),
     isActive: () => active && viewer.visible,
     maxFps: isMobile() ? LIMITS.mobileMaxFps : 0,
   });
@@ -284,7 +288,7 @@ export function createStudio({ onChangeFile }) {
   const videoJobKind = () => (source?.kind === 'video' ? 'file' : source?.kind === 'webcam' ? 'live' : 'timeline');
   /** Pictures export as video only when something moves: the mode or the source itself is animated. */
   const canExportVideo = () => !!source && mode().exports?.includes('video')
-    && (source.kind === 'video' || !!(mode().animated || source.animated));
+    && (source.kind === 'video' || !!(modeMoves(mode()) || source.animated));
 
   function suspendPlayback() {
     if (source?.kind === 'video' && !source.paused) {
@@ -508,7 +512,9 @@ export function createStudio({ onChangeFile }) {
   });
   modeList.setActive(store.state.modeId);
 
+  let movedBefore = false;
   store.subscribe((path) => {
+    pipeline.abortPending(); // parameters changed: a heavy job of the previous ones is stale
     if (path === 'modeId') {
       autoScale = 1;
       slowFrames = 0;
@@ -521,6 +527,13 @@ export function createStudio({ onChangeFile }) {
       else controls.refresh(true);
     } else {
       controls.refresh();
+    }
+    // "animate" style toggles change whether the still picture can be exported as video and whether the loop runs
+    const moves = modeMoves(mode());
+    if (moves !== movedBefore) {
+      movedBefore = moves;
+      if (path !== 'modeId' && path !== 'replace') controls.rebuildExport();
+      scheduler.poke();
     }
     scheduler.markDirty();
   });
