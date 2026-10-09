@@ -4,7 +4,7 @@ import http from 'node:http';
 import { createReadStream, statSync } from 'node:fs';
 import { resolve, dirname, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { watchPage, canvasStats, loadFixture, setControl, renderCount, waitForRender } from './helpers.js';
+import { watchPage, canvasStats, loadFixture, setControl, renderCount, waitForRender, waitForCanvasData } from './helpers.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PREFIX = '/Ascii-dithering-Image-to-art-/';
@@ -104,7 +104,7 @@ test('the heavy worker and the worker-backed modes resolve relatively under a su
   await waitForRender(page, n);
   n = await renderCount(page);
   await setControl(page, 'grid', '80');
-  await waitForRender(page, n);
+  await waitForCanvasData(page, 'cols', 80); // a frame of the old 40-column grid may still be in flight
   expect((await canvasStats(page)).variance).toBeGreaterThan(0);
   expect(await page.locator('#viewer-canvas').getAttribute('data-cols')).toBe('80');
   expect(await page.locator('#chip-error').isHidden()).toBe(true);
