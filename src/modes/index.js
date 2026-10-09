@@ -9,6 +9,7 @@ import matrix from './matrix.js';
 import typoportrait from './typoportrait.js';
 import dither1bit from './dither1bit.js';
 import halftone from './halftone.js';
+import pixelart from './pixelart.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -21,6 +22,7 @@ export const MODES = [
   typoportrait,
   dither1bit,
   halftone,
+  pixelart,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
