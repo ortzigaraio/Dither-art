@@ -1,4 +1,4 @@
-# HORAIN — Plan de implementación
+# DITHER (by Horain) — Plan de implementación
 
 > Documento de trabajo para que **Sonnet (Claude Code)** construya todo el código.
 > Léelo entero antes de empezar. Trabaja **fase por fase** (sección 12) y no pases a la siguiente sin cumplir los criterios de aceptación.
@@ -8,7 +8,13 @@
 
 ## 0. Resumen
 
-**HORAIN** es una web estática (GitHub Pages + dominio propio en Cloudflare) que convierte **imágenes, video y webcam** en arte generativo:
+> **Aclaración del dueño**: este repo (`Dither-art`, `dither.ortzigar.org`) es una herramienta independiente, **Dither**, creada para
+> diseñar y probar la UI/UX que luego usará la web app **Horain**, que vive en otro repo. Dither usa la marca de Horain (logo espino,
+> colores, tipografías). El nombre visible del producto es **Dither**, con "by Horain" junto al logo. Donde este documento diga
+> "HORAIN" como nombre de la app, léase Dither; el logo, los temas y los tokens siguen siendo los de Horain y deben poder
+> reutilizarse tal cual en el otro repo (mantén `css/tokens.css` y `css/components.css` independientes de la lógica).
+
+**Dither** es una web estática (GitHub Pages + dominio propio en Cloudflare) que convierte **imágenes, video y webcam** en arte generativo:
 ASCII, dithering 1-bit, Braille, halftone, ANSI, PETSCII, glitch, pixel sorting, wireframe vectorial, LiDAR,
 grabado de plotter, termografía, isolíneas, raymarching 3D, blueprint CAD, Voronoi, reacción-difusión,
 flow fields y más (25 modos en total).
@@ -30,7 +36,7 @@ flow fields y más (25 modos en total).
 | Export de video | **MP4 y WebM** (con audio original). **Aviso** (no bloqueo) a partir de 2 min. GIF en el futuro (dejar el hueco). |
 | Export de imagen | PNG siempre; SVG en modos vectoriales; TXT / HTML / ANSI en modos de texto; copiar al portapapeles. |
 | Hosting | GitHub Pages (repo público), **sin paso de build**: HTML + CSS + ES modules nativos. |
-| Dominio | Subdominio de **ortzigar.org** gestionado en Cloudflare (propuesta: `horain.ortzigar.org`). Pasos en `DEPLOY.md`. |
+| Dominio | Subdominio de **ortzigar.org** gestionado en Cloudflare (`dither.ortzigar.org`, ya configurado). Pasos en `DEPLOY.md`. |
 | Visitas | **Contador de visitas público** en el pie de página, con un Cloudflare Worker + D1 propio (sección 17). Sin cookies ni IPs guardadas. |
 | Guardrails | Límites de seguridad, privacidad, rendimiento, marca y desarrollo (sección 18). |
 
@@ -951,7 +957,7 @@ Los pasos manuales (repo público, activar Pages, DNS en Cloudflare, verificar d
 **`DEPLOY.md`**. Para el código basta con:
 1. `.nojekyll` en la raíz.
 2. Sin cabeceras COOP/COEP (Pages no las permite): transformers.js funciona sin `SharedArrayBuffer` (wasm de un hilo o WebGPU).
-3. Rutas relativas: debe funcionar en `https://ortzigaraio.github.io/Ascii-dithering-Image-to-art-/` y en `https://horain.ortzigar.org/`.
+3. Rutas relativas: debe funcionar en `https://ortzigaraio.github.io/Dither-art/` y en `https://dither.ortzigar.org/`.
 4. **No crear el archivo `CNAME`**: lo crea GitHub al configurar el dominio en Settings → Pages (ver guardrail 18.5).
 
 ---
@@ -978,7 +984,7 @@ cancelar trabajos obsoletos.
 | Pregunta | Respuesta |
 |---|---|
 | ¿Logo propio? | Sí: logo **espino** (`assets/brand/`). Colores y tipografías de marca en 4.0. |
-| ¿Dominio? | Repo público + Pages + **subdominio de ortzigar.org** vía Cloudflare (propuesto `horain.ortzigar.org`; ver `DEPLOY.md`). |
+| ¿Dominio? | Repo público + Pages + **subdominio de ortzigar.org** vía Cloudflare (`dither.ortzigar.org`, ya configurado; ver `DEPLOY.md`). |
 | ¿Estadísticas? | **Contador de visitas público** (sección 17). |
 | ¿Límite de video? | **Aviso** a partir de 2 min, sin bloqueo (más los límites técnicos de 18.1). |
 | ¿GIF? | Más adelante; `exportVideo.js` debe tener una tabla de formatos donde añadir `gif` sea un caso más. |
@@ -1005,7 +1011,7 @@ cancelar trabajos obsoletos.
 - Mencionarlo en `ACERCA`/privacidad: "Contamos visitas de forma anónima: un número, sin cookies ni datos personales."
 
 `src/config.js` exporta `counterUrl: ''` (vacío hasta que el dueño despliegue el Worker; luego `'https://count.ortzigar.org'`, ya permitido en la CSP)
-y `siteUrl: 'https://horain.ortzigar.org/'` (para Open Graph y `<link rel="canonical">`).
+y `siteUrl: 'https://dither.ortzigar.org/'` (para Open Graph y `<link rel="canonical">`).
 
 ---
 
@@ -1093,3 +1099,166 @@ Reglas de seguridad y calidad. **Tienen prioridad** sobre el resto del plan. Los
 ## 19. Desviaciones
 
 Registro de cambios respecto a este plan, decididos durante la implementación (fecha, qué, por qué). Vacío por ahora.
+
+### Fases 0 y 1 (2026-10-08)
+
+**Nombre del producto (aclaración del dueño en la sección 0)**
+- El nombre visible es **Dither**: `<title>` "Dither by Horain", cabecera y pie con el lockup `dither` (Unbounded 600, minúsculas) + `by` + el logo espino oficial en SVG (nunca reescrito; hueco previo al logo ≥ la altura de la "o"), README, título y `generator` del HTML exportado, `<noscript>` y la letra de la demo. `src/config.js` añade `productName` y `fileSlug` y usa `siteUrl: 'https://dither.ortzigar.org/'` y `repoUrl: 'https://github.com/ortzigaraio/Dither-art'`; los enlaces a GitHub del HTML coinciden (hay prueba).
+- Los archivos exportados se llaman `dither-<modo>-<YYYYMMDD-HHMMSS>.<ext>` (9.1 decía `horain-`).
+- Se mantiene el nombre de marca donde es marca o identificador interno: tema `horain`, tokens `--horain-*`, paleta "Horain", claves `localStorage` `horain.*`, alt del logo ("Horain") y los archivos de `assets/brand/`. `css/tokens.css` y `css/components.css` no dependen de la lógica (solo de clases del DOM), así que pueden copiarse tal cual al otro repo.
+- Móvil: el selector de tema se reduce a su icono (el `<select>` transparente lo cubre, así que sigue abriendo el selector nativo); por debajo de 360 px se oculta "by" y se aprietan los márgenes de la cabecera (sin scroll horizontal desde 320 px). Por debajo de 1000 px la cabecera oculta el enlace a GitHub (está en el pie).
+
+**Archivos y estructura**
+- Añadidos respecto a la sección 2: `src/boot.js` (aplica tema e idioma guardados antes del primer pintado; es un archivo externo porque la CSP prohíbe scripts inline), `src/studio.js` (controlador del estudio: estado, controles, visor, pipeline, scheduler y exportaciones; `main.js` queda como arranque), `src/ui/inputPanel.js` (grupo ENTRADA), `src/ui/scramble.js` (efecto de 4.2), `assets/icons/apple-touch-icon.png` (180×180, rasterizado desde `horain-icon.svg` con `tests/make-icons.mjs`, sin tocar `assets/brand/`).
+- Pruebas: además de `smoke.spec.js` hay `engine.spec.js`, `controls.spec.js`, `guardrails.spec.js`, `i18n.spec.js`, `layout.spec.js`, `subpath.spec.js` (el sitio bajo `/<repo>/`, con un servidor estático propio) y `ui.spec.js`, más `helpers.js` y `global-setup.mjs` (que genera los fixtures). `.gitignore` añade `tests/fixtures/` (se generan en cada máquina; el plan solo listaba cuatro entradas) y `.DS_Store`.
+- `webServer` de Playwright con `stdout/stderr: 'ignore'` (el log de `http.server` ensuciaba la salida).
+
+**Entrada y validación (18.1)**
+- `io/validate.js` lee **64 bytes** (no 32) para ver el `DocType` de WebM y las marcas compatibles de ISO-BMFF (AVIF frente a HEIC). Para rechazar imágenes de más de 100 MP antes de decodificar lee además la cabecera de dimensiones (PNG, GIF, BMP, WebP, y hasta 256 KB para JPEG / 16 KB para AVIF).
+- Los **videos** se reconocen por magic bytes pero todavía no se abren (fase 2): muestran un aviso "el video llegará pronto". El botón USAR CÁMARA no se muestra hasta la fase 2 (`dropzone.addAction` ya permite añadirlo).
+- La demo (`DemoSource`) dibuja "DITHER" en mayúsculas con Geist Mono, no con Unbounded en minúsculas, para que no se confunda con el logo (18.4).
+
+**Motor y modo ASCII**
+- `dither` y `serpentine` viven en el grupo global IMAGEN (5.2); `serpentine` está apagado por defecto.
+- **Polaridad**: los píxeles claros reciben glifos densos cuando el fondo de salida es oscuro y glifos ligeros cuando es claro (se decide con el color de fondo resuelto; con fondo transparente, con la luminosidad de la tinta). El sentido de la mezcla de bordes (`edges`) sigue esa polaridad; `invertGradient` invierte encima.
+- ASCII declara `draftScale: 1`: es barato y no se baja a media resolución mientras se arrastra un slider. El resto de modos usarán el valor por defecto (0,5), que ya respeta el pipeline.
+- `font` incluye **Geist Mono** (por defecto, sección 3) además de las cinco de 7.1; `edgeChars` está activo por defecto (solo tiene efecto con `edges > 0`). "Courier" cae a Geist Mono donde no exista Courier New.
+- Los glifos se componen **en CPU desde el canal alfa del atlas** (`glyphs.drawGlyphGrid`, por bandas) en lugar de un `drawImage` por celda + `source-in`: 2,5 ms en vez de 17 ms a 120 columnas en el Chromium de pruebas (sin GPU). Los bloques `░▒▓█▀▄▌▐` se dibujan proceduralmente. Está pensado para reutilizarse en Matrix, Retrato tipográfico y Raymarch→ASCII.
+- Extensiones de la interfaz de modo (6): `mode.preOptions(params, theme)` (fondo para píxeles transparentes y dirección de la mezcla de bordes), `mode.draftScale`, `mode.hide` (ids globales que no aplican), `showIf(p, all)` con todos los parámetros como segundo argumento. `FrameContext` añade `theme`, `outScale`, `srcWidth/srcHeight` e `invalidate()`; `pipeline.render()` es asíncrono (los modos pueden devolver promesas, p. ej. por `depth()`).
+- **Geometría de celda**: el `cellAspect` de 5.1 se calcula con la celda **redondeada a píxeles enteros a escala 1** (`glyphs.baseCell`), no con la medida sin redondear, y a otra escala la celda es esa celda por la escala (redondeada) con la fuente ajustada al ancho real. Así la imagen conserva el aspecto de la fuente (solo queda el redondeo de filas) y el número de filas es el mismo en vista previa, TXT y PNG a cualquier escala (hay prueba con 6 fuentes × tamaños × interlineado × espaciado).
+- **Tope de tamaño**: ASCII reduce la escala de render si la salida pasaría de 4096 px (vista previa) o 8192 px (exportación) y el pipeline devuelve la escala efectiva. La escala de la vista previa sigue al zoom (hasta 4×) para que el texto no se vea borroso al acercar. La exportación PNG estima el tamaño y luego lo verifica (las celdas son píxeles enteros en cada escala).
+- La exportación ANSI de ASCII usa la extensión `.ansi.txt` (UTF-8 con SGR); `.ans` queda para el CP437 del modo ANSI (fase 3).
+- Estado: claves de `localStorage` `horain.theme`, `horain.lang` y `horain.params` (versionado `v:1`). El enlace compartible `#s=` y la validación de estado externo ya están hechos (se necesitaban para las pruebas de 18.3); presets y "Sorpréndeme" siguen para la fase 7.
+
+**Robustez**
+- `boot.js` incluye una red de seguridad: si a los 6 s la app no ha arrancado (script bloqueado, navegador muy antiguo, error al cargar) muestra un aviso visible en lugar de una página que parece viva pero no responde (18.2). La tabla de ruido azul (≈ 60 ms) se genera en un `requestIdleCallback` tras el arranque, no al primer uso.
+- Si un modo lanza una excepción, el pipeline muestra la fuente original con el chip `ERROR EN EL MODO`; los modos WebGL2 (`mode.surface = 'gl'`) tienen su propio canvas y recuperan el estado tras `webglcontextlost`/`webglcontextrestored` (preparado para la fase 5, ya probado con un modo de prueba).
+
+**Interfaz**
+- Hero en dos columnas en escritorio (titular + dropzone a la izquierda, demo viva del motor a la derecha) en lugar de un canvas a ancho completo; rota 4 "looks" ASCII cada 4 s (con `prefers-reduced-motion`, un solo fotograma fijo). La galería de modos con miniaturas en vivo se hizo ya en la fase 1 porque el motor lo permite sin esfuerzo; el contador de visitas, Open Graph, manifest, atajos de teclado y Post-FX siguen para la fase 7.
+- El subtítulo del hero cuenta los modos registrados ("1 estilo") en lugar del "25 estilos" final, y el texto de ACERCA dice que el video y la cámara están en camino: actualizar en la fase 2.
+- Móvil (< 700 px): `cols` arranca en 80 en lugar de 120 y el bucle de animación se limita a 30 fps (18.2). El visor ocupa ~45–50 % de la altura (el plan decía 55vh) porque la barra de modos y la hoja de ajustes (38 dvh) también caben en pantalla.
+- **Contraste**: en el tema PAPER, `--accent-ink #FFFFFF` sobre `--accent #E5402A` da 4,12:1 (< 4,5:1 de AA). Se mantiene la tabla de 4.1 tal cual; arreglo sugerido: `#111111` (4,6:1) o un rojo más oscuro. La prueba de contraste lo documenta como única excepción.
+
+**Rendimiento medido** (Chromium de pruebas, sin GPU, con una fuente animada que cambia de fotograma en cada render, es decir, preprocesado + análisis + modo): ASCII a 160 columnas ≈ 12 ms por fotograma (mono, color original o con difusión de error de Floyd–Steinberg), 300 columnas ≈ 21 ms y 600 columnas ≈ 47 ms (≈ 21 fps, por debajo de 30 fps en este entorno sin GPU). Si solo cambian parámetros del modo (preprocesado en caché) un render cuesta ≈ 2–3 ms. La prueba exige mediana < 33 ms a 160 columnas (≥ 30 fps).
+
+**Pendiente / no cubierto en estas fases**: sin workers todavía (preprocesado, dithering y difusión de error corren en el hilo principal, suficiente hasta 600 columnas); solo se ha probado Chromium (Firefox/Safari no); atajos de teclado (4.7), presets, Post-FX, grupo de profundidad y contador de visitas.
+
+### Fase 2: video y webcam (2026-10-09)
+
+**Archivos y estructura**
+- Nuevos: `src/ui/transport.js`, `src/ui/exportDialog.js` (el diálogo de exportación y de grabación, con `<dialog>`), `src/io/exportVideo.js`. `VideoSource` y `WebcamSource` viven en `src/io/sources.js` y comparten una clase base interna (contador de fotogramas con `requestVideoFrameCallback`, o rAF + `currentTime` si no existe).
+- Pruebas nuevas: `video.spec.js`, `video-export.spec.js`, `webcam.spec.js`. `make-fixtures.mjs` genera ahora también `fixture.webm` (3 s, 320×240, 15 fps, VP9 con VP8 de reserva, tono de 440 Hz en Opus) con Mediabunny dentro de una página; como `file://` no puede importar módulos, levanta un servidor estático efímero del repo (y `tests/blank.html` sirve de página vacía). Las pruebas de webcam usan `--use-fake-device-for-media-stream=device-count=2` y `--use-fake-ui-for-media-stream` (dos cámaras falsas, para probar el selector).
+- La prueba de guardrails "video reconocido pero aún no disponible" pasó a "cabecera válida sin flujo decodificable": un video falso ahora se abre, falla al decodificar y muestra "No se pudo abrir el video" (`err.videoDecode`).
+
+**Fuentes**
+- Video y webcam **no son `animated`**: cada fotograma nuevo sube `source.frameId` y llama `onFrame`, de modo que el planificador solo renderiza con fotogramas nuevos o cambios de parámetros (5.7). Un modo `animated` sobre un video sigue renderizando en cada rAF, con el reloj del video (`source.shownTime`: el fotograma presentado cuando está en pausa).
+- El video empieza **silenciado, en bucle y reproduciéndose** (el plan decía `<video muted playsinline loop>`); el botón de la barra lo activa. Al ocultar la pestaña o salir del estudio el video se pausa y se reanuda al volver. El elemento `<video>` no se añade al DOM (funciona igual en Chromium).
+- La velocidad de fotogramas se **estima** con `requestVideoFrameCallback` (mediana de los últimos 15 intervalos, ajustada a las cadencias habituales) y se muestra en el panel ENTRADA; el diálogo de exportación afina "Original (N fps)" y si hay audio leyendo el contenedor con Mediabunny (`probeFile`). No se importa Mediabunny hasta que se abre el diálogo.
+- Paso de fotogramas: el fps es una estimación, así que `step()` busca `fotograma ± 1/fps` y reintenta hasta que el fotograma presentado cambia de verdad. Con las flechas, mientras el video está en pausa, el paso de fotograma tiene prioridad sobre el desplazamiento del visor (que sigue usando las flechas con imágenes o con el video reproduciéndose).
+- Webcam: `getUserMedia({ video: { width: 1280, height: 720 ideales }, audio: false })`, espejo por defecto (se dibuja en un canvas intermedio, no con `flipX`), selector si hay más de una cámara, `track.stop()` al cambiar de fuente. **La webcam se graba sin audio** (no se pide el micrófono; el plan no lo exigía).
+- Si `navigator.mediaDevices.getUserMedia` no existe, no se añade el botón USAR CÁMARA. Errores de cámara: `err.cameraDenied`, `cameraNone`, `cameraBusy`, `cameraUnsupported`.
+
+**Exportación (9.2)**
+- Rutas: `exportFromFile` (video → `Conversion` con `video.process`, `processedWidth/Height`, `forceTranscode`, recorte, audio copiado o transcodificado), `exportTimeline` (imagen fija + modo animado → `Output` + `CanvasSource`, fotogramas a `i/fps` con el tiempo del fotograma, no el reloj) y `createLiveRecorder` (webcam: se empujan los fotogramas de la vista previa al `CanvasSource`; el fps se limita descartando los sobrantes). La grabación de webcam usa por tanto los fotogramas de la vista previa (a la calidad con la que se ven) y no un render aparte a máxima calidad.
+- Cada fotograma se renderiza con un **pipeline propio de exportación** (calidad completa, parámetros congelados al empezar, canvas de trabajo de lado mayor ≤ 1920 al que se pinta cada `VideoSample`). La salida se encaja (contain) en un canvas fijo de `outW×outH` pares con el fondo del tema; la escala del pipeline es `alto elegido / alto natural`, y como ASCII redondea las celdas por escala, el resultado puede reescalarse un poco.
+- Códecs: MP4 → `avc` (alternativa `hevc`), WebM → `vp9`, `vp8`, `av1`. Sin códec de WebCodecs para un formato se usa `MediaRecorder` si soporta ese tipo (`video/mp4;codecs=avc1`, `video/webm;codecs=vp9|vp8`; no se usa el `video/mp4` genérico porque `isTypeSupported` lo da por bueno sin garantizar H.264). Si el formato no se puede escribir de ninguna forma, su opción aparece deshabilitada con una explicación y se ofrece el otro. En el Chromium de pruebas MP4 queda deshabilitado (sin H.264): la prueba de exportación MP4 se salta con `test.skip` y se informa como saltada.
+- Fallback en tiempo real: el video se reproduce en un `<video>` oculto (el audio va a un `MediaStreamAudioDestinationNode`, no a los altavoces), cada fotograma se renderiza y se empuja con `requestFrame()` a un `MediaRecorder`; para imagen fija se espacia por reloj. Si la conversión offline falla (códec no decodificable...), también se cae a esta ruta con un aviso.
+- Aviso de 2 minutos (y de más de 1080p): se muestra **en el diálogo** (con tamaño estimado) y al abrir un video de más de 2 min, sin bloquear; el propio diálogo hace de confirmación (no hay un segundo "¿seguro?"). La estimación del tamaño usa bits por píxel orientativos (0,05 / 0,09 / 0,15 / 0,25).
+- Cancelar (botón o Esc durante la exportación) llama a `conversion.cancel()` / detiene el recorder, descarta el resultado y libera el bloqueo de "un único trabajo". La latencia de cancelación depende de lo que el codificador tarde en vaciar el fotograma en curso (≈2 s a 1080p, algo más a 2160p con VP9 por software).
+- Para exportar video una imagen fija debe tener un modo animado o una fuente animada; ASCII (no animado) añade `'video'` a `exports` y solo ofrece el botón con video. No hay modos animados todavía (fase 3+): la prueba de imagen fija marca ASCII como `animated = true` desde la página y comprueba que cada fotograma recibe `ctx.time = i/fps`.
+
+**Conocido / pendiente**
+- Mediabunny registra a veces "A VideoSample was garbage collected without first being closed" tras **cancelar** una conversión con la cola del decodificador llena (se vio una vez en ≈10 ejecuciones del Chromium de pruebas; no se reproduce con `gc()` forzado). La app no crea `VideoSample` propios (solo cierra los que recibe); es el aviso de la biblioteca sobre un fotograma decodificado en cola que ella misma libera en el finalizador. Está sin resolver.
+- No se probó con videos HEVC `.mov`, ni en Firefox/Safari, ni la cuantía real de memoria tras cancelar (solo que se liberan las URL de objeto, el decodificador del `<video>` y las pistas de la cámara).
+- La grabación de la webcam y el fallback con `MediaRecorder` producen WebM sin duración en la cabecera (así lo escribe Chromium); los reproductores la calculan al leer el archivo.
+
+
+### Fase 3, parte A: modos de texto y worker pesado (2026-10-09)
+
+**`heavy.worker.js` y `engine/heavy.js` (1.6, 18.2)**
+- Protocolo: `start {jobId, task, payload, latestOnly}` / `cancel {jobId}` hacia el worker; `progress`, `done`, `error`, `cancelled` de vuelta. La cancelación es **cooperativa** (las tareas llaman a `ctl.yield()` cada ~60 000 píxeles o cada pocas filas de celdas, y ahí llega el mensaje de cancelar) y, si una tarea no cede nunca, el cliente **termina y recrea el worker** a los 400 ms de pedir la cancelación (los demás trabajos en vuelo de ese worker fallan con `AbortError`). "Un jobId más nuevo descarta al anterior" se implementa con la opción `latestOnly` (por tarea); los modos **no** la usan, porque la vista previa, la exportación y la miniatura tienen pipelines distintos y un trabajo de uno no debe cancelar el de otro (el planificador ya garantiza un único render en vuelo por pipeline).
+- Watchdog (18.2): a los `LIMITS.workerWatchdogMs` (30 s) llama al gancho `onWatchdog` (o al global `setWatchdogHandler`); `studio.js` lo usa para mostrar un toast con botón **Cancelar** (el toast admite ahora una `action`). El trabajo sigue hasta que el usuario cancele. Tras 250 ms con un trabajo activo el visor muestra "renderizando… N %".
+- Sin `Worker` (o si el script no arranca) las mismas tareas corren en el hilo principal, en trozos, con la misma cancelación. Las tareas viven en `engine/heavyTasks.js` (sin DOM, importable desde el worker y desde el hilo principal); los resultados son idénticos en ambos sitios (hay pruebas). Incluye tareas `debug.*` en el worker de producción (dormir, bloquear sin ceder, fallar): sin ellas no se puede probar de forma honesta la cancelación, el reinicio y el watchdog con tareas reales rápidas.
+- Qué va al worker: PETSCII con más de 40×25 celdas; difusión de error en Braille por encima de 250 000 sub-píxeles; cuantización a paleta con difusión en ANSI por encima de 100 000 píxeles y la búsqueda de mezclas del sombreado por encima de 20 000 celdas. ASCII sigue en el hilo principal (600 columnas ≈ 47 ms, medido en la fase 1).
+
+**Interfaz de modo (6), extensiones**
+- `mode.toBinary(state, 'ans')` → `Uint8Array` y `mode.toJSON(state)` → string, además de `toText` y `toSVG`. `modes/index.js` comprueba al cargar que cada formato de `exports` tiene su función y que las insignias coinciden (`txt` ⇒ TXT, `svg` ⇒ SVG, `animated` ⇒ ANIM). El panel EXPORTAR ofrece exactamente los formatos declarados (`TEXT_FORMATS` en `exportPanel.js`: txt, html, ansi, ans, svg, json; PNG y vídeo tienen controles propios; el vídeo solo con fuente de vídeo o modo animado). Hay una prueba que recorre todos los modos.
+- `mode.presets` (2–3 por modo, `{id, name:{es,en}, mode:{…}}`) están declarados como datos, pero **no hay interfaz de presets todavía** (llega en la fase 7, sección 10).
+- `mode.hide` oculta parámetros globales (Braille, ANSI, PETSCII y Matrix ocultan `dither`/`serpentine` porque tienen el suyo o no los usan; PETSCII oculta también `cols`: su rejilla es un parámetro del modo). Los ids de parámetros de modo `dither`, `threshold` y `serpentine` coinciden con los globales (distintos objetos de estado, el global oculto no se dibuja); las pruebas usan `setControl(page, id, value, 'mode')` para acotar el grupo.
+- `io/exportText.js`: las celdas admiten un fondo propio (`bgRgba`, para ANSI Art) en HTML y ANSI; nuevo `gridToANS` (bytes CP437 + SGR de ANSI.SYS) y `cp437Byte`. `dither.js` exporta `compileKernel`.
+
+**Braille (7.2)**
+- Polaridad automática según el fondo de salida, como ASCII (puntos encendidos en las zonas claras sobre fondo oscuro y al revés), en lugar del "luma < umbral" literal del plan; `invert` la invierte. Tramado propio (Atkinson por defecto). La rejilla de sub-píxeles es 2×4 por carácter con celdas de 1:2 (puntos cuadrados). Los puntos se dibujan con un sprite antialias en CPU (4 px de paso a escala 1). `blankAsSpace` está apagado por defecto.
+
+**ANSI Art (7.3)**
+- El parámetro de paleta se llama `ansiPalette` (no `palette`, para no chocar con el grupo COLOR). El modo no usa el grupo COLOR: los colores salen de la paleta (VGA 16, xterm 256 o truecolor).
+- Sombreado: con 16 colores, búsqueda exhaustiva sobre todas las mezclas (fg, bg, 25/50/75 %) con difusión de error entre celdas; con 256 colores y truecolor, proyección: la mitad más clara es el primer plano, la más oscura el fondo y la cobertura que mejor reproduce la media elige el carácter. Mixto: por celda, el que menos error da frente a los dos píxeles de origen (empate: medio bloque). `bg8` (8 fondos, activado por defecto) voltea `▀` a `▄` cuando solo el píxel superior puede ser fondo.
+- `.ans`: 16 colores de primer plano y 8 de fondo; un fondo brillante se pasa a su par oscuro (parpadearía en hardware real) aunque la vista previa lo muestre brillante cuando `bg8` está apagado; las filas de menos de 80 columnas acaban en CR LF y las de 80 o más no (el terminal ajusta la línea). Sin registro SAUCE. Los sombreados `░▒▓` se dibujan como mezcla plana, no como la trama de 8×16 de la VGA.
+
+**PETSCII (7.4)**
+- 97 glifos 8×8 **propios** generados desde predicados (`engine/petscii.js`: bloques y sombras 34, líneas 24, diagonales 17, redondos y palos 22); no se copia la ROM del C64 (hay una prueba de que son únicos y no se repiten). Paletas: C64 (Pepto, la de `palettes.js`), VIC-20 (valores aproximados) y PET verde de 2 colores.
+- Rejilla: 40, 80 o personalizada (10–160 columnas); las filas siguen la proporción de la imagen (máx. 200), así que 40×25 solo sale con imágenes 16:10. `draftScale: 1` (la rejilla sale de `ctx.width / 8`, de modo que la bajada automática de calidad reduce columnas). Sin tramado (el plan no lo pedía). Marco C64 de 4 celdas con color propio. El TXT usa el carácter Unicode más parecido de ~110 candidatos (Block Elements, Box Drawing, formas geométricas y sextantes U+1FB00 de Symbols for Legacy Computing); es una aproximación. JSON: glifos, paleta, fondo, `cells` y `colors`.
+
+**Lluvia Matrix (7.5)**
+- El campo de lluvia es una **función pura de (semilla, tiempo)** (`rainField`): sin estado entre fotogramas, así que la exportación (tiempo del fotograma), el vídeo con scrub y las pruebas dan los mismos píxeles. Parámetros añadidos al plan: `seed`, `bgColor`, `cellSize`. Fuente fija Geist Mono (los katakana de medio ancho salen de la fuente del sistema, como en ASCII). Extra: un "fantasma" tenue de la imagen entre gotas (30 % de `imageInfluence · luma²`) para que la imagen se lea con densidades bajas. El resplandor es una copia reducida a 1/4 y suavizada, sumada con `lighter`.
+
+**Retrato tipográfico (7.6)**
+- Fuentes: Archivo y Silkscreen no están autoalojadas (no se puede tocar `assets/fonts/`), así que se ofrecen **Geist** (por Archivo), **Unbounded**, **VT323** (pixel, por Silkscreen), JetBrains Mono y Geist Mono. `modulate`: color, tamaño, peso (solo fuentes variables) y opacidad; en "color" con color de salida monocromo la tinta se mezcla con el papel según la luz. Rangos añadidos: `letterSpacing` −2–8 px, `lineHeight` 0.8–1.8. Texto vacío ⇒ "HORAIN ".
+- Cada letra es un `<tspan x=…>` con posición propia (los espacios solo ocupan sitio, no se emiten); HTML = la misma SVG en línea dentro de una página. Todo el texto de usuario pasa por `escapeXml()` y las pruebas parsean la salida con `DOMParser` (sin `img`, `script` ni atributos `on*`).
+
+**Pruebas**
+- Nuevas: `heavy.spec.js`, `braille.spec.js`, `ansi.spec.js`, `petscii.spec.js`, `matrix.spec.js`, `typoportrait.spec.js`, `modes3.spec.js` (categorías, insignias, exportaciones por modo, bucle de los modos animados) y una prueba más en `subpath.spec.js` (worker bajo subruta). `helpers.js` añade `renderMode()` (renderiza un modo sobre una imagen sintética y devuelve hashes, píxeles, medias y exportaciones). Dos pruebas antiguas suponían que ASCII era el único modo (`engine.spec.js`: claves de `modes`; `layout.spec.js`: chips de modo): ahora comparan con los modos registrados, sin relajar lo que comprueban.
+- La suite completa tarda ≈ 7 min; la prueba de vídeo MP4 sigue saltándose (sin H.264).
+
+**Pendiente de esta parte**: sin interfaz de presets (fase 7); la galería usa la miniatura de cada modo con los valores por defecto; Firefox/Safari sin probar; la galería del hero y su demo siguen rotando solo looks de ASCII.
+
+
+### Fase 3, parte B: modos de píxel (2026-10-09)
+
+**Paso 0: la prueba de `subpath.spec.js:87` era una carrera de la prueba, no un fallo de la app**
+- Síntoma: tras `setControl(page, 'grid', '80')` + `waitForRender`, `data-cols` seguía en `40`. Causa: `waitForRender(page, n)` solo espera "un fotograma más reciente que `n`". Tras un cambio de tamaño (PETSCII, 40 columnas) el visor se reajusta y, ~160 ms después, el temporizador de zoom (`onZoom` en `studio.js`) pide un segundo pase a otra escala del visor; ese pase, que ya estaba en vuelo con la rejilla de 40 columnas cuando la prueba cambió el control, satisfacía la espera. El de 80 columnas (en el worker) llegaba después. La app era correcta (se comprobó con un registro de `data-frame`/`data-cols`: el fotograma con 80 llegaba siempre, solo que más tarde).
+- Arreglo: `helpers.js` añade `waitForCanvasData(page, attr, value)`, que espera la condición real (`data-cols === 80`) y luego a que el bucle se calme; la prueba lo usa sin tocar la aserción. Las demás pruebas con worker (`petscii`, `braille`, `ansi`, `heavy`) no cambian un parámetro y afirman sobre el resultado a continuación: leen `data-cols` o exportan (cada exportación renderiza por su cuenta), así que no tienen el mismo patrón. Con `--repeat-each=6`: 6/6 en verde (antes 2/6).
+
+**Fontanería común**
+- `pipeline.render()` pasa `{ isExport, isVideo }` como cuarto argumento de `mode.resolution()` (Pixel sort previsualiza el vídeo a ≤ 640 px y exporta a más), añade `ctx.signal` y `pipeline.abortPending()`: `studio.js` lo llama cuando cambia cualquier parámetro, de modo que un trabajo de worker obsoleto se cancela por `jobId` (el cliente de `heavy.js` ya rechazaba con `AbortError`) y `render()` devuelve `{ aborted: true }` (sin toast ni `console.error`); el bucle vuelve a renderizar porque el cambio dejó el estado "sucio". Solo lo usan Dithering 1-bit, Pixel art y Pixel sort (`heavy.run(..., { signal: ctx.signal })`); los pipelines de exportación y miniaturas nunca se abortan.
+- Interfaz de modo (6): `mode.animatedWhen(paramsDelModo)` para modos que se mueven solo con ciertos ajustes (Glitch con `animate`): `studio.js` lo consulta en el bucle, en el aviso de vídeo y reconstruye solo el grupo EXPORTAR (`controls.rebuildExport()`) cuando cambia, para que el botón de vídeo aparezca y desaparezca sin perder el foco ni el scroll del panel. `index.js` exige la insignia ANIM también para `animatedWhen`. Las pruebas de `modes3.spec.js` (categorías e insignias) comparan ahora con todas las categorías registradas, no solo `text`, y `layout.spec.js` comprueba que *cada* encabezado de categoría esté oculto en móvil y desplaza cada tarjeta de la galería hasta la vista antes de esperar su miniatura (se renderizan al acercarse; con 13 modos las últimas quedan fuera de pantalla).
+- Archivos nuevos: `engine/pixelkit.js` (relación trabajo/salida con calidad borrador, bloques enteros, `presentPixels` con vecino más cercano), `engine/rand.js` (mulberry32, hash, sin DOM: también lo importa el worker), `engine/kmeans.js`, `engine/thermal.js` (paletas y LUT), `engine/glitch.js`, `engine/pixelsort.js` (sin DOM, en `heavy.worker.js` y en el hilo principal), `io/svgkit.js` (escritor mínimo de SVG con capas de Inkscape; la fase 4 construirá `exportSVG.js`), las claves `thermal.hud.*` en los dos diccionarios y `tests/` (ver abajo).
+- **Todo en CPU, ningún modo usa WebGL2**: el plan marca Glitch y Termografía como GPU y Dithering 1-bit "GPU o CPU". Se implementaron con `ImageData`/Canvas2D porque (a) los tres son baratos a 1280 px (glitch normal ≈ 40-70 ms por fotograma 720p, con todos los efectos ≈ 170-250 ms; termografía y Bayer, pocos ms), (b) el Chromium de pruebas no tiene GPU, así que un camino WebGL2 no se podría verificar con las mismas comprobaciones de píxeles exactos, y (c) la salida determinista por semilla y tiempo es trivial de garantizar en CPU. Los modos no declaran la insignia `GPU` ni `surface: 'gl'`. Si más adelante hace falta, el contrato (`ctx.gl`, pérdida de contexto) ya existe.
+- Resolución de trabajo y calidad borrador: los modos de píxel derivan el tamaño lógico de la salida del ancho de la fuente (tope 1280, 2048-2560 al exportar) y no de `cols` (que ocultan salvo LED); con `draftScale` 0,5 (Dithering, Termografía, Glitch, Pixel sort) cada píxel de trabajo se dibuja el doble de grande para que la imagen no cambie de tamaño al arrastrar; Halftone, LED y Pixel art declaran `draftScale: 1` (la rejilla de puntos o de píxeles no debe cambiar mientras se arrastra).
+
+**Dithering 1-bit (7.7)**
+- Parámetros: `algorithm` (las 15 de 5.3, defecto Bayer 4×4), `serpentine`, `seed` (solo con "aleatorio"), `pixelSize` 1-16 (2), `levels` 2-8, `bias`, `perChannel`, `tone` (Macintosh, Game Boy, Obra Dinn, ámbar, fósforo verde, personalizado con `darkColor`/`lightColor`). Con más de 2 niveles los tonos intermedios se interpolan entre los dos colores; con `perChannel` cada canal RGB se trama por separado entre el color oscuro y el claro. Los globales `cols`, `dither` y `serpentine` se ocultan (el modo tiene los suyos).
+- Bayer, ruido azul y aleatorio van en el hilo principal; la difusión de error (`quantize` del worker) a partir de 60 000 píxeles de trabajo. Resultado idéntico en worker y en hilo principal (hay prueba). Medido en el entorno de pruebas: difusión 1080p en el worker ≈ 305-335 ms (el presupuesto de 15 era 300 ms; la prueba de rendimiento exige < 600 ms porque este entorno no tiene GPU y comparte CPU).
+- Presets: Macintosh (Atkinson), Game Boy (Bayer 4, 4 niveles), Obra Dinn (ruido azul), ámbar (Bayer 8), fósforo (Floyd–Steinberg). Siguen sin interfaz (fase 7).
+
+**Halftone (7.8)**
+- Mono, CMYK (C 15°, M 75°, Y 0°, K 45°, UCR total: K = 1 − max(r,g,b)), RGB aditivo (negro, `lighter`; ángulos 15°/75°/0°) y duotono (dos tintas: la segunda con la luminosidad, la primera con su cuadrado, a `angle` y `angle + 30°`). Formas: círculo, cuadrado, diamante, línea, cruz y elipse; `dotGain`, `jitter` (determinista con `seed`), `misregistration`, `invert` (mono y duotono) y los colores de papel y tinta.
+- **Área de punto exacta en lugar de "radio ∝ √cobertura" literal**: el círculo usa el radio cuya unión con sus vecinos cubre exactamente la fracción pedida (`r = c·√(a/π)` hasta π/4 y una tabla invertida de la unión de círculos solapados hasta `r = c/√2` en cobertura 1); con la fórmula simple un gris del 50 % se imprimía al 78 %. Cuadrado, línea y cruz también son de área exacta; el diamante lo es con el complemento a partir del 50 %.
+- La cobertura se muestrea con bilinear sobre un buffer de trabajo de ≈ celda/3 píxeles por muestra (no se promedia el área de la celda entera). El `angle` solo se ve en mono/duotono. El SVG (`toSVG`) escribe una capa de Inkscape (`inkscape:groupmode="layer"`) por tinta más una de papel, con `mix-blend-mode: multiply` (`screen` en RGB) y un elemento por punto (`<circle>`, `<ellipse>` o `<path>`); el título se escapa con `escapeXml()`.
+
+**Pixel art (7.9)**
+- `pixelSize` 2-32 (6), reducción por promedio o mediana (por canal, la mediana superior), paleta `auto` (k-means de `colors` 2-32 con semilla y k-means++, determinista; una imagen con menos colores distintos devuelve solo esos) o cualquiera de `palettes.js` / personalizada, tramado (los de 5.3; difusión de error en el worker por encima de 100 000 píxeles), limpieza de píxeles sueltos, contorno (oscurece el lado claro de cada frontera de color, fuerza ajustable) y `scaleMode`: ajustar (bloques de `pixelSize`) o nativo 1×/4×/8× por píxel de arte. La exportación PNG usa los 1×/2×/4× del panel sobre esa escala (nativo 4× × 2 = 8 px por píxel de arte). No usa el grupo COLOR (la paleta es propia, como ANSI). La rejilla de arte se calcula con la calidad completa y no cambia al arrastrar sliders.
+
+**Panel LED (7.10)**
+- El plan nombra `ledSize` y `gap`: se mantiene solo `ledSize` (diámetro/celda) porque el hueco es exactamente `1 − ledSize`; se añadió `shape` (redondo/cuadrado) y `panel` (color de fondo). Colores: rojo, ámbar, verde, azul, blanco y RGB completo (cada canal en N niveles). Apagado = 8 % del color del LED (`OFF`). `cols` es el global (cada celda es un LED).
+- SVG: capa de panel y una capa por nivel de brillo (o una sola capa con relleno por LED en RGB). Sin el resplandor (solo está en el PNG). Por encima de 60 000 LED el SVG omite los apagados (se indica en `<desc>`).
+
+**Termografía (7.11)**
+- Escalar: luminancia, magnitud de gradiente (Sobel normalizado), "profundidad" (por ahora el brillo, `ctx.depth()`) o "calor" (0,5 R + 0,35 G + 0,15 B). Sub-modo Gradientes: tono = dirección del gradiente, valor = magnitud (HSV). Paletas: Ironbow (la de `palettes.js`), Inferno, Magma, Plasma, Viridis, Turbo (anclas de los mapas de matplotlib y de Google, extremos exactos), Jet, Ártica, Blanco/Negro caliente, Lava y gradiente personalizado (parámetro propio `customStops` en lugar de `gradStops` del grupo COLOR, que el modo no usa). Nivel automático (percentiles 1-99, histograma de 1024 cajas) o rango manual, resolución de sensor 80/160/320/completa (el buffer de trabajo es la rejilla del sensor y se amplía con bilineal; el tamaño de la imagen no cambia), ruido determinista con semilla, isoterma y HUD (cruz, lectura del centro, barra de escala y marca `REC hh:mm:ss` derivada de `ctx.time`; las temperaturas son ficticias: `tempMin`..`tempMax`, 18-42 °C por defecto).
+
+**Glitch art (7.12)**
+- Efectos, en este orden: franjas, bloques corruptos (8/16 px; desplazados o repetidos), separación RGB, artefactos DCT (DCT 8×8 de Y/Cb/Cr con paso creciente con la frecuencia; mariposas par/impar para ir a la mitad de coste), bit-crush, entrelazado, scanlines y ruido. Cada uno es una función pura de (píxeles, intensidad, semilla). `animate` + `rate`: la semilla del fotograma es `mixSeed(seed, floor(t·rate))` con `t` = `ctx.time`, que en la exportación es `i/fps` (hay prueba que exporta dos veces y compara los fotogramas, y comprueba que 6 fotogramas consecutivos comparten semilla a 4 cambios/s y 24 fps). `animated` es `false`; el modo se mueve por `animatedWhen`.
+
+**Pixel sorting (7.13)**
+- Líneas paralelas por el reparto de Bresenham sin rotar la imagen (cada píxel pertenece a exactamente una línea; hay prueba para 13 ángulos), intervalos por umbral de luminosidad, bordes (corte donde el salto de luminosidad supera `lower`), aleatorio (longitudes con hash determinista) o línea completa, partidos a `maxSpan` (tope técnico 4000: la posición dentro del tramo se empaqueta en 12 bits de la clave de ordenación) y ordenados por luma, tono, saturación, R, G o B (clave redondeada a 16 bits, orden estable). `randomness` = probabilidad de dejar un tramo sin ordenar. `quantize` posteriza después de ordenar y **`paletteQuantize` se sustituye por el modo Paleta del grupo COLOR** (el modo usa `uses: ['image','color']` con `colorModes: ['original','palette']`; en "Paleta" ajusta al color más cercano en RGB después de ordenar). `showMask` pinta de blanco los píxeles de los tramos ordenados.
+- Corre en el worker (`TASKS.pixelSort`), con progreso (cada ~40 000 píxeles) y cancelación cooperativa por `jobId`; los resultados del worker y del hilo principal coinciden byte a byte. Medido: 1080p ≈ 460-800 ms según el modo (< 1 s). El vídeo se previsualiza a ≤ 640 px de ancho y se exporta a ≤ 2560.
+
+**Pruebas**
+- Nuevas: `dither1bit.spec.js` (matrices de Bayer 2/4/8 y umbrales `(M+0,5)/n²`, un gris plano da exactamente el 50 % de píxeles encendidos, solo las dos tintas con las 15 algoritmos, niveles, sesgo, bloques, por canal, worker = hilo principal), `halftone.spec.js` (radios calculados a mano, 60×30 puntos, capas SVG por tinta, CMYK de un cian y de un gris, escapado y parseo con `DOMParser`), `pixelart.spec.js` (promedio/mediana de un bloque 2×2, k-means de tamaño N exacto y determinista, contorno, escalas nativas), `led.spec.js` (extremos de LUT 100 %/8 %, niveles, hueco, SVG), `thermal.spec.js` (extremos de las 11 paletas + personalizada, fuentes, nivel, isoterma, sensor, HUD), `glitch.spec.js` (cada efecto con valores calculados a mano, kernel DCT ortonormal, determinismo, y el bucle en el estudio), `pixelsort.spec.js` (partición de líneas, orden monótono en la clave elegida, píxeles fuera de los intervalos intactos, worker = hilo principal, cancelación con progreso, `abortPending`), `pixel-video.spec.js` (los 7 modos con una fuente de vídeo, exportaciones WebM de Pixel sort, Dithering y Halftone, y el export determinista de Glitch con `animate`) y `pixel-perf.spec.js`. `helpers.js`: `waitForCanvasData` y la opción `colors` de `renderMode`.
+- Las pruebas de píxeles inyectan cuadros por `page.evaluate` con datos, no con código (la CSP prohíbe `new Function`).
+
+**Conocido / pendiente**
+- Sin interfaz de presets (fase 7); `mode.presets` de los siete modos son datos. Firefox/Safari sin probar. Los modos de píxel no tienen aún tests de accesibilidad propios (usan los controles generados).
+- Halftone con celdas de 3 px a 1280 px dibuja ≈ 120 000 puntos por tinta (CMYK ≈ 480 000): puede pasar de los 200 ms y activar la bajada automática de calidad.
+- Los modos de píxel no guardan la paleta ni la máscara para exportarlas (solo PNG/SVG y vídeo, como declara 7).

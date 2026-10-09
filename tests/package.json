@@ -1,0 +1,14 @@
+{
+  "name": "dither-tests",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Playwright smoke tests for Dither. Dev-only; does not affect GitHub Pages.",
+  "scripts": {
+    "test": "playwright test",
+    "fixtures": "node make-fixtures.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

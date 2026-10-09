@@ -1,0 +1,172 @@
+/* Dither design tokens (Horain brand): 6 themes (PLAN.md 4.1), brand palette (4.0), type, radii, spacing.
+   Themes are applied with <html data-theme="horain|claro|amber|crt|paper|cad" data-tone="dark|light">. */
+
+:root {
+  /* Brand palette (assets/brand/horain-design-system.pdf) */
+  --horain-lime: #C4F169;
+  --horain-ink: #15181E;
+  --horain-gray: #66696F;
+  --horain-paper: #F7F8FA;
+  --horain-mist: #EEF0F3;
+  --horain-lime-pale: #EDFAD1;
+
+  /* Type */
+  --font-display: 'Unbounded', 'Geist', system-ui, sans-serif;
+  --font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', 'DejaVu Sans Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  /* Radii: rounded-square icon and logo capsule */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 72px;
+
+  /* Layout */
+  --header-h: 60px;
+  --col-left: 240px;
+  --col-right: 340px;
+  --gutter: 16px;
+  --page-max: 1240px;
+
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --t-fast: 120ms;
+  --t-med: 220ms;
+}
+
+/* ---------- Themes. HORAIN is the default and lives on :root. ---------- */
+
+:root,
+[data-theme="horain"] {
+  --bg: #15181E;
+  --panel: #1B1F26;
+  --panel-2: #232830;
+  --fg: #F7F8FA;
+  --fg-2: #A3A7AE;
+  --accent: #C4F169;
+  --accent-text: #C4F169;
+  --accent-ink: #15181E;
+  --accent-soft: rgba(196, 241, 105, .12);
+  --line: #2C313A;
+  --danger: #FF6B5A;
+  --out-ink: #C4F169;
+  --out-bg: #15181E;
+  color-scheme: dark;
+}
+
+[data-theme="claro"] {
+  --bg: #F7F8FA;
+  --panel: #FFFFFF;
+  --panel-2: #EEF0F3;
+  --fg: #15181E;
+  --fg-2: #5F636A;
+  --accent: #C4F169;
+  --accent-text: #4A7300;
+  --accent-ink: #15181E;
+  --accent-soft: #EDFAD1;
+  --line: #DCDFE4;
+  --danger: #C62828;
+  --out-ink: #15181E;
+  --out-bg: #F7F8FA;
+  color-scheme: light;
+}
+
+[data-theme="amber"] {
+  --bg: #0B0B0A;
+  --panel: #141311;
+  --panel-2: #1C1A17;
+  --fg: #E8E4D8;
+  --fg-2: #8A8578;
+  --accent: #FFB000;
+  --accent-text: #FFB000;
+  --accent-ink: #0B0B0A;
+  --accent-soft: rgba(255, 176, 0, .12);
+  --line: #2A2824;
+  --danger: #FF5A3C;
+  --out-ink: #FFB000;
+  --out-bg: #0B0B0A;
+  color-scheme: dark;
+}
+
+[data-theme="crt"] {
+  --bg: #050A06;
+  --panel: #0B140D;
+  --panel-2: #102016;
+  --fg: #C8F7D2;
+  --fg-2: #5F8F6A;
+  --accent: #39FF6A;
+  --accent-text: #39FF6A;
+  --accent-ink: #050A06;
+  --accent-soft: rgba(57, 255, 106, .10);
+  --line: #183020;
+  --danger: #FF5A3C;
+  --out-ink: #39FF6A;
+  --out-bg: #050A06;
+  color-scheme: dark;
+}
+
+[data-theme="paper"] {
+  --bg: #EFECE4;
+  --panel: #E6E2D6;
+  --panel-2: #DCD7C8;
+  --fg: #111111;
+  --fg-2: #5B5850;
+  --accent: #E5402A;
+  --accent-text: #B3261E;
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(229, 64, 42, .10);
+  --line: #C9C4B5;
+  --danger: #B3261E;
+  --out-ink: #111111;
+  --out-bg: #EFECE4;
+  color-scheme: light;
+}
+
+[data-theme="cad"] {
+  --bg: #0D2A4A;
+  --panel: #10335A;
+  --panel-2: #163E6B;
+  --fg: #E6F0FF;
+  --fg-2: #8FB0D9;
+  --accent: #7FD4FF;
+  --accent-text: #7FD4FF;
+  --accent-ink: #0D2A4A;
+  --accent-soft: rgba(127, 212, 255, .12);
+  --line: #2C5A8C;
+  --danger: #FF7A6B;
+  --out-ink: #E6F0FF;
+  --out-bg: #0D2A4A;
+  color-scheme: dark;
+}
+
+/* ---------- Theme extras ---------- */
+
+/* CRT: very subtle scanlines (opacity <= .06) */
+[data-theme="crt"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .06) 0, rgba(0, 0, 0, .06) 1px, transparent 1px, transparent 3px);
+}
+
+/* CAD: drafting grid, minor lines every 8px and major every 64px */
+[data-theme="cad"] body {
+  --grid-minor: color-mix(in srgb, var(--line) 38%, transparent);
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size: 64px 64px, 64px 64px, 8px 8px, 8px 8px;
+  background-position: -1px -1px;
+}
