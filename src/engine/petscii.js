@@ -49,8 +49,8 @@ def('blocks', 'shade-rows', (x, y) => y % 2 === 0);
 def('blocks', 'shade-cols', (x) => x % 2 === 0);
 
 // ---- thin lines, corners, grids ------------------------------------------------------------------------------------
-for (const y0 of [0, 2, 3, 4, 5, 7]) def('lines', `line-h-${y0}`, (x, y) => y === y0);
-for (const x0 of [0, 2, 3, 4, 5, 7]) def('lines', `line-v-${x0}`, (x) => x === x0);
+for (const y0 of [0, 2, 3, 4, 5, 6]) def('lines', `line-h-${y0}`, (x, y) => y === y0);
+for (const x0 of [1, 2, 3, 4, 5, 7]) def('lines', `line-v-${x0}`, (x) => x === x0);
 def('lines', 'cross', (x, y) => x === 3 || y === 3);
 def('lines', 'corner-tl', (x, y) => (y === 3 && x >= 3) || (x === 3 && y >= 3));
 def('lines', 'corner-tr', (x, y) => (y === 3 && x <= 3) || (x === 3 && y >= 3));

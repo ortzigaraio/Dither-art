@@ -4,6 +4,7 @@
 import ascii from './ascii.js';
 import braille from './braille.js';
 import ansi from './ansi.js';
+import petscii from './petscii.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -11,6 +12,7 @@ export const MODES = [
   ascii,
   braille,
   ansi,
+  petscii,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
