@@ -235,3 +235,46 @@ test.describe('heavy worker', () => {
     expect(res.spawnedDelta).toBe(0);
   });
 });
+
+test.describe('pipeline and worker restarts', () => {
+  test('a job killed by a worker restart (someone else cancelled) is "aborted, render again", not a mode error', async ({ page }) => {
+    const guard = watchPage(page);
+    await gotoApp(page);
+    const res = await page.evaluate(async () => {
+      const { createPipeline } = await import('/src/engine/pipeline.js');
+      const { getMode } = await import('/src/modes/index.js');
+      const { defaultsOf } = await import('/src/state.js');
+      const { IMAGE_PARAMS } = await import('/src/engine/preprocess.js');
+      const { COLOR_PARAMS } = await import('/src/engine/color.js');
+      const heavy = await import('/src/engine/heavy.js');
+      const c = document.createElement('canvas');
+      c.width = 640; c.height = 400;
+      const g = c.getContext('2d');
+      g.fillStyle = '#888'; g.fillRect(0, 0, 640, 400); g.fillStyle = '#fff'; g.fillRect(100, 100, 200, 150);
+      const source = { id: 's', kind: 'image', width: 640, height: 400, version: 1, animated: false, frame: () => c, dispose() {} };
+      const mode = getMode('petscii');
+      const params = { global: defaultsOf(IMAGE_PARAMS), color: defaultsOf(COLOR_PARAMS), depth: {}, postfx: {}, mode: { ...defaultsOf(mode.params), grid: '80' } };
+      let invalidated = 0;
+      const pipe = createPipeline({ onInvalidate: () => { invalidated++; } });
+      // a stuck job of another caller, cancelled while the PETSCII job runs on the same worker -> worker restarted
+      const blocker = heavy.run('debug.block', { ms: 3000 }).catch((e) => e.name);
+      const job = pipe.render({ source, mode, params, time: 0, quality: 'full', theme: { ink: '#c4f169', bg: '#15181e' } });
+      await new Promise((r) => setTimeout(r, 30));
+      heavy.cancelAll();
+      const firstTry = await job;
+      // what the studio does on onInvalidate(): render again (the restart can take one more job with it: up to 400 ms)
+      let again = firstTry;
+      for (let i = 0; i < 6 && again.retry; i++) {
+        await new Promise((r) => setTimeout(r, 150));
+        again = await pipe.render({ source, mode, params, time: 0, quality: 'full', theme: { ink: '#c4f169', bg: '#15181e' } });
+      }
+      return { first: { aborted: !!firstTry.aborted, retry: !!firstTry.retry, error: firstTry.error ? String(firstTry.error) : null }, invalidated, again: { ok: !!again.canvas && !again.error, aborted: !!again.aborted, retry: !!again.retry, error: again.error ? String(again.error) : null, w: again.width }, blocker: await blocker };
+    });
+    // the PETSCII job waits behind the stuck one; cancelAll() terminates the worker and fails both:
+    // the pipeline reports "aborted, render again" (no error, no console.error) and asks for a re-render
+    expect(res.first).toEqual({ aborted: true, retry: true, error: null });
+    expect(res.invalidated).toBeGreaterThan(0);
+    expect(res.again, JSON.stringify(res.again)).toMatchObject({ ok: true, error: null });
+    await guard.assertClean(expect);
+  });
+});

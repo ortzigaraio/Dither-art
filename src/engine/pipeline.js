@@ -200,6 +200,12 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
       if (err?.name === 'AbortError' && abortCtl.signal.aborted) {
         return { aborted: true, canvas: null, width: 0, height: 0, meta: {}, error: null, ms: performance.now() - t0 };
       }
+      if (err?.name === 'AbortError') {
+        // Not ours: the shared worker was restarted to stop another caller's job (heavy.js rejects every job in
+        // flight on it). Nothing is wrong with this mode: report it as aborted and ask for a fresh render.
+        onInvalidate?.();
+        return { aborted: true, retry: true, canvas: null, width: 0, height: 0, meta: {}, error: null, ms: performance.now() - t0 };
+      }
       error = err;
       console.error(`[dither] mode "${mode.id}" failed to render`, err);
       drawFallback(frame, crop);

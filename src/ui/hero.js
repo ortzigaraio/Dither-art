@@ -190,7 +190,9 @@ export function createHome({ onOpenMode }) {
     const params = paramsFor(mode.id, mode.thumb || {}, 64);
     const time = THUMB_T0 + i * THUMB_STEP;
     const t0 = performance.now();
-    const r = await thumbPipe.render({ source: thumbSource, mode, params, time, quality: 'full', outScale: 1, theme });
+    let r = await thumbPipe.render({ source: thumbSource, mode, params, time, quality: 'full', outScale: 1, theme });
+    // the shared worker was restarted under this job (another caller cancelled a stuck task): try again
+    for (let i = 0; i < 2 && r.retry; i++) r = await thumbPipe.render({ source: thumbSource, mode, params, time, quality: 'full', outScale: 1, theme });
     if (!r.canvas) return -1; // WebGL context lost: drawn again when the card comes back into view
     keepFrame(card, r.canvas, i);
     return performance.now() - t0;
