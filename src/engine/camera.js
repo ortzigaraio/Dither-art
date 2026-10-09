@@ -51,23 +51,25 @@ export function cameraParams(d, labels = {}) {
   ];
 }
 
-/** Camera values after a drag of (dx, dy) CSS px (orbit). */
+const r6 = (v) => Math.round(v * 1e6) / 1e6;
+
+/** Camera values after a drag of (dx, dy) CSS px (orbit). Not rounded: the caller accumulates small moves. */
 export function orbitBy(cam, dx, dy) {
   let yaw = cam.yaw - dx * 0.4;
   yaw = ((((yaw + 180) % 360) + 360) % 360) - 180;
   const pitch = Math.max(-89, Math.min(89, cam.pitch + dy * 0.3));
-  return { yaw: Math.round(yaw), pitch: Math.round(pitch) };
+  return { yaw: r6(yaw), pitch: r6(pitch) };
 }
 
 /** Camera values after a Shift-drag of (dx, dy) CSS px over a viewport `size` px tall (pan). */
 export function panBy(cam, dx, dy, size) {
   const k = 2 / Math.max(100, size);
   const clamp = (v) => Math.max(-CAMERA_LIMITS.maxPan, Math.min(CAMERA_LIMITS.maxPan, v));
-  return { panX: Number(clamp(cam.panX - dx * k).toFixed(2)), panY: Number(clamp(cam.panY + dy * k).toFixed(2)) };
+  return { panX: r6(clamp(cam.panX - dx * k)), panY: r6(clamp(cam.panY + dy * k)) };
 }
 
 /** Camera distance after a wheel delta (positive = away). */
 export function dollyBy(cam, deltaY) {
   const d = cam.distance * Math.exp(deltaY * 0.0012);
-  return { distance: Number(Math.max(CAMERA_LIMITS.minDistance, Math.min(CAMERA_LIMITS.maxDistance, d)).toFixed(2)) };
+  return { distance: r6(Math.max(CAMERA_LIMITS.minDistance, Math.min(CAMERA_LIMITS.maxDistance, d))) };
 }
