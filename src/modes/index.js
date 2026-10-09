@@ -17,6 +17,7 @@ import pixelsort from './pixelsort.js';
 import crosshatch from './crosshatch.js';
 import contours from './contours.js';
 import voronoi from './voronoi.js';
+import flowfield from './flowfield.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -37,6 +38,7 @@ export const MODES = [
   crosshatch,
   contours,
   voronoi,
+  flowfield,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
