@@ -595,6 +595,10 @@ body.is-dragging .drop-overlay { display: flex; }
 }
 .input:hover { border-color: var(--accent-text); }
 .input:focus { border-color: var(--accent-text); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.input.is-invalid { border-color: var(--danger); }
+.input.is-invalid:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent); }
+.ctl-error { margin: 0; font-size: 12px; line-height: 1.4; color: var(--danger); }
+.ctl-error[hidden] { display: none; }
 
 /* Colour: swatch + editable hex */
 .color-row { display: flex; align-items: center; gap: 8px; }

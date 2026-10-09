@@ -281,6 +281,8 @@ export function createViewer({ onZoomChange } = {}) {
       canvas.dataset.rows = String(result.meta?.rows ?? result.workHeight);
       canvas.dataset.outScale = String(k);
       canvas.dataset.depth = result.meta?.depthSource || ''; // 3D modes: which depth source drew this frame
+      // simulations: simulated seconds since the seed (what a PNG export reproduces)
+      canvas.dataset.simTime = Number.isFinite(result.meta?.exportTime) ? result.meta.exportTime.toFixed(3) : '';
     },
 
     /** `res` = "160×72" text, plus fps (0 hides it) and render milliseconds. */
