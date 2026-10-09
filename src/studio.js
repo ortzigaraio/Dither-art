@@ -2,7 +2,7 @@
 // main.js only boots the page and decides which view is visible.
 
 import { t, tl, onLangChange } from './i18n/i18n.js';
-import { createStore, decodeShareHash } from './state.js';
+import { createStore, decodeShareHash, sanitizeState } from './state.js';
 import { getMode, modeAvailable, MODES } from './modes/index.js';
 import { createPipeline } from './engine/pipeline.js';
 import { cropRect } from './engine/preprocess.js';
@@ -12,6 +12,8 @@ import { createControls } from './ui/controls.js';
 import { createModeList } from './ui/modeList.js';
 import { createExportGroup } from './ui/exportPanel.js';
 import { createInputGroup, describeSource } from './ui/inputPanel.js';
+import { createPresetsGroup } from './ui/presets.js';
+import { stateWithPreset, surprise as surpriseParams } from './presets.js';
 import { createTransport } from './ui/transport.js';
 import { openExportDialog } from './ui/exportDialog.js';
 import * as vx from './io/exportVideo.js';
@@ -26,6 +28,7 @@ import * as heavy from './engine/heavy.js';
 import { loadDepthAI, depthAIStatus } from './engine/depth.js';
 import { orbitBy, panBy, dollyBy } from './engine/camera.js';
 import { confirmDepthDownload } from './ui/depthDialog.js';
+import { initShortcuts, openShortcutsHelp } from './ui/shortcuts.js';
 
 const AI_CONSENT_KEY = 'horain.depthAI';
 const hasAIConsent = () => { try { return localStorage.getItem(AI_CONSENT_KEY) === '1'; } catch { return false; } };
@@ -55,6 +58,7 @@ export function createStudio({ onChangeFile }) {
   let dragging = false;
   let theme = themeOutputColors();
   let lastTime = 0;
+  let lastExportTime = null; // meta.exportTime of the last preview frame, if the mode reports one
   let autoScale = 1;
   let slowFrames = 0;
   let exporting = false;
@@ -150,6 +154,8 @@ export function createStudio({ onChangeFile }) {
     if (result.aborted) return; // a parameter changed while a heavy job ran: the loop renders again (dirty)
     if (result.lost) return; // WebGL context lost: keep the last frame until it is restored (the pipeline re-renders)
 
+    // a mode whose picture depends on its own clock (a simulation started at RESET) tells exports which time to render
+    lastExportTime = Number.isFinite(result.meta?.exportTime) ? result.meta.exportTime : null;
     lastLogical = { w: result.width / result.outScale, h: result.height / result.outScale };
     viewer.present(result, {
       drawOriginal: (g, w, h) => {
@@ -209,7 +215,7 @@ export function createStudio({ onChangeFile }) {
   }
 
   const exportBase = () => ({
-    source, mode: mode(), params: paramsNow(), time: lastTime, quality: 'full', isExport: true, theme,
+    source, mode: mode(), params: paramsNow(), time: lastExportTime ?? lastTime, quality: 'full', isExport: true, theme,
   });
 
   /** Render a full-quality export pass and return { result, state }. */
@@ -239,6 +245,25 @@ export function createStudio({ onChangeFile }) {
     if (out.result.outScale < scale * 0.999) clamped = true; // the mode itself rendered smaller than requested
     if (clamped) toast(t('export.scaleClamped', { px: Math.max(out.result.width, out.result.height) }), { type: 'warn' });
     return canvasToBlob(out.result.canvas, 'image/png');
+  }
+
+  // ---- presets, "Surprise me" and share links (PLAN.md 10) -----------------------------------------
+  function shareUrl() {
+    return `${location.origin}${location.pathname}${store.shareHash()}`;
+  }
+  function applyPreset(preset, modeId = store.state.modeId) {
+    const next = stateWithPreset(store.state, modeId, preset);
+    if (!next) { toastError(t('presets.err.invalid')); return false; }
+    if (!modeAvailable(getMode(next.modeId))) { toastWarn(t('err.noWebGL2')); return false; }
+    store.replace(next);
+    toast(t('presets.applied', { name: typeof preset.name === 'string' ? preset.name : tl(preset.name) }));
+    return true;
+  }
+  function surpriseMe() {
+    const m = mode();
+    const next = JSON.parse(JSON.stringify(store.state));
+    next.modes[m.id] = surpriseParams(m, store.state.modes[m.id]);
+    store.replace(sanitizeState(next));
   }
 
   const actions = {
@@ -296,7 +321,7 @@ export function createStudio({ onChangeFile }) {
     share: async () => {
       const hash = store.shareHash();
       try { history.replaceState(null, '', hash); } catch { /* sandboxed frame */ }
-      const url = `${location.origin}${location.pathname}${hash}`;
+      const url = shareUrl();
       if (await copyText(url)) toast(t('export.shareCopied'));
       else toastWarn(t('export.shareFailed'));
     },
@@ -524,10 +549,17 @@ export function createStudio({ onChangeFile }) {
     extra: {
       input: () => (source ? createInputGroup(source, { onChange: onChangeFile }) : null),
       export: () => createExportGroup(mode(), actions, { video: canExportVideo() }),
+      presets: () => createPresetsGroup({
+        mode: mode(), store, apply: applyPreset, surprise: surpriseMe, shareUrl, share: actions.share,
+      }).el,
     },
     onAction: (param) => {
       if (param.action === 'depthAI') enableDepthAI();
-      else if (Array.isArray(param.resets)) {
+      else if (param.action && typeof mode().onAction === 'function') {
+        // a mode-specific action (e.g. restart a simulation): the mode updates its preview state
+        mode().onAction(param.action, pipeline.getState(mode().id));
+        scheduler.markDirty();
+      } else if (Array.isArray(param.resets)) {
         // e.g. "Reset camera": restore these params of the current mode to their defaults
         const m = mode();
         for (const id of param.resets) {
@@ -654,6 +686,26 @@ export function createStudio({ onChangeFile }) {
     controls.rebuild();
   });
 
+  // ---- keyboard shortcuts (PLAN.md 4.7) ----------------------------------------------------------------
+  function cycleMode(dir) {
+    const list = MODES.filter((m) => modeAvailable(m));
+    const i = list.findIndex((m) => m.id === store.state.modeId);
+    const next = list[(i + dir + list.length) % list.length];
+    store.setModeId(next.id);
+    document.querySelector(`#mode-list [data-mode-id="${next.id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  initShortcuts({
+    inStudio: () => active && !!source,
+    cycleMode,
+    resetMode: () => { store.resetGroup('mode'); toast(t('keys.didReset', { mode: tl(mode().name) })); },
+    exportImage: () => actions.png(1),
+    copy: () => (mode().exports?.includes('txt') ? actions.copyText() : actions.copyImage()),
+    fullscreen: () => viewer.toggleFullscreen(),
+    split: () => viewer.toggleSplit(),
+    surprise: () => surpriseMe(),
+  });
+  document.getElementById('vw-keys')?.addEventListener('click', () => openShortcutsHelp());
+
   scheduler.start();
 
   return {
@@ -707,5 +759,7 @@ export function createStudio({ onChangeFile }) {
 
     actions,
     scheduler,
+    applyPreset,
+    surprise: surpriseMe,
   };
 }

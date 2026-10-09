@@ -13,35 +13,35 @@ export const CAMERA_LIMITS = { minDistance: 0.6, maxDistance: 12, maxPan: 2 };
 export function cameraParams(d, labels = {}) {
   return [
     {
-      id: 'yaw', type: 'range', min: -180, max: 180, step: 1, default: d.yaw ?? 0, unit: '°',
+      id: 'yaw', type: 'range', min: -180, max: 180, step: 1, default: d.yaw ?? 0, unit: '°', randomRange: [-60, 60],
       label: labels.yaw || { es: 'Giro (yaw)', en: 'Yaw' },
       help: { es: 'Rotación de la cámara alrededor del objeto. Arrastra en el visor para orbitar.', en: 'Camera rotation around the object. Drag in the viewer to orbit.' },
     },
     {
-      id: 'pitch', type: 'range', min: -89, max: 89, step: 1, default: d.pitch ?? 20, unit: '°',
+      id: 'pitch', type: 'range', min: -89, max: 89, step: 1, default: d.pitch ?? 20, unit: '°', randomRange: [5, 50],
       label: labels.pitch || { es: 'Inclinación (pitch)', en: 'Pitch' },
     },
     {
-      id: 'distance', type: 'range', min: CAMERA_LIMITS.minDistance, max: CAMERA_LIMITS.maxDistance, step: 0.05, default: d.distance ?? 3,
+      id: 'distance', type: 'range', min: CAMERA_LIMITS.minDistance, max: CAMERA_LIMITS.maxDistance, step: 0.05, default: d.distance ?? 3, random: false,
       label: { es: 'Distancia', en: 'Distance' },
       help: { es: 'La rueda del ratón sobre el visor acerca o aleja la cámara.', en: 'The mouse wheel over the viewer moves the camera in and out.' },
     },
     {
-      id: 'fov', type: 'range', min: 10, max: 100, step: 1, default: d.fov ?? 45, unit: '°',
+      id: 'fov', type: 'range', min: 10, max: 100, step: 1, default: d.fov ?? 45, unit: '°', random: false,
       label: { es: 'Campo de visión', en: 'Field of view' },
     },
     {
-      id: 'autoRotate', type: 'range', min: -90, max: 90, step: 1, default: d.autoRotate ?? 0, unit: '°/s',
+      id: 'autoRotate', type: 'range', min: -90, max: 90, step: 1, default: d.autoRotate ?? 0, unit: '°/s', random: false,
       label: labels.autoRotate || { es: 'Auto-rotación', en: 'Auto-rotate' },
       help: { es: 'Grados por segundo. En la exportación de video usa el tiempo de cada fotograma.', en: 'Degrees per second. Video exports use each frame\'s time.' },
     },
     {
-      id: 'panX', type: 'range', min: -CAMERA_LIMITS.maxPan, max: CAMERA_LIMITS.maxPan, step: 0.01, default: 0,
+      id: 'panX', type: 'range', min: -CAMERA_LIMITS.maxPan, max: CAMERA_LIMITS.maxPan, step: 0.01, default: 0, random: false,
       label: { es: 'Desplazamiento X', en: 'Pan X' },
       help: { es: 'Mayús + arrastrar en el visor desplaza la cámara.', en: 'Shift + drag in the viewer pans the camera.' },
     },
     {
-      id: 'panY', type: 'range', min: -CAMERA_LIMITS.maxPan, max: CAMERA_LIMITS.maxPan, step: 0.01, default: 0,
+      id: 'panY', type: 'range', min: -CAMERA_LIMITS.maxPan, max: CAMERA_LIMITS.maxPan, step: 0.01, default: 0, random: false,
       label: { es: 'Desplazamiento Y', en: 'Pan Y' },
     },
     {

@@ -53,6 +53,12 @@ export default {
   exports: ['png', 'txt', 'html', 'ansi', 'video'],
   draftScale: 1, // cheap enough to render at full quality while dragging
 
+  presets: [
+    { id: 'classic', name: { es: 'Clásico', en: 'Classic' }, mode: { gradient: 'standard' }, color: { colorMode: 'mono', ink: null, bg: null } },
+    { id: 'matrix', name: { es: 'Matrix', en: 'Matrix' }, mode: { gradient: 'katakana' }, color: { colorMode: 'mono', ink: '#00ff41', bg: '#031205' } },
+    { id: 'blocks', name: { es: 'Bloques color', en: 'Color blocks' }, mode: { gradient: 'blocks', spaceDensity: 0 }, color: { colorMode: 'original' } },
+  ],
+
   params: [
     {
       id: 'gradient', type: 'select', default: 'standard', options: GRADIENT_OPTIONS,
@@ -75,7 +81,7 @@ export default {
       label: { es: 'Invertir gradiente', en: 'Invert gradient' },
     },
     {
-      id: 'spaceDensity', type: 'range', min: 0, max: 20, step: 1, default: 1,
+      id: 'spaceDensity', type: 'range', min: 0, max: 20, step: 1, default: 1, randomRange: [0, 4],
       label: { es: 'Densidad de espacio', en: 'Space Density' },
       help: { es: 'Repite el espacio al inicio del gradiente: más zonas vacías en las luces.', en: 'Repeats the space at the start of the gradient: more empty areas in the highlights.' },
     },
@@ -95,16 +101,16 @@ export default {
       label: { es: 'Fuente', en: 'Font' },
     },
     {
-      id: 'cellSize', type: 'range', min: 6, max: 32, step: 1, default: 12, unit: 'px',
+      id: 'cellSize', type: 'range', min: 6, max: 32, step: 1, default: 12, unit: 'px', random: false,
       label: { es: 'Tamaño de celda', en: 'Cell size' },
       help: { es: 'Tamaño de la fuente en píxeles (no cambia el número de columnas).', en: 'Font size in pixels (does not change the number of columns).' },
     },
     {
-      id: 'lineHeight', type: 'range', min: 0.8, max: 1.4, step: 0.05, default: 1,
+      id: 'lineHeight', type: 'range', min: 0.8, max: 1.4, step: 0.05, default: 1, randomRange: [0.9, 1.15],
       label: { es: 'Altura de línea', en: 'Line height' },
     },
     {
-      id: 'letterSpacing', type: 'range', min: -2, max: 4, step: 0.5, default: 0, unit: 'px',
+      id: 'letterSpacing', type: 'range', min: -2, max: 4, step: 0.5, default: 0, unit: 'px', randomRange: [-0.5, 1],
       label: { es: 'Espaciado de letras', en: 'Letter spacing' },
     },
   ],

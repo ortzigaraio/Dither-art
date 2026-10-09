@@ -50,7 +50,11 @@ Phases 0, 1 and 2, and the text and pixel modes of phase 3, are in place:
   zooming the picture). Depth is the picture's brightness by default; **Enhance with AI** downloads Depth Anything V2 once
   (≈27–50 MB, after a confirmation) and runs it in a worker in your browser. Without WebGL2 these modes are listed but disabled.
 
-The simulation styles come in a later phase.
+- **Simulation** (phase 6, WebGL2): **Reaction-diffusion / Life**. Gray-Scott reaction-diffusion whose feed and kill rates
+  follow the picture's brightness (coral, mitosis, labyrinth, worms, spots and fingerprint presets as editable sliders, seeds
+  from the picture's edges, random or the centre, embossed relief), or Life-like cellular automata (Life, HighLife, Day & Night,
+  Seeds or any `B/S` rule) seeded with the dithered picture, with an image lock that keeps the picture alive. Both are
+  deterministic on the frame time, so video exports are reproducible; *Restart simulation* starts again from the seed.
 
 ## Run
 

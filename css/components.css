@@ -303,7 +303,7 @@ body.is-dragging .drop-overlay { display: flex; }
 .term-dots { display: inline-flex; gap: 5px; }
 .term-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; }
 .term-dots i:first-child { background: var(--accent); }
-.term canvas { width: 100%; height: auto; aspect-ratio: 640 / 420; background: var(--out-bg); }
+.term canvas { width: 100%; height: auto; aspect-ratio: 640 / 420; object-fit: contain; background: var(--out-bg); }
 
 .mode-card {
   display: flex;
@@ -319,7 +319,7 @@ body.is-dragging .drop-overlay { display: flex; }
   transition: border-color var(--t-fast), transform var(--t-med) var(--ease), box-shadow var(--t-med);
 }
 .mode-card:hover { border-color: var(--accent-text); transform: translateY(-3px); box-shadow: 0 14px 36px -22px var(--accent); }
-.mode-card canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; background: var(--out-bg); border-bottom: 1px solid var(--line); }
+.mode-card canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; object-fit: cover; background: var(--out-bg); border-bottom: 1px solid var(--line); }
 .mode-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .mode-card-name { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; letter-spacing: -.02em; text-transform: lowercase; }
 .mode-card-blurb { color: var(--fg-2); font-size: 13.5px; }
@@ -595,6 +595,10 @@ body.is-dragging .drop-overlay { display: flex; }
 }
 .input:hover { border-color: var(--accent-text); }
 .input:focus { border-color: var(--accent-text); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.input.is-invalid { border-color: var(--danger); }
+.input.is-invalid:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent); }
+.ctl-error { margin: 0; font-size: 12px; line-height: 1.4; color: var(--danger); }
+.ctl-error[hidden] { display: none; }
 
 /* Colour: swatch + editable hex */
 .color-row { display: flex; align-items: center; gap: 8px; }
@@ -917,6 +921,7 @@ body.is-dragging .drop-overlay { display: flex; }
   .studio-panel[data-tab="image"] .group:not([data-tab="image"]),
   .studio-panel[data-tab="mode"] .group:not([data-tab="mode"]),
   .studio-panel[data-tab="color"] .group:not([data-tab="color"]),
+  .studio-panel[data-tab="fx"] .group:not([data-tab="fx"]),
   .studio-panel[data-tab="export"] .group:not([data-tab="export"]) { display: none; }
   .viewer-toolbar { padding: 8px var(--gutter); }
   .viewer-toolbar .vw-full { display: none; }
@@ -998,3 +1003,78 @@ body.is-dragging .drop-overlay { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   .dz-arrow { animation: none; }
 }
+
+/* ---- Phase 7: notes inside a settings group ---- */
+.group-note { margin: 0 0 10px; font-size: 12px; line-height: 1.45; }
+
+/* ---- presets group ---- */
+.preset-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.preset-chips .preset-surprise { margin-left: auto; }
+.preset-row { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.preset-row .input { flex: 1 1 auto; min-width: 0; }
+.preset-row .btn { flex: 0 0 auto; }
+.preset-user .preset-row { margin-top: 8px; }
+.preset-user .preset-row .btn { flex: 1 1 0; }
+.preset-files { margin: 4px 0 14px; }
+.preset-share .group-note { margin-top: 6px; }
+
+/* ---- visit counter: retro odometer (PLAN.md 17) ---- */
+.visit-counter {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  grid-template-areas: "label odo" ". today";
+  align-items: center;
+  gap: 4px 12px;
+}
+.visit-counter[hidden] { display: none; }
+.vc-label { grid-area: label; }
+.vc-odo { grid-area: odo; display: inline-flex; gap: 3px; }
+.vc-digit {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.5em;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.5em;
+  text-align: center;
+  color: var(--fg);
+}
+.vc-strip { display: flex; flex-direction: column; transform: translateY(0); transition: transform 1.4s cubic-bezier(.2, .8, .2, 1); }
+.vc-strip > span { display: block; height: 1.5em; }
+.vc-digit:nth-child(2) .vc-strip { transition-delay: 60ms; }
+.vc-digit:nth-child(3) .vc-strip { transition-delay: 120ms; }
+.vc-digit:nth-child(4) .vc-strip { transition-delay: 180ms; }
+.vc-digit:nth-child(5) .vc-strip { transition-delay: 240ms; }
+.vc-digit:nth-child(6) .vc-strip { transition-delay: 300ms; }
+.vc-still .vc-strip { transition: none; }
+.vc-today { grid-area: today; font-size: 12px; color: var(--fg-2); }
+@media (prefers-reduced-motion: reduce) { .vc-strip { transition: none; } }
+
+/* ---- keyboard shortcuts overlay (PLAN.md 4.7) ---- */
+.keys-dialog { width: min(560px, calc(100vw - 32px)); }
+.keys-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.keys-list { margin: 0; display: grid; grid-template-columns: 1fr; gap: 0; }
+.keys-row { display: grid; grid-template-columns: minmax(96px, auto) 1fr; gap: 14px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.keys-row:first-child { border-top: 0; }
+.keys-row dt { display: flex; flex-wrap: wrap; gap: 4px; }
+.keys-row dd { margin: 0; font-size: 13.5px; }
+.kbd {
+  display: inline-block;
+  min-width: 1.9em;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--fg);
+}
+.vw-keys { min-width: 34px; }
