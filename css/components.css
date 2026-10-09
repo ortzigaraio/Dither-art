@@ -1078,3 +1078,16 @@ body.is-dragging .drop-overlay { display: flex; }
   color: var(--fg);
 }
 .vw-keys { min-width: 34px; }
+
+/* ---- about: privacy and Horain blocks, footer link-buttons ---- */
+.about-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.about-block { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); min-width: 0; }
+.about-block h3 { margin: 0 0 12px; font-size: 1.25rem; color: var(--accent-text); letter-spacing: -.02em; }
+.about-block p { color: var(--fg-2); margin: 0 0 12px; }
+.about-block .credits { margin: 0; font-size: 12.5px; }
+.privacy-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; color: var(--fg-2); }
+.privacy-list li { position: relative; padding-left: 18px; }
+.privacy-list li::before { content: "┄"; position: absolute; left: 0; color: var(--accent-text); }
+.link-btn { padding: 0; border: 0; background: none; font: inherit; color: var(--fg-2); cursor: pointer; text-decoration: none; }
+.link-btn:hover { color: var(--accent-text); text-decoration: underline; }
+@media (max-width: 899px) { .about-more { grid-template-columns: minmax(0, 1fr); } }

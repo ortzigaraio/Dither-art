@@ -7,6 +7,7 @@ import { toast, toastError, toastWarn } from './ui/toast.js';
 import { createHome } from './ui/hero.js';
 import { createStudio } from './studio.js';
 import { initVisitCounter } from './ui/visitCounter.js';
+import { openShortcutsHelp } from './ui/shortcuts.js';
 import { MODES } from './modes/index.js';
 import { LIMITS } from './config.js';
 import { blueNoise } from './engine/dither.js';
@@ -175,6 +176,7 @@ function boot() {
   document.documentElement.dataset.ready = 'true';
   // Visit counter (PLAN.md 17): hidden without a Worker URL; any failure keeps it hidden, silently
   initVisitCounter(document.getElementById('visit-counter')).catch(() => {});
+  document.getElementById('footer-keys')?.addEventListener('click', () => openShortcutsHelp());
   // Build the 64x64 blue-noise table (about 60 ms) while the browser is idle instead of on first use
   (window.requestIdleCallback || ((fn) => setTimeout(fn, 1500)))(() => blueNoise(), { timeout: 4000 });
 }
