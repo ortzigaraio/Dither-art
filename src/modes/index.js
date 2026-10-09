@@ -18,6 +18,7 @@ import crosshatch from './crosshatch.js';
 import contours from './contours.js';
 import voronoi from './voronoi.js';
 import flowfield from './flowfield.js';
+import vectrex from './vectrex.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -39,6 +40,7 @@ export const MODES = [
   contours,
   voronoi,
   flowfield,
+  vectrex,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
