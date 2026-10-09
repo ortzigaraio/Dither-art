@@ -121,7 +121,7 @@
   --fg-2: #5B5850;
   --accent: #E5402A;
   --accent-text: #B3261E;
-  --accent-ink: #FFFFFF;
+  --accent-ink: #111111; /* #FFFFFF in PLAN.md 4.1 was 4.12:1; ink reaches AA (4.6:1), PLAN.md 19 */
   --accent-soft: rgba(229, 64, 42, .10);
   --line: #C9C4B5;
   --danger: #B3261E;

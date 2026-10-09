@@ -164,15 +164,16 @@
     </section>
 
     <!-- ============ STUDIO ============ -->
-    <section id="studio" class="view view-studio" aria-label="Studio" hidden>
-      <aside class="studio-modes" aria-labelledby="out-title">
+    <section id="studio" class="view view-studio" aria-labelledby="studio-h1" hidden>
+      <h1 id="studio-h1" class="sr-only" data-i18n="studio.h1">Dither studio</h1>
+      <section class="studio-modes" aria-labelledby="out-title">
         <h2 id="out-title" class="label panel-title"><span class="idx">02 /</span> <span data-i18n="studio.output">Output</span></h2>
         <label class="mode-select-wrap">
           <span class="sr-only" data-i18n="studio.mode">Mode</span>
           <select id="mode-select" class="select"></select>
         </label>
         <nav id="mode-list" class="mode-list" aria-label="Output styles" data-i18n-attr="aria-label:studio.modesNav"></nav>
-      </aside>
+      </section>
 
       <div class="studio-stage">
         <div class="viewer" id="viewer">
@@ -205,11 +206,11 @@
         <div class="transport" id="transport" hidden></div>
       </div>
 
-      <aside class="studio-panel" id="studio-panel" aria-labelledby="set-title">
+      <section class="studio-panel" id="studio-panel" aria-labelledby="set-title">
         <h2 id="set-title" class="label panel-title"><span class="idx">03 /</span> <span data-i18n="studio.settings">Settings</span></h2>
         <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Settings tabs" data-i18n-attr="aria-label:studio.tabs"></div>
         <div id="controls" class="controls"></div>
-      </aside>
+      </section>
 
     </section>
   </main>
