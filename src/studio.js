@@ -2,7 +2,7 @@
 // main.js only boots the page and decides which view is visible.
 
 import { t, tl, onLangChange } from './i18n/i18n.js';
-import { createStore, decodeShareHash } from './state.js';
+import { createStore, decodeShareHash, sanitizeState } from './state.js';
 import { getMode, modeAvailable, MODES } from './modes/index.js';
 import { createPipeline } from './engine/pipeline.js';
 import { cropRect } from './engine/preprocess.js';
@@ -12,6 +12,8 @@ import { createControls } from './ui/controls.js';
 import { createModeList } from './ui/modeList.js';
 import { createExportGroup } from './ui/exportPanel.js';
 import { createInputGroup, describeSource } from './ui/inputPanel.js';
+import { createPresetsGroup } from './ui/presets.js';
+import { stateWithPreset, surprise as surpriseParams } from './presets.js';
 import { createTransport } from './ui/transport.js';
 import { openExportDialog } from './ui/exportDialog.js';
 import * as vx from './io/exportVideo.js';
@@ -244,6 +246,25 @@ export function createStudio({ onChangeFile }) {
     return canvasToBlob(out.result.canvas, 'image/png');
   }
 
+  // ---- presets, "Surprise me" and share links (PLAN.md 10) -----------------------------------------
+  function shareUrl() {
+    return `${location.origin}${location.pathname}${store.shareHash()}`;
+  }
+  function applyPreset(preset, modeId = store.state.modeId) {
+    const next = stateWithPreset(store.state, modeId, preset);
+    if (!next) { toastError(t('presets.err.invalid')); return false; }
+    if (!modeAvailable(getMode(next.modeId))) { toastWarn(t('err.noWebGL2')); return false; }
+    store.replace(next);
+    toast(t('presets.applied', { name: typeof preset.name === 'string' ? preset.name : tl(preset.name) }));
+    return true;
+  }
+  function surpriseMe() {
+    const m = mode();
+    const next = JSON.parse(JSON.stringify(store.state));
+    next.modes[m.id] = surpriseParams(m, store.state.modes[m.id]);
+    store.replace(sanitizeState(next));
+  }
+
   const actions = {
     png: (scale) => withExport(t('viewer.rendering'), async () => {
       const blob = await pngBlob(scale);
@@ -299,7 +320,7 @@ export function createStudio({ onChangeFile }) {
     share: async () => {
       const hash = store.shareHash();
       try { history.replaceState(null, '', hash); } catch { /* sandboxed frame */ }
-      const url = `${location.origin}${location.pathname}${hash}`;
+      const url = shareUrl();
       if (await copyText(url)) toast(t('export.shareCopied'));
       else toastWarn(t('export.shareFailed'));
     },
@@ -527,6 +548,9 @@ export function createStudio({ onChangeFile }) {
     extra: {
       input: () => (source ? createInputGroup(source, { onChange: onChangeFile }) : null),
       export: () => createExportGroup(mode(), actions, { video: canExportVideo() }),
+      presets: () => createPresetsGroup({
+        mode: mode(), store, apply: applyPreset, surprise: surpriseMe, shareUrl, share: actions.share,
+      }).el,
     },
     onAction: (param) => {
       if (param.action === 'depthAI') enableDepthAI();
@@ -714,5 +738,7 @@ export function createStudio({ onChangeFile }) {
 
     actions,
     scheduler,
+    applyPreset,
+    surprise: surpriseMe,
   };
 }
