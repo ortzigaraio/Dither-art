@@ -206,4 +206,7 @@ export default {
   'info.stateIgnored': 'The shared state in the link was ignored because it is not valid.',
   'toast.region': 'Notifications',
   'toast.close': 'Close',
+  'thermal.hud.max': 'MAX',
+  'thermal.hud.min': 'MIN',
+  'thermal.hud.rec': 'REC',
 };

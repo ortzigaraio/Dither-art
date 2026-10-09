@@ -206,4 +206,7 @@ export default {
   'info.stateIgnored': 'Se ha ignorado el estado compartido del enlace porque no es válido.',
   'toast.region': 'Notificaciones',
   'toast.close': 'Cerrar',
+  'thermal.hud.max': 'MÁX',
+  'thermal.hud.min': 'MÍN',
+  'thermal.hud.rec': 'GRAB',
 };
