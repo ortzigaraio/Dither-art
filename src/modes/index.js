@@ -18,8 +18,8 @@ import crosshatch from './crosshatch.js';
 import contours from './contours.js';
 import voronoi from './voronoi.js';
 import flowfield from './flowfield.js';
-import vectrex from './vectrex.js';
 import blueprint from './blueprint.js';
+import vectrex from './vectrex.js';
 import spiral from './spiral.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
@@ -42,8 +42,8 @@ export const MODES = [
   contours,
   voronoi,
   flowfield,
-  vectrex,
   blueprint,
+  vectrex,
   spiral,
 ];
 

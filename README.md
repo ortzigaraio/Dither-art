@@ -32,7 +32,16 @@ Phases 0, 1 and 2, and the text and pixel modes of phase 3, are in place:
   **Glitch art** (eight deterministic effects, optional animation) and **Pixel sorting** (any angle, in the worker, with progress,
   cancellation and a mask view).
 
-The vector, 3D and simulation styles come in later phases.
+- **Vector modes** (phase 4): **Engraving / crosshatch** (crosshatching, banknote engraving with variable-width lines,
+  scribble), **Contour lines** (index contours with labels, hypsometric bands, hillshade), **Voronoi** (weighted stippling
+  relaxed with Lloyd in the worker and animated in the viewer, plus cells, low-poly and constellation), **Flow field**
+  (animated particles on curl noise and the picture's contours), **Blueprint CAD** (blueprint, brutalist and CAD-screen
+  variants with vector edges, hatching, automatic dimensions and an editable title block), **Vectrex** (terrain with hidden
+  lines, contours or a perspective mesh, glow and phosphor persistence) and **Spiral / squiggle** (one continuous line).
+  Every vector mode keeps its polylines in memory and exports SVG: in px or on an A4 / A3 / Letter / custom page in mm with a
+  margin, with Inkscape layers, stroke order optimised for pen plotters and a plotter mode (strokes only, no fills).
+
+The 3D and simulation styles come in later phases.
 
 ## Run
 

@@ -45,7 +45,7 @@ export default {
   'about.media.title': 'images & video',
   'about.media.body': 'Drop an image or a video, or open your camera. Videos keep their sound when you export.',
   'about.export.title': 'export',
-  'about.export.body': 'Save PNG, TXT, HTML or ANSI, or copy the result to the clipboard.',
+  'about.export.body': 'Save PNG, SVG (also for pen plotters), TXT, HTML or ANSI, or copy the result to the clipboard.',
   'about.credits': 'Algorithms: error diffusion (Floyd–Steinberg, Jarvis–Judice–Ninke, Stucki, Atkinson, Burkes, Sierra), Bayer ordered dithering and void-and-cluster blue noise. Fonts: Unbounded, Geist, Geist Mono, JetBrains Mono, VT323, IBM Plex Mono and Space Mono (SIL OFL).',
 
   'footer.nav': 'Footer',

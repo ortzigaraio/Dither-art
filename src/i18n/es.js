@@ -45,7 +45,7 @@ export default {
   'about.media.title': 'imagen y video',
   'about.media.body': 'Suelta una imagen o un video, o abre tu cámara. Los videos conservan el sonido al exportar.',
   'about.export.title': 'exporta',
-  'about.export.body': 'Guarda PNG, TXT, HTML o ANSI, o copia el resultado al portapapeles.',
+  'about.export.body': 'Guarda PNG, SVG (también para plotter), TXT, HTML o ANSI, o copia el resultado al portapapeles.',
   'about.credits': 'Algoritmos: difusión de error (Floyd–Steinberg, Jarvis–Judice–Ninke, Stucki, Atkinson, Burkes, Sierra), tramado ordenado de Bayer y ruido azul por void-and-cluster. Tipografías: Unbounded, Geist, Geist Mono, JetBrains Mono, VT323, IBM Plex Mono y Space Mono (SIL OFL).',
 
   'footer.nav': 'Pie de página',
