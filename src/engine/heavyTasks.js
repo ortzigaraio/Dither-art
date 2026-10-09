@@ -8,6 +8,7 @@
 import { getKernel, isErrorDiffusion, quantize, quantizePalette } from './dither.js';
 import { makePaletteMatcher } from './color.js';
 import { matchRows, autoBackground } from './petsciiMatch.js';
+import { buildMixTable, shadeCells } from './ansiart.js';
 
 const CHUNK_PIXELS = 60000;
 
@@ -139,6 +140,10 @@ export const TASKS = {
   quantize: (p, ctl) => quantizeAsync(p.buffer, p.w, p.h, p.levels, p.algorithm, p.opts, ctl),
   quantizePalette: (p, ctl) => quantizePaletteAsync(p.rgba, p.w, p.h, p.palette, p.algorithm, p.opts, ctl),
   petscii: (p, ctl) => petsciiAsync(p, ctl),
+  ansiShade: async (p, ctl) => {
+    ctl.check();
+    return shadeCells(p.M, p.cols, p.rows, buildMixTable(p.palette, p.bgCount), p.algorithm, p.serpentine);
+  },
 
   // Diagnostics used by the tests (cancellation, progress and the watchdog)
   'debug.sleep': async (p, ctl) => {
