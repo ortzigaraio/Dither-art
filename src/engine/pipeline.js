@@ -164,6 +164,8 @@ export function createPipeline({ onInvalidate } = {}) {
       gl: out.gl,
       outScale,
       invalidate: () => onInvalidate?.(),
+      // true when invalidate() re-renders (the studio preview): a mode may then show work in progress and finish later
+      progressive: !!onInvalidate && !isExport,
     };
 
     let meta = {};
