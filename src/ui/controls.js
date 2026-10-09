@@ -367,5 +367,12 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
     }
   }
 
-  return { rebuild, refresh };
+  /** Replace only the EXPORT group (what it offers depends on whether the mode currently moves). */
+  function rebuildExport() {
+    const old = host.querySelector('[data-group="export"]');
+    const next = extra.export?.();
+    if (old && next) old.replaceWith(next);
+  }
+
+  return { rebuild, refresh, rebuildExport };
 }
