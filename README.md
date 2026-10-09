@@ -9,7 +9,7 @@ by GitHub Pages. The full specification lives in [`PLAN.md`](PLAN.md) (in Spanis
 
 ## Status
 
-Phases 0, 1 and 2 of the plan are in place:
+Phases 0, 1 and 2, and the text modes of phase 3, are in place:
 
 - Site skeleton, brand (espino logo, barbed-wire divider, the "eye"), six themes (HORAIN, CLARO, AMBER, CRT, PAPER, CAD),
   ES/EN interface and a validated dropzone (click, drag and drop anywhere, paste, demo).
@@ -20,6 +20,10 @@ Phases 0, 1 and 2 of the plan are in place:
 - **Video and webcam** (phase 2): open a video file or the camera, play/pause/scrub/step frames, and export MP4 or WebM with the
   original sound (offline, frame by frame, with [Mediabunny](vendor/README.md)). Trim, frame rate, quality, height and audio are
   options; the camera can be recorded. Browsers without WebCodecs fall back to a real-time `MediaRecorder` recording.
+
+- **Text modes** (phase 3, part A): ASCII, **Braille** (2×4 dots), **ANSI Art** (half blocks and shading, with a CP437 `.ans`
+  export), **PETSCII** (our own 8×8 glyph set and a C64-style palette, JSON export), **Matrix rain** (animated, deterministic)
+  and **Typographic portrait** (SVG/HTML export). CPU-heavy work runs in a cancellable Web Worker with a 30 s watchdog.
 
 The other output styles come in later phases.
 
@@ -49,7 +53,8 @@ fixtures (`tests/fixtures/`, git-ignored) and fails on any console error or CSP 
 ```
 index.html        single page, CSP in a <meta> tag
 css/              tokens (6 themes), base, layout, components
-src/engine/       pipeline, preprocess, analysis, dither, color, palettes, glyphs
+src/engine/       pipeline, preprocess, analysis, dither, color, palettes, glyphs, heavy worker client and tasks
+src/workers/      heavy.worker.js (job runner with cancellation by jobId)
 src/modes/        one module per output style (interface in PLAN.md 6) + registry
 src/ui/           header, dropzone, controls (generated from schemas), viewer, mode list, export panel, hero
 src/io/           file validation by magic bytes, sources, PNG/text exports, download
@@ -62,7 +67,7 @@ tests/            Playwright suite
 ## Adding an output style
 
 Create `src/modes/<id>.js` implementing the interface of PLAN.md section 6 (parameter schema, `resolution()`,
-`render()`, optional `toText()`/`toSVG()`), then import it in `src/modes/index.js`. The settings panel, the mode list,
+`render()`, optional `toText()`/`toSVG()`/`toBinary()`/`toJSON()`), then import it in `src/modes/index.js`. The settings panel, the mode list,
 the gallery card, the exports and the share link are all generated from that module.
 
 ## Privacy
