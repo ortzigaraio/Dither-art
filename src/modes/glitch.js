@@ -26,7 +26,7 @@ const MODE = {
 
   presets: [
     { id: 'vhs', name: { es: 'Cinta VHS', en: 'VHS tape' }, mode: { rgbSplit: 0.3, bandShift: 0.35, scanlines: 0.4, noise: 0.2, interlace: 0.3, bitCrush: 0, blockCorrupt: 0, dct: 0 } },
-    { id: 'datamosh', name: { es: 'Datamosh', en: 'Datamosh' }, mode: { rgbSplit: 0.1, bandShift: 0, blockCorrupt: 0.6, blockSize: 16, dct: 0.4, noise: 0, scanlines: 0 } },
+    { id: 'datamosh', name: { es: 'Datamosh', en: 'Datamosh' }, mode: { rgbSplit: 0.1, bandShift: 0, blockCorrupt: 0.6, blockSize: '16', dct: 0.4, noise: 0, scanlines: 0 } },
     { id: 'broken', name: { es: 'Señal rota', en: 'Broken signal' }, mode: { rgbSplit: 0.6, bandShift: 0.7, bitCrush: 0.5, noise: 0.35, animate: true, rate: 10 } },
   ],
 
