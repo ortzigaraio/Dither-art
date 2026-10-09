@@ -12,6 +12,7 @@ import halftone from './halftone.js';
 import pixelart from './pixelart.js';
 import led from './led.js';
 import thermal from './thermal.js';
+import glitch from './glitch.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -27,6 +28,7 @@ export const MODES = [
   pixelart,
   led,
   thermal,
+  glitch,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
