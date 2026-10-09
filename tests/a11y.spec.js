@@ -31,6 +31,7 @@ test.describe('axe-core', () => {
       expect(await axe(page), theme).toEqual([]);
     }
     await page.click('[data-lang="es"]');
+    await page.waitForTimeout(200); // let the toggle's colour transition finish, as after each theme change
     expect(await axe(page), 'es').toEqual([]);
     await guard.assertClean(expect);
   });

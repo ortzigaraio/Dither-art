@@ -53,6 +53,7 @@ function setView(view) {
   setActiveNav(view === 'studio' ? 'studio' : null);
   app.studio?.setActive(view === 'studio');
   app.home?.setActive(view === 'home');
+  if (view === 'home') app.reveal?.refresh();
 }
 
 function scrollToHash(id) {
@@ -179,6 +180,11 @@ function boot() {
     .then((m) => m.initVisitCounter(document.getElementById('visit-counter')))
     .catch(() => {});
   document.getElementById('footer-keys')?.addEventListener('click', () => openShortcutsHelp());
+  document.getElementById('feature-try')?.addEventListener('click', () => openMode('linehalftone'));
+  // Landing pictures: "cropped reveal & pan" parallax (decorative, so a failure only leaves them still)
+  import('./ui/reveal.js')
+    .then((m) => { app.reveal = m.initReveal(document.getElementById('home')); })
+    .catch(() => {});
   // Build the 64x64 blue-noise table (about 60 ms) while the browser is idle instead of on first use
   (window.requestIdleCallback || ((fn) => setTimeout(fn, 1500)))(() => blueNoise(), { timeout: 4000 });
 }

@@ -1,5 +1,8 @@
-/* Dither design tokens (Horain brand): 6 themes (PLAN.md 4.1), brand palette (4.0), type, radii, spacing.
-   Themes are applied with <html data-theme="horain|claro|amber|crt|paper|cad" data-tone="dark|light">. */
+/* Dither design tokens: 6 themes (PLAN.md 4.1), type, radii, spacing.
+   Themes are applied with <html data-theme="horain|claro|amber|crt|paper|cad" data-tone="dark|light">.
+   The default theme keeps its internal id "horain" (stored in localStorage) but is Dither's own look since the
+   redesign: black, electric blue and white ink (PLAN.md 19). The --horain-* palette stays for the presets and
+   palettes that use it. */
 
 :root {
   /* Brand palette (assets/brand/horain-design-system.pdf) */
@@ -10,15 +13,22 @@
   --horain-mist: #EEF0F3;
   --horain-lime-pale: #EDFAD1;
 
+  /* Dither identity: black, electric blue, white ink */
+  --blue: #1E1EFF;
+  --blue-ink: #FFFFFF;
+  --black: #050505;
+  --white-ink: #F4F2EC;
+
   /* Type */
+  --font-condensed: 'Big Shoulders Display', 'Arial Narrow', 'Geist', system-ui, sans-serif;
   --font-display: 'Unbounded', 'Geist', system-ui, sans-serif;
   --font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'Geist Mono', 'DejaVu Sans Mono', ui-monospace, Menlo, Consolas, monospace;
 
-  /* Radii: rounded-square icon and logo capsule */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-pill: 999px;
+  /* Radii: square corners everywhere (buttons, cards, chips) */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-pill: 0px;
 
   /* Spacing scale */
   --sp-1: 4px;
@@ -42,23 +52,23 @@
   --t-med: 220ms;
 }
 
-/* ---------- Themes. HORAIN is the default and lives on :root. ---------- */
+/* ---------- Themes. The default (id "horain") lives on :root. ---------- */
 
 :root,
 [data-theme="horain"] {
-  --bg: #15181E;
-  --panel: #1B1F26;
-  --panel-2: #232830;
-  --fg: #F7F8FA;
-  --fg-2: #A3A7AE;
-  --accent: #C4F169;
-  --accent-text: #C4F169;
-  --accent-ink: #15181E;
-  --accent-soft: rgba(196, 241, 105, .12);
-  --line: #2C313A;
+  --bg: #050505;
+  --panel: #0D0D10;
+  --panel-2: #17171C;
+  --fg: #F4F2EC;
+  --fg-2: #A2A2AA;
+  --accent: #1E1EFF;
+  --accent-text: #8C8CFF;
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(30, 30, 255, .16);
+  --line: #26262C;
   --danger: #FF6B5A;
-  --out-ink: #C4F169;
-  --out-bg: #15181E;
+  --out-ink: #F4F2EC;
+  --out-bg: #050505;
   color-scheme: dark;
 }
 
@@ -66,15 +76,15 @@
   --bg: #F7F8FA;
   --panel: #FFFFFF;
   --panel-2: #EEF0F3;
-  --fg: #15181E;
-  --fg-2: #5F636A;
-  --accent: #C4F169;
-  --accent-text: #4A7300;
-  --accent-ink: #15181E;
-  --accent-soft: #EDFAD1;
+  --fg: #0A0A0C;
+  --fg-2: #5A5D64;
+  --accent: #1E1EFF;
+  --accent-text: #1E1EFF;
+  --accent-ink: #FFFFFF;
+  --accent-soft: rgba(30, 30, 255, .08);
   --line: #DCDFE4;
   --danger: #C62828;
-  --out-ink: #15181E;
+  --out-ink: #0A0A0C;
   --out-bg: #F7F8FA;
   color-scheme: light;
 }

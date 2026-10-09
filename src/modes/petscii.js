@@ -197,7 +197,7 @@ export default {
     return JSON.stringify({
       format: 'dither-petscii',
       version: 1,
-      generator: `${config.productName} by Horain`,
+      generator: config.productName,
       note: 'Original 8x8 glyph set; not the C64 character ROM.',
       cols: r.cols,
       rows: r.rows,
