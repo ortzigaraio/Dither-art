@@ -217,3 +217,31 @@ test.describe('video source and transport', () => {
     await guard.assertClean(expect);
   });
 });
+
+test.describe('phone layout', () => {
+  test.use({ viewport: { width: 360, height: 740 } });
+
+  test('the transport bar and the export dialog fit a 360 px screen without horizontal scroll', async ({ page }) => {
+    const guard = watchPage(page);
+    await gotoApp(page);
+    await loadVideo(page);
+    const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(await overflow()).toBeLessThanOrEqual(0);
+    const bar = await page.locator('#transport').boundingBox();
+    expect(bar.x).toBeGreaterThanOrEqual(0);
+    expect(bar.x + bar.width).toBeLessThanOrEqual(360);
+    for (const id of ['#tp-play', '#tp-scrub', '#tp-mute']) {
+      const box = await page.locator(id).boundingBox();
+      expect(box.x + box.width, id).toBeLessThanOrEqual(360);
+    }
+    await page.locator('#sheet-tabs [data-tab="export"]').click();
+    await page.locator('#controls [data-export="video"]').click();
+    await page.waitForSelector('#export-dialog[open]');
+    const dlg = await page.locator('#export-dialog').boundingBox();
+    expect(dlg.x).toBeGreaterThanOrEqual(0);
+    expect(dlg.x + dlg.width).toBeLessThanOrEqual(360);
+    expect(await overflow()).toBeLessThanOrEqual(0);
+    await guard.assertClean(expect);
+  });
+});
+

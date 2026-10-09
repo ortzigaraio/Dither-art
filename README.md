@@ -9,7 +9,7 @@ by GitHub Pages. The full specification lives in [`PLAN.md`](PLAN.md) (in Spanis
 
 ## Status
 
-Phases 0 and 1 of the plan are in place:
+Phases 0, 1 and 2 of the plan are in place:
 
 - Site skeleton, brand (espino logo, barbed-wire divider, the "eye"), six themes (HORAIN, CLARO, AMBER, CRT, PAPER, CAD),
   ES/EN interface and a validated dropzone (click, drag and drop anywhere, paste, demo).
@@ -17,7 +17,11 @@ Phases 0 and 1 of the plan are in place:
   colour modes, glyph atlas with measured ink density, zoom/pan/split viewer.
 - The complete **ASCII** mode with PNG, TXT, HTML, ANSI and clipboard export.
 
-Video, webcam and the other output styles come in later phases.
+- **Video and webcam** (phase 2): open a video file or the camera, play/pause/scrub/step frames, and export MP4 or WebM with the
+  original sound (offline, frame by frame, with [Mediabunny](vendor/README.md)). Trim, frame rate, quality, height and audio are
+  options; the camera can be recorded. Browsers without WebCodecs fall back to a real-time `MediaRecorder` recording.
+
+The other output styles come in later phases.
 
 ## Run
 
