@@ -22,6 +22,7 @@ import { toast, toastError, toastWarn } from './ui/toast.js';
 import { exportName, downloadBlob } from './io/download.js';
 import { canvasToBlob, fitExportScale, shrinkToLimit, copyImageBlob, copyText } from './io/exportImage.js';
 import { LIMITS } from './config.js';
+import * as heavy from './engine/heavy.js';
 
 const isMobile = () => window.matchMedia('(max-width: 699px)').matches;
 
@@ -86,6 +87,29 @@ export function createStudio({ onChangeFile }) {
   const getExportPipeline = () => exportPipeline || (exportPipeline = createPipeline());
 
   const viewer = createViewer({ onZoomChange: onZoom });
+
+  // ---- heavy worker jobs: progress overlay after 250 ms, and the 30 s watchdog (PLAN.md 18.2) ----------
+  let heavyTimer = 0;
+  let heavyShown = false;
+  heavy.onActivity(({ active, progress }) => {
+    if (active) {
+      const label = () => t('heavy.progress', { pct: Math.round(progress * 100) });
+      if (heavyShown) { if (!exporting) viewer.setBusy(true, label()); } else if (!heavyTimer) {
+        heavyTimer = setTimeout(() => {
+          heavyTimer = 0;
+          heavyShown = true;
+          if (!exporting) viewer.setBusy(true, label());
+        }, 250);
+      }
+    } else {
+      clearTimeout(heavyTimer);
+      heavyTimer = 0;
+      if (heavyShown) { heavyShown = false; if (!exporting) viewer.setBusy(false); }
+    }
+  });
+  heavy.setWatchdogHandler(({ cancel }) => {
+    toastWarn(t('heavy.slow', { s: LIMITS.workerWatchdogMs / 1000 }), { timeout: 0, action: { label: t('heavy.cancel'), onClick: cancel } });
+  });
 
   async function renderFrame(nowSec) {
     if (!source) return;

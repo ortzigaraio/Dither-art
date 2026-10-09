@@ -94,6 +94,9 @@ export default {
   'viewer.autoQuality': 'AUTO QUALITY ↓',
   'viewer.modeError': 'MODE ERROR',
   'viewer.rendering': 'rendering…',
+  'heavy.slow': 'This is taking a long time (more than {s} s). Cancel it?',
+  'heavy.cancel': 'Cancel',
+  'heavy.progress': 'rendering… {pct}%',
   'viewer.loading': 'opening file…',
 
   'export.png': 'Download PNG',

@@ -4,7 +4,7 @@ import { t } from '../i18n/i18n.js';
 
 const MAX_TOASTS = 4;
 
-export function toast(message, { type = 'info', timeout } = {}) {
+export function toast(message, { type = 'info', timeout, action } = {}) {
   const host = document.getElementById('toasts');
   if (!host || !message) return null;
 
@@ -36,7 +36,16 @@ export function toast(message, { type = 'info', timeout } = {}) {
   close.setAttribute('aria-label', t('toast.close'));
   close.textContent = '×';
 
-  el.append(msg, close);
+  el.appendChild(msg);
+  if (action?.label && typeof action.onClick === 'function') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'toast-action';
+    btn.textContent = action.label;
+    btn.addEventListener('click', () => { action.onClick(); dismiss(); });
+    el.appendChild(btn);
+  }
+  el.appendChild(close);
   host.appendChild(el);
 
   let timer = null;
