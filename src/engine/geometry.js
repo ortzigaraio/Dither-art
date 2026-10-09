@@ -285,7 +285,7 @@ export function clipPolylineByField(points, inside, { minLength = 0, refine = 5 
       const m = (lo + hi) / 2;
       if (inside(ax + (bx - ax) * m, ay + (by - ay) * m) === aIn) lo = m; else hi = m;
     }
-    const t = (lo + hi) / 2;
+    const t = aIn ? lo : hi; // the end that satisfies the predicate, so runs never poke outside
     return [ax + (bx - ax) * t, ay + (by - ay) * t];
   };
   let prevIn = false;
