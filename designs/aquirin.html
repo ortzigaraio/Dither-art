@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dither Studio</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/aquirin.css">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#">Dither<sup>®</sup> Studio</a>
+  <nav><a href="#work">Work</a><a href="#components">Components</a><a href="#studio">Studio</a><a href="index.html">Index</a></nav>
+  <a class="pill" href="#contact">Start a project</a>
+</header>
+
+<main>
+  <section class="hero">
+    <h1 class="lines">
+      <span><span>We turn paintings</span></span>
+      <span><span>into <em>patterns</em> of light.</span></span>
+    </h1>
+    <div class="hero-row fade">
+      <p>Dither is a small studio and an open tool for error diffusion, halftone and line engraving — made for artists, archives and anyone with a painting and a browser.</p>
+      <dl><dt>Based in</dt><dd>Donostia / Remote</dd><dt>Since</dt><dd>2024</dd></dl>
+    </div>
+    <figure class="hero-img fade">
+      <img src="img/a-hero.webp" width="1200" height="888" alt="Fishermen at a harbour market, rendered as a fine warm-grey halftone">
+      <figcaption><span>Puerto de pescadores</span><span>Halftone · 6 px · 30°</span></figcaption>
+    </figure>
+  </section>
+
+  <section class="work" id="work">
+    <div class="sec-head fade"><span class="idx">01</span><h2>Selected work</h2><span class="meta">2024 — 2026</span></div>
+    <div class="work-grid">
+      <a class="project fade" href="#">
+        <div class="frame"><img src="img/a-work-herrero.webp" width="900" height="693" alt="A blacksmith and a farmer in a village forge, as fine engraved lines" loading="lazy"></div>
+        <div class="pmeta"><h3>Herrero</h3><span>Line engraving, plotter edition</span><span>2026</span></div>
+      </a>
+      <a class="project fade d1" href="#">
+        <div class="frame"><img src="img/a-work-pescado.webp" width="900" height="900" alt="Fishermen behind a table of fish, ordered dither in three tones" loading="lazy"></div>
+        <div class="pmeta"><h3>Pescado</h3><span>Bayer 8×8, 3 tones</span><span>2025</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="components" id="components">
+    <div class="sec-head fade"><span class="idx">02</span><h2>Components</h2><span class="meta">Hover · drag</span></div>
+
+    <div class="comp fade">
+      <div class="comp-head">
+        <h3>Accordion</h3>
+        <ul class="props">
+          <li><span>open</span><b>50%</b></li>
+          <li><span>reach</span><b>35%</b></li>
+          <li><span>bounce</span><b>10</b></li>
+          <li><span>gap</span><b>8px</b></li>
+        </ul>
+      </div>
+      <div class="accordion" data-open="50" data-reach="35" data-bounce="10" style="--gap:8px">
+        <a class="panel" href="#"><img src="img/a-acc-1.webp" width="640" height="562" alt="Three farmers with hoes, dithered in stone greys" loading="lazy"><span class="ptitle"><b>01</b> Campesinos</span><span class="pcap">Floyd–Steinberg · 4 tones</span></a>
+        <a class="panel" href="#"><img src="img/a-acc-2.webp" width="640" height="524" alt="The blacksmith, dithered in stone greys" loading="lazy"><span class="ptitle"><b>02</b> Herrero</span><span class="pcap">Floyd–Steinberg · 4 tones</span></a>
+        <a class="panel" href="#"><img src="img/a-acc-3.webp" width="640" height="468" alt="Ploughmen in a field, dithered in stone greys" loading="lazy"><span class="ptitle"><b>03</b> Labradores</span><span class="pcap">Floyd–Steinberg · 4 tones</span></a>
+        <a class="panel" href="#"><img src="img/a-acc-4.webp" width="640" height="495" alt="Harbour fishermen, dithered in stone greys" loading="lazy"><span class="ptitle"><b>04</b> Puerto</span><span class="pcap">Floyd–Steinberg · 4 tones</span></a>
+        <a class="panel" href="#"><img src="img/a-acc-5.webp" width="640" height="918" alt="Rowers with oars, dithered in stone greys" loading="lazy"><span class="ptitle"><b>05</b> Remeros</span><span class="pcap">Floyd–Steinberg · 4 tones</span></a>
+      </div>
+    </div>
+
+    <div class="comp fade">
+      <div class="comp-head">
+        <h3>Compare</h3>
+        <ul class="props">
+          <li><span>labels</span><b>true</b></li>
+          <li><span>corner</span><b>20px</b></li>
+          <li><span>start</span><b>50%</b></li>
+        </ul>
+      </div>
+      <div class="compare" style="--corner:20px;--pos:50%">
+        <img class="c-after" src="img/a-compare-dither.webp" width="1100" height="814" alt="The harbour painting dithered in four warm tones" loading="lazy">
+        <div class="c-before"><img src="img/a-compare-original.webp" width="1100" height="814" alt="The original harbour market painting" loading="lazy"></div>
+        <span class="c-label l">Original</span><span class="c-label r">Dither · 4 tones</span>
+        <div class="c-handle" aria-hidden="true"><span>‹ ›</span></div>
+        <input class="c-range" type="range" min="0" max="100" value="50" aria-label="Before and after position">
+      </div>
+    </div>
+  </section>
+
+  <section class="studio" id="studio">
+    <div class="sec-head fade"><span class="idx">03</span><h2>Studio</h2><span class="meta">Process</span></div>
+    <div class="steps">
+      <div class="fade"><b>Source</b><p>We start from the painting itself — scanned, cleaned, the paper made white again.</p></div>
+      <div class="fade d1"><b>Pattern</b><p>Error diffusion for texture, halftone for print, engraving for the pen plotter.</p></div>
+      <div class="fade d2"><b>Output</b><p>PNG, SVG, video or a framed giclée. All rendered locally, nothing uploaded.</p></div>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <p class="fade">Have a painting that wants to become a pattern?</p>
+    <a class="big fade" href="#">Start a project <span>→</span></a>
+  </section>
+</main>
+
+<footer class="foot"><span>© Dither Studio</span><span>Error diffusion since 1976</span><a href="index.html">All mockups</a></footer>
+
+<script src="js/aquirin.js"></script>
+</body>
+</html>

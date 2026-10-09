@@ -24,8 +24,8 @@ for (const name of pages) {
   await page.goto(BASE + name + '.html', { waitUntil: 'networkidle' });
   // scroll through so reveal-on-scroll elements and lazy images load
   const h = await page.evaluate(() => document.documentElement.scrollHeight);
-  for (let y = 0; y < h; y += 500) { await page.evaluate((yy) => scrollTo(0, yy), y); await page.waitForTimeout(90); }
-  await page.evaluate(() => scrollTo(0, 0));
+  for (let y = 0; y < h; y += 500) { await page.evaluate((yy) => scrollTo({ top: yy, behavior: 'instant' }), y); await page.waitForTimeout(90); }
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await page.waitForTimeout(1600);
   await page.screenshot({ path: path.join(here, '../screens', name + '.png'), fullPage: true });
   await ctx.close();
