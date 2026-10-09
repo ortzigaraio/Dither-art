@@ -5,9 +5,13 @@
 // Output surfaces: Canvas2D by default. A canvas can only ever hold one kind of context, so modes that draw with
 // WebGL2 declare `surface: 'gl'` and get a separate canvas (`ctx.out.gl`, also `ctx.gl`) that survives context loss:
 // on `webglcontextlost` / `webglcontextrestored` the mode state is dropped and rebuilt by the next render.
+// While the context is lost, render() resolves `{ lost: true }` (the caller keeps the last frame on screen).
+// A GL mode can also draw its final picture on the 2D surface (`ctx.out2d`, e.g. GPU raymarching read back and drawn
+// as glyphs) and return `{ surface: '2d' }` in its meta.
 
 import { Analysis } from './analysis.js';
 import { cropRect, preprocess, preprocessKey } from './preprocess.js';
+import { depthField } from './depth.js';
 
 const MAX_WORK_SIDE = 8192;
 const MAX_WORK_PIXELS = 16e6;
@@ -16,7 +20,12 @@ function makeCanvas() {
   return document.createElement('canvas');
 }
 
-export function createPipeline({ onInvalidate } = {}) {
+/**
+ * @param {object} [o]
+ * @param {() => void} [o.onInvalidate]  re-render request (fonts loaded, worker progress, AI depth arrived...)
+ * @param {(event: 'lost'|'restored') => void} [o.onContextEvent]  WebGL context lost / restored (to tell the user)
+ */
+export function createPipeline({ onInvalidate, onContextEvent } = {}) {
   const ws = { canvas: makeCanvas(), ctx: null, scratch: [] };
   ws.ctx = ws.canvas.getContext('2d', { willReadFrequently: true });
   const analysis = new Analysis();
@@ -31,7 +40,10 @@ export function createPipeline({ onInvalidate } = {}) {
     const canvas = makeCanvas();
     const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true, antialias: false });
     if (!gl) throw new Error('WebGL2 is not available');
-    canvas.addEventListener('webglcontextlost', (ev) => ev.preventDefault());
+    canvas.addEventListener('webglcontextlost', (ev) => {
+      ev.preventDefault(); // ask the browser to restore it
+      onContextEvent?.('lost');
+    });
     canvas.addEventListener('webglcontextrestored', () => {
       // GPU resources are gone: let every GL mode rebuild its state on the next render
       for (const [id, entry] of states) {
@@ -41,6 +53,7 @@ export function createPipeline({ onInvalidate } = {}) {
         }
       }
       lastKey = '';
+      onContextEvent?.('restored');
       onInvalidate?.();
     });
     outGl = { canvas, ctx2d: null, gl };
@@ -136,6 +149,9 @@ export function createPipeline({ onInvalidate } = {}) {
     let glError = null;
     if (mode.surface === 'gl') {
       try { out = glSurface(); } catch (err) { glError = err; }
+      if (!glError && out.gl.isContextLost()) {
+        return { lost: true, canvas: null, width: 0, height: 0, meta: {}, error: null, ms: performance.now() - t0 };
+      }
     }
 
     // Heavy modes pass ctx.signal to the worker runner: abortPending() (a parameter changed) stops a stale job
@@ -150,7 +166,9 @@ export function createPipeline({ onInvalidate } = {}) {
       get rgba() { return analysis.rgba(); },
       luma: () => analysis.luma(),
       sobel: () => analysis.sobel(),
-      depth: (opts) => analysis.depth({ invert: !!params.depth?.invert, smooth: params.depth?.smooth ?? 0, ...opts }),
+      depth: (opts) => depthField({
+        analysis, params: params.depth || {}, source, frameKey, isExport, isVideo, invalidate: () => onInvalidate?.(), opts,
+      }),
       time,
       dt,
       frameIndex: frameCounter++,
@@ -162,6 +180,7 @@ export function createPipeline({ onInvalidate } = {}) {
       theme,
       out,
       gl: out.gl,
+      out2d, // GL modes may draw their final picture here and return { surface: '2d' }
       outScale,
       invalidate: () => onInvalidate?.(),
       // true when invalidate() re-renders (the studio preview): a mode may then show work in progress and finish later
@@ -188,7 +207,7 @@ export function createPipeline({ onInvalidate } = {}) {
     // a mode may render smaller than asked to respect size caps; the fallback picture is always 1x
     const effScale = error ? 1 : (meta.effectiveScale ?? outScale);
     const margin = Math.round((g.frame || 0) * effScale);
-    const surface = error ? surface2d : out.canvas;
+    const surface = error || meta.surface === '2d' ? surface2d : out.canvas;
     let canvas = surface;
     if (margin > 0 && !error) {
       framed.width = surface.width + margin * 2;

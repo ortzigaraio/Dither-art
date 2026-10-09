@@ -1,4 +1,5 @@
-// Lazy, cached analysis buffers for one preprocessed frame: rgba, luma, sobel (and brightness depth).
+// Lazy, cached analysis buffers for one preprocessed frame: rgba, luma, sobel; engine/depth.js caches the depth
+// field of the frame here as well (_depth / _depthKey, cleared on reset).
 // The pipeline resets one Analysis per frame/params key; modes pull only what they need.
 
 export const luma709 = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -116,16 +117,5 @@ export class Analysis {
       this._sobelValid = true;
     }
     return this._sobel;
-  }
-
-  /** Brightness-as-depth (PLAN.md 5.5). The AI source plugs in here in Phase 5. */
-  async depth({ invert = false, smooth = 0 } = {}) {
-    const key = `${invert}|${smooth}`;
-    if (this._depthKey === key && this._depth) return this._depth;
-    let d = smooth > 0 ? boxBlur(this.luma(), this.width, this.height, smooth) : Float32Array.from(this.luma());
-    if (invert) for (let i = 0; i < d.length; i++) d[i] = 1 - d[i];
-    this._depth = d;
-    this._depthKey = key;
-    return d;
   }
 }
