@@ -19,16 +19,45 @@
   root.setAttribute('data-tone', tones[theme]);
   root.setAttribute('lang', lang);
 
-  // Safety net: if the app has not started after a few seconds (blocked script, very old browser, a bug at load time)
-  // say so instead of leaving a page that looks alive but does nothing.
-  setTimeout(function () {
-    if (root.getAttribute('data-ready') === 'true' || !document.body) return;
-    var box = document.createElement('p');
-    box.className = 'noscript';
-    box.setAttribute('role', 'alert');
-    box.textContent = lang === 'es'
+  // Safety net (PLAN.md 18.2): say so when the app really failed to start, instead of leaving a page that looks
+  // alive but does nothing. A real failure (a module that fails to load or throws while loading) shows the notice
+  // at once, with the reason; a merely slow start (first visit on a slow connection) only after 20 s. If the app
+  // starts after all, the notice goes away.
+  var notice = null;
+  var firstError = '';
+  function ready() { return root.getAttribute('data-ready') === 'true'; }
+  function showNotice() {
+    if (notice || ready() || !document.body) return;
+    notice = document.createElement('p');
+    notice.className = 'noscript';
+    notice.setAttribute('role', 'alert');
+    notice.textContent = (lang === 'es'
       ? 'Dither no ha podido arrancar. Recarga la página o usa una versión reciente de tu navegador.'
-      : 'Dither could not start. Reload the page or use an up-to-date browser.';
-    document.body.insertBefore(box, document.body.firstChild);
-  }, 6000);
+      : 'Dither could not start. Reload the page or use an up-to-date browser.')
+      + (firstError ? ' (' + firstError + ')' : '');
+    document.body.insertBefore(notice, document.body.firstChild);
+  }
+  function onError(e) {
+    if (ready()) return;
+    var t = e && e.target;
+    if (t && t.tagName === 'SCRIPT') {
+      firstError = firstError || ('load failed: ' + String(t.src || '').split('/').slice(-2).join('/'));
+    } else if (e && e.message) {
+      firstError = firstError || String(e.message).slice(0, 160);
+    } else {
+      return;
+    }
+    // a failed module never sets data-ready: give the rest of the graph a moment, then explain
+    setTimeout(showNotice, 1500);
+  }
+  window.addEventListener('error', onError, true);
+  setTimeout(showNotice, 20000);
+  if (window.MutationObserver) {
+    new MutationObserver(function () {
+      if (!ready()) return;
+      window.removeEventListener('error', onError, true);
+      if (notice && notice.parentNode) notice.parentNode.removeChild(notice);
+      notice = null;
+    }).observe(root, { attributes: true, attributeFilter: ['data-ready'] });
+  }
 })();
