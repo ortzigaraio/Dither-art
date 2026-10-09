@@ -83,3 +83,31 @@ test('works under a sub-path: hero, studio, exports and assets all resolve relat
   expect(outside, `requests outside ${PREFIX}`).toEqual([]);
   await guard.assertClean(expect);
 });
+
+test('the heavy worker and the worker-backed modes resolve relatively under a sub-path', async ({ page }) => {
+  const guard = watchPage(page);
+  await page.goto(base);
+  await page.waitForSelector('html[data-ready="true"]');
+  await loadFixture(page);
+  const spawned = await page.evaluate(async (prefix) => {
+    const heavy = await import(`${prefix}src/engine/heavy.js`);
+    const out = await heavy.run('debug.sleep', { ms: 20, steps: 2, echo: 'from a sub-path' });
+    return { echo: out.echo, stats: heavy.stats() };
+  }, PREFIX);
+  expect(spawned.echo).toBe('from a sub-path');
+  expect(spawned.stats.hasWorker).toBe(true);
+  expect(spawned.stats.workerFailed).toBe(false);
+
+  // PETSCII at 80 columns is matched in the worker
+  let n = await renderCount(page);
+  await page.locator('#mode-list .mode-item[data-mode-id="petscii"]').click();
+  await waitForRender(page, n);
+  n = await renderCount(page);
+  await setControl(page, 'grid', '80');
+  await waitForRender(page, n);
+  expect((await canvasStats(page)).variance).toBeGreaterThan(0);
+  expect(await page.locator('#viewer-canvas').getAttribute('data-cols')).toBe('80');
+  expect(await page.locator('#chip-error').isHidden()).toBe(true);
+  expect(outside, `requests outside ${PREFIX}`).toEqual([]);
+  await guard.assertClean(expect);
+});

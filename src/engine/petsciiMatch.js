@@ -32,6 +32,21 @@ export function autoBackground(rgba, W, H, palette) {
   return best;
 }
 
+const listCache = new WeakMap();
+/** Indices (0..63) of the "on" pixels of every glyph, so the hot loop skips the bit tests. */
+function onLists(glyphs) {
+  let l = listCache.get(glyphs);
+  if (l) return l;
+  l = [];
+  for (let g = 0; g < glyphs.length / 8; g++) {
+    const idx = [];
+    for (let py = 0; py < 8; py++) for (let px = 0; px < 8; px++) if (glyphs[g * 8 + py] & (0x80 >> px)) idx.push(py * 8 + px);
+    l.push(Uint8Array.from(idx));
+  }
+  listCache.set(glyphs, l);
+  return l;
+}
+
 /**
  * Match cell rows y0..y1-1.
  * @param {{ rgba: Uint8ClampedArray, cols: number, palette: number[][], glyphs: Uint8Array, enabled: Uint8Array }} p
@@ -43,6 +58,7 @@ export function matchRows(p, bg, y0, y1, glyphOut, colorOut) {
   const { rgba, cols, palette, glyphs, enabled } = p;
   const W = cols * 8;
   const nG = enabled.length;
+  const on = onLists(glyphs);
   const B = palette[bg];
   const cr = new Float64Array(64);
   const cg = new Float64Array(64);
@@ -64,19 +80,15 @@ export function matchRows(p, bg, y0, y1, glyphOut, colorOut) {
       let bestColor = bg;
       for (let g = 0; g < nG; g++) {
         if (!enabled[g]) continue;
-        let n = 0, s1r = 0, s1g = 0, s1b = 0, s2 = 0, sb = 0;
-        for (let py = 0; py < 8; py++) {
-          const byte = glyphs[g * 8 + py];
-          if (!byte) continue;
-          for (let px = 0; px < 8; px++) {
-            if (!(byte & (0x80 >> px))) continue;
-            const i = py * 8 + px;
-            const r = cr[i], gg = cg[i], b = cb[i];
-            n++;
-            s1r += r; s1g += gg; s1b += b;
-            s2 += r * r + gg * gg + b * b;
-            sb += (r - B[0]) ** 2 + (gg - B[1]) ** 2 + (b - B[2]) ** 2;
-          }
+        const list = on[g];
+        const n = list.length;
+        let s1r = 0, s1g = 0, s1b = 0, s2 = 0, sb = 0;
+        for (let k = 0; k < n; k++) {
+          const i = list[k];
+          const r = cr[i], gg = cg[i], b = cb[i];
+          s1r += r; s1g += gg; s1b += b;
+          s2 += r * r + gg * gg + b * b;
+          sb += (r - B[0]) ** 2 + (gg - B[1]) ** 2 + (b - B[2]) ** 2;
         }
         let err;
         let fg = bg;
