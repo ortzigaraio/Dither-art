@@ -576,6 +576,7 @@ test.describe('engine', () => {
   test('state: sanitising clamps numbers, whitelists enums and drops unknown keys', async ({ page }) => {
     const res = await page.evaluate(async () => {
       const st = await import('/src/state.js');
+      const { MODE_IDS } = await import('/src/modes/index.js');
       const hostile = {
         modeId: '<script>',
         global: { cols: 99999, brightness: -50, contrast: 'lots', hue: NaN, dither: 'evil', flipX: 'yes', thresholdOn: true, threshold: 300, __proto__: { polluted: 1 }, unknownKey: 5 },
@@ -593,6 +594,7 @@ test.describe('engine', () => {
         keys: Object.keys(s).sort(),
         globalKeys: Object.keys(s.global).includes('unknownKey'),
         modesKeys: Object.keys(s.modes),
+        registered: MODE_IDS,
         roundTrip: JSON.stringify(back.global) === JSON.stringify(s.global) && JSON.stringify(back.modes.ascii) === JSON.stringify(s.modes.ascii),
         defaults: clean.global.cols,
         badHashes: [
@@ -626,7 +628,8 @@ test.describe('engine', () => {
     expect(res.s.modes.ascii.cellSize).toBe(32);
     expect(res.s.modes.ascii.font).toBe('geist-mono');
     expect(res.s.modes.ascii.spaceDensity).toBe(3);
-    expect(res.modesKeys).toEqual(['ascii']);
+    expect(res.modesKeys).toEqual(res.registered); // exactly the registered modes: the unknown "evil" entry was dropped
+    expect(res.modesKeys).not.toContain('evil');
     expect(res.roundTrip).toBe(true);
     expect(res.defaults).toBe(120);
     for (const b of res.badHashes) expect(b).toBeNull();
