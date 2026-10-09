@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dither Summer OS</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/poolsuite.css">
+</head>
+<body>
+<header class="menubar">
+  <div class="menus">
+    <span class="apple" aria-label="Dither menu">
+      <svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><g fill="currentColor"><rect x="6" y="0" width="4" height="2"/><rect x="3" y="2" width="10" height="2"/><rect x="2" y="4" width="12" height="2" fill="#e86a92"/><rect x="1" y="6" width="14" height="2" fill="#f7a072"/><rect x="1" y="8" width="14" height="2" fill="#fbd27a"/><rect x="2" y="10" width="12" height="2" fill="#9ad1c9"/><rect x="3" y="12" width="10" height="2" fill="#8fb8f0"/><rect x="6" y="14" width="4" height="2"/></g></svg>
+    </span>
+    <b>Dither</b><span>File</span><span>Edit</span><span>View</span><span class="hide-sm">Effects</span><span class="hide-sm">Special</span>
+  </div>
+  <div class="menus right"><span class="hide-sm">☀ 27°C Donostia</span><span>Fri 4:20 PM</span></div>
+</header>
+
+<main class="desktop" id="desktop">
+  <div class="icons">
+    <a class="icon" href="index.html"><span class="ico ico-hd"></span><span>Dither HD</span></a>
+    <a class="icon" href="#"><span class="ico ico-folder"></span><span>Summer '86</span></a>
+    <a class="icon" href="#"><span class="ico ico-disk"></span><span>Palettes</span></a>
+    <a class="icon" href="#"><span class="ico ico-trash"></span><span>Trash</span></a>
+  </div>
+
+  <section class="win welcome" style="left:36%;top:40px;z-index:3" data-win>
+    <div class="titlebar"><span class="close"></span><span class="title">Welcome</span><span class="zoom"></span></div>
+    <div class="content">
+      <p class="eyebrow">Now dithering ↓</p>
+      <h1>Dither<span>summer</span></h1>
+      <p>Your images, in four pastel colours and a Bayer matrix. A vintage desktop for very modern pixels, running entirely in your browser.</p>
+      <div class="row">
+        <button class="btn default">Open Image…</button>
+        <button class="btn">Take a Selfie</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="win player" style="left:3%;top:210px;z-index:4" data-win>
+    <div class="titlebar"><span class="close"></span><span class="title">Dither FM</span><span class="zoom"></span></div>
+    <div class="content">
+      <div class="art"><img src="img/ps-pescado.webp" width="560" height="560" alt="Fishermen and red fish, Bayer-dithered in pastel pink, peach and mint"></div>
+      <div class="lcd">
+        <div class="marquee"><span>♪ Error Diffusion (Pool Side Mix) — Floyd &amp; Steinberg — Side A, 1976 ♪ Error Diffusion (Pool Side Mix) — Floyd &amp; Steinberg — Side A, 1976&nbsp;</span></div>
+        <div class="time"><span>01:48</span><div class="bar"><i></i></div><span>04:12</span></div>
+      </div>
+      <div class="controls">
+        <button class="btn sq" aria-label="Previous">⏮</button>
+        <button class="btn sq play" id="play" aria-label="Pause">❚❚</button>
+        <button class="btn sq" aria-label="Next">⏭</button>
+        <div class="eq playing" id="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <ol class="playlist">
+        <li class="on"><span>Error Diffusion</span><span>4:12</span></li>
+        <li><span>Bayer 8×8 (Sunset)</span><span>3:27</span></li>
+        <li><span>Atkinson on the Pier</span><span>5:02</span></li>
+        <li><span>Halftone Lagoon</span><span>2:58</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="win viewer" style="left:31%;top:430px;z-index:2" data-win>
+    <div class="titlebar"><span class="close"></span><span class="title">remeros.dthr — 100%</span><span class="zoom"></span></div>
+    <div class="toolbar"><span>Bayer 4×4</span><span>6 colours</span><span>2× pixels</span><span>10 KB</span></div>
+    <div class="content flush"><img src="img/ps-remeros.webp" width="520" height="746" alt="Four Basque rowers with oars, Bayer-dithered in six pastel colours"></div>
+  </section>
+
+  <section class="win panel" style="left:61%;top:300px;z-index:5" data-win>
+    <div class="titlebar"><span class="close"></span><span class="title">Effects</span><span class="zoom"></span></div>
+    <div class="content">
+      <fieldset><legend>Pattern</legend>
+        <label><input type="radio" name="p" checked> Bayer 4×4</label>
+        <label><input type="radio" name="p"> Bayer 8×8</label>
+        <label><input type="radio" name="p"> Floyd–Steinberg</label>
+        <label><input type="radio" name="p"> Atkinson</label>
+      </fieldset>
+      <label class="slider">Pixel size <input type="range" min="1" max="8" value="2"></label>
+      <label class="slider">Contrast <input type="range" min="0" max="100" value="62"></label>
+      <div class="palette"><span style="--c:#2b2a4c"></span><span style="--c:#e86a92"></span><span style="--c:#f7a072"></span><span style="--c:#9ad1c9"></span><span style="--c:#fbe7c6"></span><span style="--c:#fffdf6"></span></div>
+      <label class="check"><input type="checkbox" checked> Serpentine scan</label>
+      <div class="row end"><button class="btn">Cancel</button><button class="btn default">Apply</button></div>
+    </div>
+  </section>
+
+  <section class="win album" style="left:59%;top:780px;z-index:1" data-win>
+    <div class="titlebar"><span class="close"></span><span class="title">Photo Album — 3 items</span><span class="zoom"></span></div>
+    <div class="content grid3">
+      <figure><img src="img/ps-puerto.webp" width="640" height="494" alt="Harbour fishermen, pastel Bayer dither" loading="lazy"><figcaption>puerto.dthr</figcaption></figure>
+      <figure><img src="img/ps-labradores.webp" width="560" height="410" alt="Ploughmen, pastel Bayer dither" loading="lazy"><figcaption>labradores.dthr</figcaption></figure>
+      <figure><img src="img/ps-herrero.webp" width="520" height="426" alt="Blacksmith, pastel Bayer dither" loading="lazy"><figcaption>herrero.dthr</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="win about" style="left:4%;top:1010px;z-index:1" data-win>
+    <div class="titlebar"><span class="close"></span><span class="title">About This Dither</span><span class="zoom"></span></div>
+    <div class="content">
+      <div class="about-row">
+        <svg viewBox="0 0 16 16" class="about-logo" aria-hidden="true" shape-rendering="crispEdges"><g><rect x="6" y="0" width="4" height="2" fill="#2b2a4c"/><rect x="3" y="2" width="10" height="2" fill="#2b2a4c"/><rect x="2" y="4" width="12" height="2" fill="#e86a92"/><rect x="1" y="6" width="14" height="2" fill="#f7a072"/><rect x="1" y="8" width="14" height="2" fill="#fbd27a"/><rect x="2" y="10" width="12" height="2" fill="#9ad1c9"/><rect x="3" y="12" width="10" height="2" fill="#8fb8f0"/><rect x="6" y="14" width="4" height="2" fill="#2b2a4c"/></g></svg>
+        <div><b>Dither OS 1.0</b><br>© Dither. Runs in your browser.</div>
+      </div>
+      <div class="mem"><span>Built-in palette</span><span>6 colours</span></div>
+      <div class="membar"><i style="width:38%;--c:#e86a92"></i><i style="width:22%;--c:#9ad1c9"></i><i style="width:14%;--c:#f7a072"></i></div>
+      <div class="mem small"><span>Images dithered today</span><span>1,986</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="dock">Dither Summer OS — drag the windows around · <a href="index.html">all mockups</a></footer>
+
+<script src="js/poolsuite.js"></script>
+</body>
+</html>

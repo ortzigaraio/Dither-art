@@ -185,11 +185,10 @@ def job(f):
 
 @job
 def hermes():
-    im = load(C + 'puerto.webp', 1200)
-    m = mask_white(im)
-    g = gray(im, 1.15)
-    lit = np.clip(g, 0, 1) ** 0.45 * m
-    save(lines(1 - lit, period=5, wave=0.55, ink=BLUE, paper='#000000', gain=1.3), 'h-hero', q=80)
+    # hero: the full harbour painting as blue engraved lines on black (light = ink)
+    im = load('puerto-pescadores.webp', 1200)
+    g = gray(im, 1.2)
+    save(lines(1 - g ** 0.8, period=5, wave=0.55, ink=BLUE, paper='#000000', gain=1.1), 'h-hero', q=78)
     for src, name in [('herrero.webp', 'h-herrero'), ('labradores.webp', 'h-labradores'), ('campesinos.webp', 'h-campesinos')]:
         im = load(C + src, 760)
         m = mask_white(im)

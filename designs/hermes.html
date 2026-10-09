@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dither — Engraved Light (Hermes study)</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/hermes.css">
+</head>
+<body>
+<div class="topline mono">
+  <span>Dither / v1.0</span>
+  <span class="hide-sm">100% in-browser · no uploads · no account</span>
+  <span>EN / ES</span>
+</div>
+
+<header class="masthead">
+  <a class="logo" href="#top" aria-label="Dither">
+    <svg class="mark" viewBox="0 0 48 48" aria-hidden="true">
+      <g fill="currentColor">
+        <rect x="0" y="0" width="12" height="12"/><rect x="24" y="0" width="12" height="12"/>
+        <rect x="12" y="12" width="12" height="12"/><rect x="36" y="12" width="12" height="12"/>
+        <rect x="0" y="24" width="12" height="12"/><rect x="24" y="24" width="12" height="12"/>
+        <rect x="12" y="36" width="12" height="12"/><rect x="36" y="36" width="6" height="6"/>
+      </g>
+    </svg>
+    <span class="wordmark">DITHER</span>
+  </a>
+  <nav class="nav mono">
+    <a href="#modes">Modes</a><a href="#engine">Engine</a><a href="#ascii">ASCII</a><a href="#export">Export</a><a href="index.html">Index</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <h1 class="display">
+      <span>Turn any image</span>
+      <span class="blue-text">into engraved</span>
+      <span>light.</span>
+    </h1>
+    <div class="hero-meta mono">
+      <p>[ 01 ] Image → line screen</p>
+      <p>Dither converts photos, paintings and webcam feeds into dithering, halftone, ASCII and plotter-ready line art. Everything happens on your machine.</p>
+      <div class="btns">
+        <a class="btn btn-blue" href="#export">Open the studio ↗</a>
+        <a class="btn" href="#modes">See 24 modes</a>
+      </div>
+    </div>
+    <figure class="reveal hero-frame" data-speed="0.18">
+      <img src="img/h-hero.webp" alt="A harbour scene from a Basque painting rendered as electric-blue engraved lines on black" width="1200" height="928">
+      <figcaption class="mono"><span>FIG. 01 — Puerto, line engraving 5 px</span><span>λ 0.55 · 1-bit</span></figcaption>
+    </figure>
+  </section>
+
+  <section class="block blue" id="engine">
+    <div class="block-head mono"><span>[ 02 ] Engine</span><span>WebGL2 · Workers · Canvas2D</span></div>
+    <h2 class="display big">Built for pixels.<br>Not for servers.</h2>
+    <div class="stats">
+      <div><b class="display">24</b><span class="mono">Render modes</span></div>
+      <div><b class="display">0</b><span class="mono">Bytes uploaded</span></div>
+      <div><b class="display">60</b><span class="mono">FPS on webcam</span></div>
+      <div><b class="display">∞</b><span class="mono">Exports / SVG · PNG · WebM</span></div>
+    </div>
+  </section>
+
+  <section class="modes" id="modes">
+    <div class="section-head">
+      <p class="mono">[ 03 ] Modes</p>
+      <h2 class="display">Three ways to engrave a fisherman.</h2>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <div class="reveal card-frame" data-speed="0.1"><img src="img/h-herrero.webp" alt="The blacksmith painting as white engraved lines on electric blue" width="760" height="622" loading="lazy"></div>
+        <div class="card-body"><span class="mono tag">MODE 07</span><h3 class="display">Line screen</h3><p>Copper-plate lines that bend with tone. Exports straight to plotter SVG.</p></div>
+      </article>
+      <article class="card">
+        <div class="reveal card-frame" data-speed="0.14"><img src="img/h-labradores.webp" alt="The ploughmen painting as white engraved lines on electric blue" width="760" height="556" loading="lazy"></div>
+        <div class="card-body"><span class="mono tag">MODE 11</span><h3 class="display">Wave engrave</h3><p>Sinusoidal phase shifts follow luminance, like a banknote portrait.</p></div>
+      </article>
+      <article class="card">
+        <div class="reveal card-frame" data-speed="0.1"><img src="img/h-campesinos.webp" alt="Three farmers with hoes as white engraved lines on electric blue" width="760" height="667" loading="lazy"></div>
+        <div class="card-body"><span class="mono tag">MODE 02</span><h3 class="display">Floyd–Steinberg</h3><p>The classic error diffusion, with serpentine scan and custom palettes.</p></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="split" id="ascii">
+    <div class="split-img reveal" data-speed="0.2">
+      <img src="img/h-remeros.webp" alt="The rowers painting as blue halftone dots on black" width="700" height="1004" loading="lazy">
+    </div>
+    <div class="split-ascii">
+      <div class="block-head mono"><span>[ 04 ] Live ASCII</span><span>move your cursor</span></div>
+      <div class="ascii-box">
+        <canvas class="ascii-fx" data-src="../assets/source/clean/remeros.webp" data-cell="8" data-fg="#e8e8ff" data-accent="#1E1EFF" data-bg="#000000" data-fit="contain" data-radius="120"></canvas>
+      </div>
+      <p class="mono small">14 glyphs · Geist Mono · 8 px cells · cursor lens radius 120 px, lerp 0.14</p>
+    </div>
+  </section>
+
+  <section class="cmd" id="export">
+    <p class="mono">[ 05 ] Export</p>
+    <h2 class="display">One drop. Four formats.</h2>
+    <div class="cmd-grid">
+      <div class="cmd-line mono"><span class="prompt">$</span> dither remeros.jpg --mode engrave --lines 5 --out svg<span class="caret"></span></div>
+      <div class="formats mono"><span>SVG</span><span>PNG</span><span>WEBM</span><span>TXT</span></div>
+    </div>
+    <div class="btns center">
+      <a class="btn btn-blue" href="#top">Start dithering ↗</a>
+      <a class="btn" href="index.html">All mockups</a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot-row mono"><span>© Dither</span><span>Made with error diffusion</span><span>Basque paintings, treated in-browser</span></div>
+  <div class="giant display" aria-hidden="true">DITHER</div>
+</footer>
+
+<script src="js/ascii-effect.js"></script>
+<script src="js/reveal-pan.js"></script>
+</body>
+</html>
