@@ -612,7 +612,8 @@ test.describe('studio', () => {
     // simulation) new frames keep arriving while the simulated time only grows
     const samples = [];
     for (let i = 0; i < 12; i++) {
-      samples.push(await page.evaluate(() => [Number(document.getElementById('transport').dataset.time || 0), Number(document.getElementById('viewer-canvas').dataset.simTime)]));
+      // both values describe the same rendered frame: its source (video) time and its simulated time
+      samples.push(await page.evaluate(() => { const d = document.getElementById('viewer-canvas').dataset; return [Number(d.srcTime || 0), Number(d.simTime)]; }));
       await page.waitForTimeout(150);
     }
     let run = 0;

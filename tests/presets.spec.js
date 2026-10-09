@@ -104,7 +104,12 @@ test.describe('presets', () => {
     expect(json.postfx.scanlines).toBe(30);
 
     // reset everything, then import the file: the values come back
-    for (const g of ['image', 'mode', 'postfx']) await page.locator(`#controls [data-group="${g}"] .group-reset`).click();
+    // the ↺ button belongs to an open group (Post-FX starts folded after the reload)
+    for (const g of ['image', 'mode', 'postfx']) {
+      const grp = page.locator(`#controls [data-group="${g}"]`);
+      if ((await grp.getAttribute('open')) === null) await grp.locator('summary').click();
+      await grp.locator('.group-reset').click();
+    }
     await settle(page);
     expect(await getControl(page, 'gradient')).toBe('standard');
     json.name = 'Imported look';
