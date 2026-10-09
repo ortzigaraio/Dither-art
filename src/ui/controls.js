@@ -330,13 +330,12 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
     const rst = el('button', 'group-reset', { type: 'button', 'aria-label': `${t('studio.resetGroup')}: ${title}`, title: t('studio.resetGroup') });
     rst.textContent = '↺';
     rst.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
       store.resetGroup(resetKey);
       refresh(true);
     });
-    head.append(ttl, rule, rst);
-    group.appendChild(head);
+    head.append(ttl, rule);
+    // the reset button sits next to the summary, not inside it (no interactive element nested in another)
+    group.append(head, rst);
 
     const body = el('div', 'group-body');
     group.appendChild(body);

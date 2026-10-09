@@ -306,4 +306,5 @@ export default {
   'privacy.none': "Sin cookies, sin analítica de terceros, sin fuentes ni scripts externos.",
   'footer.keys': "Atajos de teclado",
   'footer.source': "Código en GitHub",
+  'studio.h1': "Estudio de Dither",
 };

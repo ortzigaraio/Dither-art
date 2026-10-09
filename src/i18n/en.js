@@ -306,4 +306,5 @@ export default {
   'privacy.none': "No cookies, no third-party analytics, no external fonts or scripts.",
   'footer.keys': "Keyboard shortcuts",
   'footer.source': "Source on GitHub",
+  'studio.h1': "Dither studio",
 };
