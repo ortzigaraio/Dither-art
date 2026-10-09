@@ -2,7 +2,7 @@
 // pixels, the parameters and the seed: no state survives between calls, so a frame depends only on (seed, time).
 // Order: band shift, block corruption, RGB split, DCT artefacts, bit crush, interlace, scanlines, noise.
 
-import { rng, mixSeed, clamp8 } from './pixelkit.js';
+import { rng, mixSeed, clamp8 } from './rand.js';
 
 export const GLITCH_DEFAULTS = {
   rgbSplit: 0, bandShift: 0, blockCorrupt: 0, blockSize: 16, bitCrush: 0, dct: 0, scanlines: 0, noise: 0, interlace: 0,
@@ -93,12 +93,36 @@ function rgbSplit(buf, snap, w, h, amount, seed) {
   }
 }
 
+/** 1-D DCT-II of 8 samples (stride `as`) using the even/odd symmetry c[u][7-n] = (-1)^u c[u][n]: 32 products, not 64. */
+export function fdct8(a, ao, as, d, dof, ds) {
+  const x0 = a[ao], x1 = a[ao + as], x2 = a[ao + 2 * as], x3 = a[ao + 3 * as];
+  const x4 = a[ao + 4 * as], x5 = a[ao + 5 * as], x6 = a[ao + 6 * as], x7 = a[ao + 7 * as];
+  const s0 = x0 + x7, s1 = x1 + x6, s2 = x2 + x5, s3 = x3 + x4;
+  const t0 = x0 - x7, t1 = x1 - x6, t2 = x2 - x5, t3 = x3 - x4;
+  for (let u = 0; u < 8; u += 2) d[dof + u * ds] = s0 * COS[u * 8] + s1 * COS[u * 8 + 1] + s2 * COS[u * 8 + 2] + s3 * COS[u * 8 + 3];
+  for (let u = 1; u < 8; u += 2) d[dof + u * ds] = t0 * COS[u * 8] + t1 * COS[u * 8 + 1] + t2 * COS[u * 8 + 2] + t3 * COS[u * 8 + 3];
+}
+
+/** Inverse of fdct8. */
+export function idct8(X, xo, xs, d, dof, ds) {
+  const X0 = X[xo], X1 = X[xo + xs], X2 = X[xo + 2 * xs], X3 = X[xo + 3 * xs];
+  const X4 = X[xo + 4 * xs], X5 = X[xo + 5 * xs], X6 = X[xo + 6 * xs], X7 = X[xo + 7 * xs];
+  for (let n = 0; n < 4; n++) {
+    const e = X0 * COS[n] + X2 * COS[16 + n] + X4 * COS[32 + n] + X6 * COS[48 + n];
+    const o = X1 * COS[8 + n] + X3 * COS[24 + n] + X5 * COS[40 + n] + X7 * COS[56 + n];
+    d[dof + n * ds] = e + o;
+    d[dof + (7 - n) * ds] = e - o;
+  }
+}
+
 /** JPEG-like blocking: 8x8 DCT of Y, Cb and Cr, coefficients rounded to a step that grows with frequency. */
 function dctArtifacts(buf, w, h, amount) {
   const Q = 4 + amount * 120;
   const blk = new Float32Array(64);
   const tmp = new Float32Array(64);
   const planes = [new Float32Array(64), new Float32Array(64), new Float32Array(64)];
+  const steps = [new Float32Array(64), new Float32Array(64)]; // quantisation step per coefficient: luma, chroma
+  for (let v = 0; v < 8; v++) for (let u = 0; u < 8; u++) { steps[0][v * 8 + u] = Q * (1 + (u + v) * 0.5); steps[1][v * 8 + u] = Q * 1.6 * (1 + (u + v) * 0.5); }
   for (let by = 0; by + 8 <= h; by += 8) {
     for (let bx = 0; bx + 8 <= w; bx += 8) {
       for (let y = 0; y < 8; y++) {
@@ -113,13 +137,12 @@ function dctArtifacts(buf, w, h, amount) {
       }
       for (let c = 0; c < 3; c++) {
         const pl = planes[c];
-        // rows then columns (separable)
-        for (let y = 0; y < 8; y++) for (let u = 0; u < 8; u++) { let s = 0; for (let x = 0; x < 8; x++) s += pl[y * 8 + x] * COS[u * 8 + x]; tmp[y * 8 + u] = s; }
-        for (let u = 0; u < 8; u++) for (let v = 0; v < 8; v++) { let s = 0; for (let y = 0; y < 8; y++) s += tmp[y * 8 + u] * COS[v * 8 + y]; blk[v * 8 + u] = s; }
-        const step = c === 0 ? Q : Q * 1.6;
-        for (let v = 0; v < 8; v++) for (let u = 0; u < 8; u++) { const q = step * (1 + (u + v) * 0.5); blk[v * 8 + u] = Math.round(blk[v * 8 + u] / q) * q; }
-        for (let v = 0; v < 8; v++) for (let x = 0; x < 8; x++) { let s = 0; for (let u = 0; u < 8; u++) s += blk[v * 8 + u] * COS[u * 8 + x]; tmp[v * 8 + x] = s; }
-        for (let x = 0; x < 8; x++) for (let y = 0; y < 8; y++) { let s = 0; for (let v = 0; v < 8; v++) s += tmp[v * 8 + x] * COS[v * 8 + y]; pl[y * 8 + x] = s; }
+        const st = steps[c === 0 ? 0 : 1];
+        for (let y = 0; y < 8; y++) fdct8(pl, y * 8, 1, tmp, y * 8, 1); // rows, then columns
+        for (let u = 0; u < 8; u++) fdct8(tmp, u, 8, blk, u, 8);
+        for (let i = 0; i < 64; i++) blk[i] = Math.round(blk[i] / st[i]) * st[i];
+        for (let v = 0; v < 8; v++) idct8(blk, v * 8, 1, tmp, v * 8, 1);
+        for (let x = 0; x < 8; x++) idct8(tmp, x, 8, pl, x, 8);
       }
       for (let y = 0; y < 8; y++) {
         for (let x = 0; x < 8; x++) {

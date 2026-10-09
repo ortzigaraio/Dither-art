@@ -13,6 +13,7 @@ import pixelart from './pixelart.js';
 import led from './led.js';
 import thermal from './thermal.js';
 import glitch from './glitch.js';
+import pixelsort from './pixelsort.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -29,6 +30,7 @@ export const MODES = [
   led,
   thermal,
   glitch,
+  pixelsort,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);

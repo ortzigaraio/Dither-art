@@ -1,7 +1,7 @@
 // Automatic palette by k-means (PLAN.md 7.9): k-means++ seeding with a seeded generator and a few Lloyd iterations
 // in RGB. Deterministic for a given input and seed, and independent of the DOM.
 
-import { rng } from './pixelkit.js';
+import { rng } from './rand.js';
 
 /**
  * @param {Uint8ClampedArray|Uint8Array} rgba  pixels (alpha ignored)

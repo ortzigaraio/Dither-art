@@ -147,6 +147,39 @@ test.describe('glitch: each effect', () => {
   });
 });
 
+test.describe('glitch: the DCT kernel', () => {
+  test('the 8-point transform is orthonormal: DC of a flat block, a known cosine, and a perfect round trip', async ({ page }) => {
+    await gotoApp(page);
+    const res = await page.evaluate(async () => {
+      const { fdct8, idct8 } = await import('/src/engine/glitch.js');
+      const flat = new Float32Array(8).fill(100);
+      const f = new Float32Array(8);
+      fdct8(flat, 0, 1, f, 0, 1);
+      // the first basis function is 0.5 * cos((2n + 1) pi / 16) (norm 1); the samples cos((2n + 1) pi / 16) themselves
+      // therefore have X[1] = 0.5 * sum cos^2 = 0.5 * 4 = 2 and no other coefficient
+      const cosx = Float32Array.from({ length: 8 }, (_, n) => Math.cos(((2 * n + 1) * Math.PI) / 16));
+      const c = new Float32Array(8);
+      fdct8(cosx, 0, 1, c, 0, 1);
+      // random block round trip, with a stride (columns of an 8x8 block)
+      const blk = Float32Array.from({ length: 64 }, (_, i) => ((i * 37) % 101) - 50);
+      const tmp = new Float32Array(64), back = new Float32Array(64), mid = new Float32Array(64);
+      for (let y = 0; y < 8; y++) fdct8(blk, y * 8, 1, tmp, y * 8, 1);
+      for (let u = 0; u < 8; u++) fdct8(tmp, u, 8, mid, u, 8);
+      for (let v = 0; v < 8; v++) idct8(mid, v * 8, 1, tmp, v * 8, 1);
+      for (let x = 0; x < 8; x++) idct8(tmp, x, 8, back, x, 8);
+      let err = 0, energyIn = 0, energyOut = 0;
+      for (let i = 0; i < 64; i++) { err = Math.max(err, Math.abs(back[i] - blk[i])); energyIn += blk[i] ** 2; energyOut += mid[i] ** 2; }
+      return { dc: f[0], rest: Array.from(f).slice(1).map((v) => Math.abs(v)), harmonic: Array.from(c), err, energyIn, energyOut };
+    });
+    expect(res.dc).toBeCloseTo(100 * 8 * Math.SQRT1_2 * 0.5, 3); // 282.84 = a(0) * 0.5 * sum
+    for (const v of res.rest) expect(v).toBeLessThan(1e-3);
+    expect(res.harmonic[1]).toBeCloseTo(2, 3);
+    for (const [u, v] of res.harmonic.entries()) if (u !== 1) expect(Math.abs(v), `X[${u}]`).toBeLessThan(1e-3);
+    expect(res.err).toBeLessThan(1e-3);
+    expect(res.energyOut).toBeCloseTo(res.energyIn, 0); // Parseval: orthonormal
+  });
+});
+
 test.describe('glitch: determinism', () => {
   const ALL = { rgbSplit: 0.4, bandShift: 0.5, blockCorrupt: 0.5, blockSize: 8, bitCrush: 0.3, dct: 0.3, scanlines: 0.3, noise: 0.2, interlace: 0.3 };
 
