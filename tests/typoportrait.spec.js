@@ -261,7 +261,7 @@ test.describe('typographic portrait: layout and modulation', () => {
     }
     const empty = await renderMode(page, { ...base('   '), outputs: ['svg'] });
     const info = await inspect(page, empty.outputs.svg, 'svg');
-    expect(info.letters.startsWith('HORAIN')).toBe(true); // fell back to the default text
+    expect(info.letters.startsWith('DITHER')).toBe(true); // fell back to the default text
     await guard.assertClean(expect);
   });
 

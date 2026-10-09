@@ -22,40 +22,24 @@
   gap: 28px;
 }
 
-/* Product lockup: "dither" in the display face, "by", then the official Horain logo (never retyped).
-   The gap before the logo keeps clear space around it (PLAN.md 18.4). */
+/* Wordmark: a typographic "DITHER" in the condensed display face (no logo image) */
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   flex: none;
   color: var(--fg);
   text-decoration: none;
   border-radius: var(--radius-sm);
 }
 .brand-name {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.3rem;
-  letter-spacing: -0.02em;
-  text-transform: lowercase;
+  font-family: var(--font-condensed);
+  font-weight: 900;
+  font-size: 1.85rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
   line-height: 1;
 }
-.brand-by {
-  font-weight: 600;
-  font-size: 11px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--fg-2);
-  margin-right: 6px;
-}
-
-/* Logo: always one of the two official SVGs, chosen by data-tone (PLAN.md 4.0 / 18.4).
-   Letter size is kept equal in both files (the light SVG has a taller viewBox). */
-.logo { height: var(--logo-h, 28px); width: auto; }
-.logo-on-light { height: calc(var(--logo-h, 28px) * .94); }
-:root[data-tone="dark"] .logo-on-light,
-:root[data-tone="light"] .logo-on-dark { display: none; }
+.header-tag { flex: none; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-2); white-space: nowrap; }
 
 .site-nav { display: flex; gap: 22px; margin-right: auto; }
 .site-nav a {
@@ -83,26 +67,25 @@ body[data-view="studio"] .view-home { display: none; }
 body[data-view="home"] .view-studio { display: none; }
 
 /* ---------- Hero ---------- */
+/* Full-width condensed headline, then the live demo and the dropzone side by side (css/landing.css adds the rest) */
 .hero {
   max-width: calc(var(--page-max) + 48px);
   margin: 0 auto;
-  padding: 56px 24px 24px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
-  gap: 56px;
-  align-items: center;
+  padding: 36px 24px 24px;
 }
-
-.hero-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .hero-title {
-  font-size: clamp(2.3rem, 5.2vw, 4.4rem);
-  font-weight: 600;
-  margin-bottom: 18px;
-  text-wrap: balance;
+  font-size: clamp(3.4rem, 10.4vw, 10.5rem);
+  margin: 0 0 36px;
 }
+.hero-line { display: block; }
 .hero-accent { color: var(--accent-text); }
-.hero-sub { color: var(--fg-2); font-size: 1.05rem; max-width: 46ch; margin-bottom: 18px; }
-.hero-copy .valla { margin: 0 0 26px; }
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+  gap: 48px;
+  align-items: start;
+}
+.hero-sub { color: var(--fg-2); max-width: 52ch; margin-bottom: 18px; }
 
 .hero-demo { margin: 0; min-width: 0; }
 
@@ -114,7 +97,6 @@ body[data-view="home"] .view-studio { display: none; }
 }
 .section-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .section-title { font-size: clamp(1.6rem, 3.2vw, 2.4rem); }
-.section > .valla { margin-bottom: 28px; }
 .idx { color: var(--accent-text); font-family: var(--font-mono); letter-spacing: 0; }
 
 .mode-grid {
@@ -145,8 +127,6 @@ body[data-view="home"] .view-studio { display: none; }
   align-items: center;
   gap: 16px 28px;
 }
-.site-footer .logo { --logo-h: 26px; }
-.footer-brand .brand-name { font-size: 1.15rem; }
 .footer-links { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-left: auto; font-size: 13px; color: var(--fg-2); }
 .footer-links a { color: var(--fg-2); text-decoration: none; }
 .footer-links a:hover { color: var(--accent-text); text-decoration: underline; }
@@ -223,13 +203,11 @@ body[data-view="studio"] .site-footer { display: none; }
   .header-inner { padding: 0 var(--gutter); gap: 10px; }
   .site-nav, .gh-link { display: none; }
   .header-tools { gap: 8px; }
-  .logo { --logo-h: 24px; }
-  .brand { gap: 6px; }
-  .brand-name { font-size: 1.05rem; }
-  .brand-by { margin-right: 2px; }
+  .brand-name { font-size: 1.5rem; }
   .header-tools .seg button { padding: 4px 9px; }
 
-  .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 28px var(--gutter) 8px; }
+  .hero { padding: 24px var(--gutter) 8px; }
+  .hero-title { margin-bottom: 24px; }
   .section { padding: 44px var(--gutter) 8px; }
   .about-grid { grid-template-columns: minmax(0, 1fr); }
   .footer-inner { padding: 24px var(--gutter); }
@@ -260,6 +238,7 @@ body[data-view="studio"] .site-footer { display: none; }
 }
 
 @media (max-width: 899px) {
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .hero-demo { order: 2; }
 }
 
@@ -267,14 +246,12 @@ body[data-view="studio"] .site-footer { display: none; }
   .header-inner { gap: 20px; }
   .site-nav { gap: 16px; }
   .gh-link { display: none; } /* the footer links to the repository as well */
-  .hero { grid-template-columns: minmax(0, 1fr); gap: 32px; }
   .about-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Very small phones (< 360 px): drop "by" and tighten the header so nothing overflows */
+/* Very small phones (< 360 px): tighten the header so nothing overflows */
 @media (max-width: 359px) {
-  .brand-by { display: none; }
-  .brand-name { font-size: 1rem; }
+  .brand-name { font-size: 1.3rem; }
   .header-tools .seg button { padding: 4px 8px; }
   .header-inner { gap: 6px; }
 }

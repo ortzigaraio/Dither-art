@@ -6,8 +6,8 @@ import {
 } from './helpers.js';
 
 const THEMES = {
-  horain: { tone: 'dark', bg: '#15181e', accent: '#c4f169' },
-  claro: { tone: 'light', bg: '#f7f8fa', accent: '#c4f169' },
+  horain: { tone: 'dark', bg: '#050505', accent: '#1e1eff' },
+  claro: { tone: 'light', bg: '#f7f8fa', accent: '#1e1eff' },
   amber: { tone: 'dark', bg: '#0b0b0a', accent: '#ffb000' },
   crt: { tone: 'dark', bg: '#050a06', accent: '#39ff6a' },
   paper: { tone: 'light', bg: '#efece4', accent: '#e5402a' },
@@ -28,7 +28,7 @@ test.describe('1. page load', () => {
 });
 
 test.describe('3. themes and language', () => {
-  test('every theme applies, shows the right logo and is remembered', async ({ page }) => {
+  test('every theme applies, keeps the DITHER wordmark and is remembered', async ({ page }) => {
     const guard = watchPage(page);
     await gotoApp(page);
     for (const [id, th] of Object.entries(THEMES)) {
@@ -45,12 +45,9 @@ test.describe('3. themes and language', () => {
       const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toLowerCase());
       expect(accent).toBe(th.accent);
 
-      // Header logo: exactly the dark-bg SVG on dark themes, the light-bg SVG on light themes
-      const visible = page.locator('.site-header .logo:visible');
-      await expect(visible).toHaveCount(1);
-      await expect(visible).toHaveAttribute('src', th.tone === 'dark' ? /horain-espino-on-dark\.svg$/ : /horain-espino\.svg$/);
-      const loaded = await visible.evaluate((img) => img.complete && img.naturalWidth > 0);
-      expect(loaded).toBe(true);
+      // Header wordmark: typographic, visible and readable on every theme; no logo image
+      await expect(page.locator('.site-header .brand-name')).toBeVisible();
+      await expect(page.locator('.site-header img')).toHaveCount(0);
     }
     // persisted across reloads
     await page.selectOption('#theme-select', 'amber');

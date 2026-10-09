@@ -1,7 +1,7 @@
 {
-  "name": "Dither by Horain",
+  "name": "Dither",
   "short_name": "Dither",
-  "description": "Turn images, video and your webcam into ASCII, dithering, halftone, plotter SVG, 3D and generative art. Everything runs in your browser: nothing is uploaded.",
+  "description": "Turn images, video and your webcam into ASCII, dithering, linear halftone, plotter SVG, 3D and generative art. Everything runs in your browser: nothing is uploaded.",
   "lang": "en",
   "dir": "ltr",
   "id": "./",
@@ -9,11 +9,11 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#15181E",
-  "theme_color": "#15181E",
+  "background_color": "#050505",
+  "theme_color": "#050505",
   "categories": ["graphics", "photo", "design", "utilities"],
   "icons": [
-    { "src": "assets/brand/horain-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/icons/dither-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "assets/icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }

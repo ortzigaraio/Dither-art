@@ -54,16 +54,18 @@ test('works under a sub-path: hero, studio, exports and assets all resolve relat
   await page.waitForFunction(() => !document.getElementById('hero-demo').hidden);
   await expect.poll(async () => (await canvasStats(page, '#hero-canvas')).variance).toBeGreaterThan(0);
 
-  // logo, valla and fonts really loaded from the sub-path
-  const logoOk = await page.locator('.site-header .logo:visible').evaluate((img) => img.complete && img.naturalWidth > 0);
-  expect(logoOk).toBe(true);
+  // fonts (including the condensed display face of the wordmark) and the landing pictures load from the sub-path
+  await expect(page.locator('.site-header .brand-name')).toBeVisible();
   const fonts = await page.evaluate(async () => {
     await document.fonts.ready;
     return Array.from(document.fonts).filter((f) => f.status === 'loaded').map((f) => f.family);
   });
-  expect(fonts).toEqual(expect.arrayContaining(['Unbounded', 'Geist', 'Geist Mono']));
-  const mask = await page.locator('.valla').first().evaluate((el) => getComputedStyle(el).webkitMaskImage);
-  expect(mask).toContain(`${PREFIX}assets/brand/wire-valla.svg`);
+  expect(fonts).toEqual(expect.arrayContaining(['Big Shoulders Display', 'Unbounded', 'Geist', 'Geist Mono']));
+  const art = page.locator('.feature-art img');
+  await art.scrollIntoViewIfNeeded();
+  await expect.poll(() => art.evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+  expect(await art.evaluate((img) => img.currentSrc)).toContain(`${PREFIX}assets/landing/`);
+  await page.evaluate(() => window.scrollTo(0, 0));
 
   // the studio works as well
   await loadFixture(page);
@@ -76,9 +78,8 @@ test('works under a sub-path: hero, studio, exports and assets all resolve relat
 
   // theme, language and the brand icon links
   await page.selectOption('#theme-select', 'paper');
-  await expect(page.locator('.site-header .logo:visible')).toHaveAttribute('src', /horain-espino\.svg$/);
   const icon = await page.locator('link[rel="icon"]').evaluate((l) => l.href);
-  expect(icon).toBe(`${base}assets/brand/horain-icon.svg`);
+  expect(icon).toBe(`${base}assets/icons/dither-icon.svg`);
 
   expect(outside, `requests outside ${PREFIX}`).toEqual([]);
   await guard.assertClean(expect);

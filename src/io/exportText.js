@@ -92,7 +92,7 @@ export function gridToHTML(grid, { title = config.productName } = {}) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="generator" content="${escapeXml(config.productName)} by Horain">
+<meta name="generator" content="${escapeXml(config.productName)}">
 <title>${escapeXml(title)}</title>
 <style>html,body{margin:0;padding:0;${bg ? `background:${bg};` : ''}}body{padding:24px}</style>
 </head>

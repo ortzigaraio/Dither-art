@@ -25,7 +25,7 @@ const stackOf = (id) => {
 const COLOR_MODES = ['mono', 'original', 'gradient', 'palette'];
 const MAX_PREVIEW_SIDE = 4096;
 const MAX_LETTERS_PER_ROW = 3000;
-const DEFAULT_TEXT = 'HORAIN ';
+const DEFAULT_TEXT = 'DITHER ';
 
 // ---- font loading and advance widths -----------------------------------------------------------------------------------
 const pending = new Set();
@@ -142,7 +142,7 @@ export default {
   hide: ['dither', 'serpentine'],
 
   presets: [
-    { id: 'name', name: { es: 'Tu nombre', en: 'Your name' }, mode: { text: 'HORAIN ', modulate: 'size', font: 'geist' } },
+    { id: 'name', name: { es: 'Tu nombre', en: 'Your name' }, mode: { text: 'DITHER ', modulate: 'size', font: 'geist' } },
     { id: 'poster', name: { es: 'Cartel', en: 'Poster' }, mode: { modulate: 'weight', font: 'unbounded', fontSize: 14 } },
     { id: 'whisper', name: { es: 'Susurro', en: 'Whisper' }, mode: { modulate: 'opacity', font: 'jetbrains-mono', fontSize: 10 } },
   ],
@@ -299,7 +299,7 @@ export default {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="generator" content="${escapeXml(config.productName)} by Horain">
+<meta name="generator" content="${escapeXml(config.productName)}">
 <title>${escapeXml(config.productName)} typographic portrait</title>
 <style>html,body{margin:0;padding:0;${bg ? `background:${bg};` : ''}}body{padding:24px}svg{display:block;max-width:100%;height:auto;margin:0 auto}</style>
 </head>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Dither</title>
+  <!-- Dither mark: a linear-halftone ramp (white lines thickening downwards) on electric blue -->
+  <rect width="64" height="64" fill="#1E1EFF"/>
+  <g fill="#F4F2EC">
+    <rect x="12" y="11.25" width="40" height="1.5"/>
+    <rect x="12" y="19.75" width="40" height="2.5"/>
+    <rect x="12" y="28.25" width="40" height="3.5"/>
+    <rect x="12" y="36.75" width="40" height="4.5"/>
+    <rect x="12" y="45.25" width="40" height="5.5"/>
+    <rect x="12" y="53.25" width="40" height="5.5" />
+  </g>
+</svg>

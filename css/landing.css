@@ -1,0 +1,184 @@
+/* Landing (home view): black, electric-blue blocks and white ink; huge condensed uppercase headlines
+   (Big Shoulders Display), small mono uppercase labels, square buttons and the "cropped reveal & pan" frames
+   (src/ui/reveal.js). Colours come from the theme tokens, so every theme still works. */
+
+.headline {
+  font-family: var(--font-condensed);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -.005em;
+  line-height: .86;
+  text-wrap: balance;
+}
+.wordmark { font-family: var(--font-condensed); font-weight: 900; text-transform: uppercase; letter-spacing: .05em; line-height: 1; }
+.card-title {
+  font-family: var(--font-condensed);
+  font-weight: 800;
+  font-size: 1.9rem;
+  text-transform: uppercase;
+  letter-spacing: .01em;
+  line-height: .95;
+}
+.label.mono { font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: .12em; }
+
+/* ---------- header ---------- */
+.header-tag { margin-left: -10px; }
+@media (max-width: 1199px) { .header-tag { display: none; } }
+.site-nav a { font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: .12em; }
+
+/* ---------- hero ---------- */
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  padding: 10px 0 0;
+  margin-bottom: 22px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.hero-meta > span:first-child { color: var(--accent-text); }
+.hero-meta-end { margin-left: auto; }
+.hero-accent {
+  display: inline-block;
+  padding: 0 .07em;
+  margin-top: .04em;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.hero-lead {
+  font-family: var(--font-condensed);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 2.6vw, 2.3rem);
+  line-height: 1;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.hero-sub.label { font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: .1em; }
+
+/* the demo frame: square corners and registration ticks instead of a window chrome */
+.hero-demo .term { position: relative; overflow: visible; border-radius: 0; box-shadow: none; }
+.hero-demo .term canvas { display: block; }
+.term-fig { color: var(--accent-text); }
+.tick { position: absolute; width: 12px; height: 12px; border: 0 solid var(--fg); pointer-events: none; }
+.tick-tl { top: -6px; left: -6px; border-top-width: 1px; border-left-width: 1px; }
+.tick-tr { top: -6px; right: -6px; border-top-width: 1px; border-right-width: 1px; }
+.tick-bl { bottom: -6px; left: -6px; border-bottom-width: 1px; border-left-width: 1px; }
+.tick-br { bottom: -6px; right: -6px; border-bottom-width: 1px; border-right-width: 1px; }
+
+/* ---------- cropped reveal & pan ---------- */
+.reveal { position: relative; overflow: hidden; margin: 0; background: var(--panel); }
+.reveal-media {
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: scale(1.18);
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) { .reveal-media { will-change: auto; } }
+
+/* ---------- feature: full-bleed electric-blue block ---------- */
+.feature { margin-top: 56px; background: var(--accent); color: var(--accent-ink); }
+.feature-inner {
+  max-width: calc(var(--page-max) + 48px);
+  margin: 0 auto;
+  padding: 72px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: 64px;
+  align-items: center;
+}
+.feature-art { background: transparent; }
+.feature-copy { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.feature .label, .feature .idx { color: inherit; }
+.feature-title { font-size: clamp(3.6rem, 9vw, 8.6rem); }
+.feature-body { font-size: 1.1rem; max-width: 44ch; }
+.spec-list { list-style: none; margin: 0; padding: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.spec-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+}
+.spec-list li:last-child { border-bottom: 1px solid color-mix(in srgb, currentColor 40%, transparent); }
+.btn-invert {
+  align-self: flex-start;
+  background: var(--accent-ink);
+  color: var(--accent);
+  border-color: var(--accent-ink);
+  border-radius: 0;
+}
+.btn-invert:hover:not(:disabled) { background: transparent; color: var(--accent-ink); border-color: var(--accent-ink); }
+.btn-invert:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; }
+
+/* ---------- sections ---------- */
+.section-title { font-size: clamp(2.8rem, 7vw, 6.2rem); }
+.section-head { margin-bottom: 28px; }
+
+/* ---------- works: asymmetric 12-column grid ---------- */
+.works-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 40px 24px;
+  align-items: start;
+}
+.work { margin: 0; min-width: 0; }
+.work-wide { grid-column: 1 / span 8; }
+.work-tall { grid-column: 9 / span 4; margin-top: 120px; }
+.work-square { grid-column: 1 / span 5; margin-top: -40px; }
+.work-collage { grid-column: 6 / span 7; }
+.work-frame { overflow: hidden; background: var(--panel); }
+.work-frame img { display: block; width: 100%; height: auto; }
+.work figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.work figcaption span:first-child { color: var(--accent-text); }
+.works-note { margin-top: 36px; color: var(--fg-2); font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; }
+
+/* ---------- about ---------- */
+.about-card { border-radius: 0; border-width: 1px 0 0; background: transparent; padding: 18px 0 0; }
+.about-card .card-title { color: var(--fg); }
+.about-more .card-title { margin-bottom: 12px; }
+
+/* ---------- footer ---------- */
+.site-footer { overflow: hidden; }
+.footer-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; width: 100%; }
+.footer-claim { font-size: clamp(2.4rem, 6vw, 4.6rem); }
+.footer-links { margin-left: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+.footer-links .link-btn { font: inherit; letter-spacing: inherit; text-transform: inherit; }
+.footer-wordmark {
+  margin: 0;
+  padding: .06em 0 0;
+  font-size: clamp(6rem, 30vw, 26rem);
+  line-height: .84;
+  text-align: center;
+  letter-spacing: .02em;
+  background: var(--accent);
+  color: var(--accent-ink);
+  user-select: none;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 899px) {
+  .feature-inner { grid-template-columns: minmax(0, 1fr); gap: 36px; padding: 48px var(--gutter, 16px); }
+  .works-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .work-wide, .work-tall, .work-square, .work-collage { grid-column: auto; margin-top: 0; }
+}
+@media (max-width: 699px) {
+  .feature { margin-top: 36px; }
+  .hero-meta-end { margin-left: 0; }
+  .footer-claim { font-size: 2.4rem; }
+}

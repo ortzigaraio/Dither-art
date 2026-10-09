@@ -310,46 +310,32 @@ test.describe('home view', () => {
     expect((await canvasStats(page)).variance).toBeGreaterThan(0);
   });
 
-  test('the brand valla and the logo come from the official SVG files', async ({ page }) => {
+  test('the icons come from the Dither files', async ({ page }) => {
     await gotoApp(page);
-    const mask = await page.locator('.valla').first().evaluate((el) => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage);
-    expect(mask).toContain('assets/brand/wire-valla.svg');
-    const srcs = await page.locator('.logo').evaluateAll((els) => els.map((e) => e.getAttribute('src')));
-    expect(new Set(srcs)).toEqual(new Set(['./assets/brand/horain-espino-on-dark.svg', './assets/brand/horain-espino.svg']));
-    const favicon = await page.locator('link[rel="icon"]').getAttribute('href');
-    expect(favicon).toBe('./assets/brand/horain-icon.svg');
+    const favicon = await page.locator('link[rel="icon"]').first().getAttribute('href');
+    expect(favicon).toBe('./assets/icons/dither-icon.svg');
     const apple = await page.locator('link[rel="apple-touch-icon"]').getAttribute('href');
     expect(apple).toBe('./assets/icons/apple-touch-icon.png');
     for (const url of [favicon, apple]) {
       const res = await page.request.get(`/${url.replace('./', '')}`);
       expect(res.status()).toBe(200);
     }
-    // header logo height >= 24px (PLAN.md 18.4)
-    const h = await page.locator('.site-header .logo:visible').evaluate((el) => el.getBoundingClientRect().height);
+    // the header wordmark stays legible: at least 24px tall (PLAN.md 18.4)
+    const h = await page.locator('.site-header .brand-name').evaluate((el) => el.getBoundingClientRect().height);
     expect(h).toBeGreaterThanOrEqual(24);
   });
 
-  test('the product is Dither by Horain: name, lockup, links and file names', async ({ page }) => {
+  test('the product is Dither: name, wordmark, links and file names', async ({ page }) => {
     await gotoApp(page);
-    await expect(page).toHaveTitle('Dither by Horain');
-    await expect(page.locator('.site-header .brand')).toHaveAttribute('aria-label', 'Dither by Horain');
-    await expect(page.locator('.site-header .brand-name')).toHaveText('dither');
-    await expect(page.locator('.site-header .brand-by')).toHaveText('by');
-    // "dither" is set in the display face, the logo itself stays the official SVG, and "by" sits between them
-    const order = await page.evaluate(() => Array.from(document.querySelectorAll('.site-header .brand > *'))
-      .filter((e) => getComputedStyle(e).display !== 'none').map((e) => e.className.split(' ')[0]));
-    expect(order).toEqual(['brand-name', 'brand-by', 'logo']);
-    const nameFont = await page.locator('.site-header .brand-name').evaluate((el) => getComputedStyle(el).fontFamily);
-    expect(nameFont).toContain('Unbounded');
-    // clear space between "by" and the logo is at least the height of the "o" (about half the logo height)
-    const gap = await page.evaluate(() => {
-      const by = document.querySelector('.site-header .brand-by').getBoundingClientRect();
-      const logo = Array.from(document.querySelectorAll('.site-header .logo')).find((e) => getComputedStyle(e).display !== 'none').getBoundingClientRect();
-      return { gap: logo.left - by.right, logoH: logo.height };
-    });
-    expect(gap.gap).toBeGreaterThanOrEqual(gap.logoH * 0.45);
-    // the footer repeats the lockup, links point to the Dither repo, config agrees with the markup
-    await expect(page.locator('.site-footer .brand-name')).toHaveText('dither');
+    await expect(page).toHaveTitle(/^Dither\b/);
+    await expect(page.locator('.site-header .brand')).toHaveAttribute('aria-label', 'Dither, home');
+    // a typographic DITHER wordmark in the condensed display face
+    await expect(page.locator('.site-header .brand-name')).toHaveText('Dither');
+    const mark = await page.locator('.site-header .brand-name').evaluate((el) => getComputedStyle(el));
+    expect(mark.fontFamily).toContain('Big Shoulders Display');
+    expect(mark.textTransform).toBe('uppercase');
+    // the footer repeats the wordmark, links point to the Dither repo, config agrees with the markup
+    await expect(page.locator('.site-footer .footer-wordmark')).toHaveText('Dither');
     const cfg = await page.evaluate(async () => (await import('/src/config.js')).config);
     expect(cfg).toMatchObject({ productName: 'Dither', fileSlug: 'dither', siteUrl: 'https://dither.ortzigar.org/', repoUrl: 'https://github.com/ortzigaraio/Dither-art' });
     const hrefs = await page.locator('a[href*="github.com"]').evaluateAll((els) => els.map((e) => e.href));
@@ -357,13 +343,15 @@ test.describe('home view', () => {
     // every GitHub link is the configured repository (or a file inside it, such as the LICENSE)
     for (const h of hrefs) expect(h === cfg.repoUrl || h.startsWith(`${cfg.repoUrl}/blob/main/`), h).toBe(true);
     expect(hrefs.filter((h) => h === cfg.repoUrl).length).toBeGreaterThanOrEqual(2);
-    // the visible name never replaces the logo: no text node spells the Horain logo anywhere in the header
-    const logoCount = await page.locator('.site-header img.logo').count();
-    expect(logoCount).toBe(2);
+    // Dither stands on its own: no Horain logo or "by Horain" anywhere on the page or in its metadata
+    await expect(page.locator('img[src*="assets/brand/"]')).toHaveCount(0);
+    const text = await page.evaluate(() => document.documentElement.outerHTML);
+    expect(text).not.toMatch(/by Horain|horain-espino|horain-icon/i);
+    expect(await page.evaluate(() => document.body.innerText)).not.toMatch(/horain/i);
   });
 
   for (const width of [320, 340, 360, 390]) {
-    test(`mobile header keeps the lockup and the theme/language controls on one row at ${width}px`, async ({ page }) => {
+    test(`mobile header keeps the wordmark and the theme/language controls on one row at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 740 });
       await gotoApp(page);
       await page.evaluate(() => document.fonts.ready);
@@ -373,10 +361,10 @@ test.describe('home view', () => {
           const b = e.getBoundingClientRect();
           return { l: b.left, r: b.right, t: b.top, b: b.bottom };
         };
-        return { name: r('.site-header .brand-name'), logo: r('.site-header .logo'), picker: r('.theme-picker'), lang: r('.lang-toggle'), vw: window.innerWidth };
+        return { name: r('.site-header .brand-name'), picker: r('.theme-picker'), lang: r('.lang-toggle'), vw: window.innerWidth };
       });
       expect(rects.name.l).toBeGreaterThanOrEqual(15);
-      expect(rects.logo.r).toBeLessThanOrEqual(rects.picker.l);
+      expect(rects.name.r).toBeLessThanOrEqual(rects.picker.l);
       expect(rects.picker.r).toBeLessThanOrEqual(rects.lang.l);
       expect(rects.lang.r).toBeLessThanOrEqual(rects.vw - 15); // 16px gutter on both sides
       expect(Math.abs(rects.name.t - rects.lang.t)).toBeLessThan(20); // same row
@@ -393,27 +381,28 @@ test.describe('home view', () => {
     });
   }
 
-  test('typography follows the brand: Unbounded lowercase titles, Geist uppercase labels, Geist Mono values', async ({ page }) => {
+  test('typography: condensed uppercase headlines, Geist Mono uppercase labels and values, Unbounded card titles', async ({ page }) => {
     await gotoApp(page);
     const fam = (sel) => page.locator(sel).first().evaluate((el) => {
       const cs = getComputedStyle(el);
       return { family: cs.fontFamily, transform: cs.textTransform, weight: cs.fontWeight, ls: cs.letterSpacing };
     });
     const h1 = await fam('.hero-title');
-    expect(h1.family).toContain('Unbounded');
-    expect(h1.transform).toBe('lowercase');
-    expect(h1.weight).toBe('600');
-    const label = await fam('.hero-eyebrow');
-    expect(label.family).toContain('Geist');
+    expect(h1.family).toContain('Big Shoulders Display');
+    expect(h1.transform).toBe('uppercase');
+    expect(h1.weight).toBe('800');
+    const label = await fam('.section-head .label');
+    expect(label.family).toContain('Geist Mono');
     expect(label.transform).toBe('uppercase');
-    expect(label.weight).toBe('600');
+    const card = await fam('.mode-card-name');
+    expect(card.family).toContain('Unbounded');
     await loadFixture(page);
     const val = await fam('.ctl-num');
     expect(val.family).toContain('Geist Mono');
     expect(await page.evaluate(() => document.fonts.check('600 20px "Unbounded"', 'abc'))).toBe(true);
     expect(await page.evaluate(() => document.fonts.check('16px "Geist Mono"', '█░▒▓'))).toBe(true);
     const loaded = await page.evaluate(() => Array.from(document.fonts).filter((f) => f.status === 'loaded').map((f) => f.family));
-    expect(loaded).toEqual(expect.arrayContaining(['Unbounded', 'Geist', 'Geist Mono']));
+    expect(loaded).toEqual(expect.arrayContaining(['Big Shoulders Display', 'Unbounded', 'Geist', 'Geist Mono']));
   });
 });
 
