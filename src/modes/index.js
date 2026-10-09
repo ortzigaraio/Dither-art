@@ -21,6 +21,7 @@ import flowfield from './flowfield.js';
 import blueprint from './blueprint.js';
 import vectrex from './vectrex.js';
 import spiral from './spiral.js';
+import hiddenwire from './hiddenwire.js';
 import lidar from './lidar.js';
 import { hasWebGL2 } from '../engine/gl.js';
 
@@ -47,6 +48,7 @@ export const MODES = [
   blueprint,
   vectrex,
   spiral,
+  hiddenwire,
   lidar,
 ];
 
