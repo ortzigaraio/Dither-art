@@ -28,6 +28,7 @@ import * as heavy from './engine/heavy.js';
 import { loadDepthAI, depthAIStatus } from './engine/depth.js';
 import { orbitBy, panBy, dollyBy } from './engine/camera.js';
 import { confirmDepthDownload } from './ui/depthDialog.js';
+import { initShortcuts, openShortcutsHelp } from './ui/shortcuts.js';
 
 const AI_CONSENT_KEY = 'horain.depthAI';
 const hasAIConsent = () => { try { return localStorage.getItem(AI_CONSENT_KEY) === '1'; } catch { return false; } };
@@ -684,6 +685,26 @@ export function createStudio({ onChangeFile }) {
     modeList.rebuild();
     controls.rebuild();
   });
+
+  // ---- keyboard shortcuts (PLAN.md 4.7) ----------------------------------------------------------------
+  function cycleMode(dir) {
+    const list = MODES.filter((m) => modeAvailable(m));
+    const i = list.findIndex((m) => m.id === store.state.modeId);
+    const next = list[(i + dir + list.length) % list.length];
+    store.setModeId(next.id);
+    document.querySelector(`#mode-list [data-mode-id="${next.id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  initShortcuts({
+    inStudio: () => active && !!source,
+    cycleMode,
+    resetMode: () => { store.resetGroup('mode'); toast(t('keys.didReset', { mode: tl(mode().name) })); },
+    exportImage: () => actions.png(1),
+    copy: () => (mode().exports?.includes('txt') ? actions.copyText() : actions.copyImage()),
+    fullscreen: () => viewer.toggleFullscreen(),
+    split: () => viewer.toggleSplit(),
+    surprise: () => surpriseMe(),
+  });
+  document.getElementById('vw-keys')?.addEventListener('click', () => openShortcutsHelp());
 
   scheduler.start();
 
