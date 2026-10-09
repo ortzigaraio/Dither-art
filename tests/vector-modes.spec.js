@@ -8,7 +8,7 @@ import {
   settle, pauseVideo, renderMode,
 } from './helpers.js';
 
-const VECTOR_MODES = ['crosshatch', 'contours', 'voronoi', 'flowfield', 'blueprint', 'vectrex', 'spiral'];
+const VECTOR_MODES = ['crosshatch', 'linehalftone', 'contours', 'voronoi', 'flowfield', 'blueprint', 'vectrex', 'spiral'];
 const RECTS = [['#f0f0f0', 0, 0, 1, 1], ['#101010', 0.1, 0.15, 0.4, 0.5], ['#808080', 0.55, 0.2, 0.35, 0.6], ['#c04020', 0.2, 0.7, 0.6, 0.2]];
 const HOSTILE = `<img src=x onerror=alert(1)>&"'`;
 
