@@ -1,60 +1,51 @@
 # Dither
 
-*Dither by Horain.* Turn images into ASCII art and generative art, entirely in your browser. Nothing is uploaded: files are decoded,
-processed and exported on your device.
+*Dither by Horain* turns images, video and your webcam into art: ASCII, dithering, Braille, halftone, plotter-ready SVG,
+3D, simulations and more, with 25 styles in total. **Everything runs in your browser.** Files are decoded, processed and
+exported on your device, and nothing is uploaded.
 
-Dither is a static site (no framework, no bundler, no build step): plain HTML, CSS and ES modules, served as-is
-by GitHub Pages. The full specification lives in [`PLAN.md`](PLAN.md) (in Spanish); the rules for agents are in
-[`CLAUDE.md`](CLAUDE.md); publishing steps are in [`DEPLOY.md`](DEPLOY.md).
+**Live:** <https://dither.ortzigar.org> · Spec: [`PLAN.md`](PLAN.md) (Spanish) · Agent rules: [`CLAUDE.md`](CLAUDE.md) ·
+Publishing: [`DEPLOY.md`](DEPLOY.md)
 
-## Status
+![Home: the hero runs the real engine on a procedural demo, touring the styles](docs/screenshots/home.jpg)
 
-Phases 0, 1 and 2, and the text and pixel modes of phase 3, are in place:
+Dither is also the UI/UX test bench for **Horain**. Its six themes, tokens and components (`css/tokens.css`,
+`css/components.css`) are designed here and do not depend on the app's logic, so they can be copied into the Horain app as they are.
 
-- Site skeleton, brand (espino logo, barbed-wire divider, the "eye"), six themes (HORAIN, CLARO, AMBER, CRT, PAPER, CAD),
-  ES/EN interface and a validated dropzone (click, drag and drop anywhere, paste, demo).
-- Render engine: preprocessing with CSS-filter semantics, all error-diffusion kernels, Bayer and blue-noise dithering,
-  colour modes, glyph atlas with measured ink density, zoom/pan/split viewer.
-- The complete **ASCII** mode with PNG, TXT, HTML, ANSI and clipboard export.
+It is a static site with no framework, no bundler and no build step: plain HTML, CSS, ES modules, WebGL2, Canvas2D and Web
+Workers, served as-is by GitHub Pages.
 
-- **Video and webcam** (phase 2): open a video file or the camera, play/pause/scrub/step frames, and export MP4 or WebM with the
-  original sound (offline, frame by frame, with [Mediabunny](vendor/README.md)). Trim, frame rate, quality, height and audio are
-  options; the camera can be recorded. Browsers without WebCodecs fall back to a real-time `MediaRecorder` recording.
+## What it does
 
-- **Text modes** (phase 3, part A): ASCII, **Braille** (2×4 dots), **ANSI Art** (half blocks and shading, with a CP437 `.ans`
-  export), **PETSCII** (our own 8×8 glyph set and a C64-style palette, JSON export), **Matrix rain** (animated, deterministic)
-  and **Typographic portrait** (SVG/HTML export). CPU-heavy work runs in a cancellable Web Worker with a 30 s watchdog.
+| | |
+|---|---|
+| ![Studio with the ASCII mode](docs/screenshots/studio-ascii.jpg) | ![Halftone CMYK in the light theme](docs/screenshots/studio-halftone-light.jpg) |
+| ![1-bit dithering through the Full CRT post-FX in the CRT theme](docs/screenshots/studio-crt.jpg) | ![Blueprint CAD in the CAD theme](docs/screenshots/studio-blueprint.jpg) |
 
-- **Pixel modes** (phase 3, part B): **1-bit dithering** (Bayer, blue noise and every error-diffusion kernel; Macintosh, Game Boy,
-  Obra Dinn, amber and phosphor inks), **Halftone** (mono, CMYK, additive RGB and duotone with a layered SVG, one layer per ink),
-  **Pixel art** (block average or median, k-means or retro palettes, outline, nearest-neighbour 1x/4x/8x),
-  **LED panel** (PNG and SVG), **Thermography** (eleven look-up-table palettes, isotherm, HUD and a gradients sub-mode),
-  **Glitch art** (eight deterministic effects, optional animation) and **Pixel sorting** (any angle, in the worker, with progress,
-  cancellation and a mask view).
+- **25 styles in five families.**
+  - **Text:** ASCII, Braille, ANSI art (`.ans` export), PETSCII, Matrix rain and a typographic portrait.
+  - **Pixel:** 1-bit dithering (Bayer, blue noise and every error-diffusion kernel), halftone (mono, CMYK, RGB and duotone), pixel art, LED panel, thermography, glitch art and pixel sorting.
+  - **Vector:** engraving/crosshatch, contour lines, Voronoi/stipple, flow field, blueprint CAD, Vectrex and a one-line spiral or squiggle.
+  - **3D (WebGL2):** LiDAR point cloud, hidden-line CAD wireframe, raymarched 3D ASCII and volumetric text.
+  - **Simulation:** Gray-Scott reaction-diffusion and Life-like cellular automata.
+- **Inputs:** images (PNG, JPG, WebP, GIF, AVIF and BMP, validated by their magic bytes), video (MP4, WebM and MOV) and the
+  webcam. Drop a file anywhere on the page, paste one, or try the demo.
+- **Exports:** PNG at 1×, 2× or 4×; SVG (in px or on A4, A3, Letter or a custom page in mm, with Inkscape layers and a plotter
+  mode); TXT, HTML and ANSI; PLY and JSON; and MP4 or WebM video with the original sound. You can also copy the result to the clipboard.
+- **Post-FX:** scanlines, CRT curvature, glow, chromatic aberration, vignette, grain and flicker, with a *Full CRT* preset.
+  They apply to the preview, PNG and video, and never to SVG or text.
+- **Presets:** each style has curated presets. You can also save, export and import your own presets as JSON (imports are
+  validated and clamped), use *Surprise me* for random settings within each style's ranges, and copy a **share link** that
+  carries the settings (never the file).
+- **Keyboard:** `[` `]` switch style, `R` resets, `E` exports a PNG, `C` copies, `F` goes fullscreen, `S` shows before/after,
+  `X` is *Surprise me*, Space and `←` `→` control video, and `?` lists all the shortcuts.
+- **Depth:** by default, brightness stands in for depth. *Enhance with AI* is optional: after you confirm, it downloads Depth
+  Anything V2 once and runs it in a worker in your browser.
+- **Accessibility:** ES/EN, six themes that meet WCAG AA contrast, and keyboard navigation. It respects
+  `prefers-reduced-motion`, and the settings become a bottom sheet with tabs on phones. axe-core reports no violations on the
+  home page or in the studio in any of the themes.
 
-- **Vector modes** (phase 4): **Engraving / crosshatch** (crosshatching, banknote engraving with variable-width lines,
-  scribble), **Contour lines** (index contours with labels, hypsometric bands, hillshade), **Voronoi** (weighted stippling
-  relaxed with Lloyd in the worker and animated in the viewer, plus cells, low-poly and constellation), **Flow field**
-  (animated particles on curl noise and the picture's contours), **Blueprint CAD** (blueprint, brutalist and CAD-screen
-  variants with vector edges, hatching, automatic dimensions and an editable title block), **Vectrex** (terrain with hidden
-  lines, contours or a perspective mesh, glow and phosphor persistence) and **Spiral / squiggle** (one continuous line).
-  Every vector mode keeps its polylines in memory and exports SVG: in px or on an A4 / A3 / Letter / custom page in mm with a
-  margin, with Inkscape layers, stroke order optimised for pen plotters and a plotter mode (strokes only, no fills).
-
-- **3D modes** (phase 5, WebGL2): **LiDAR scan** (point cloud with a scan sweep, ring mode, noise and dropout; PLY export),
-  **Hidden-line CAD wireframe** (a height mesh with hidden lines removed, optional dashed hidden edges, four topologies and five
-  cameras; the SVG holds only the visible segments), **Raymarched 3D ASCII** (signed-distance torus — a homage to donut.c —,
-  sphere, rounded cube, octahedron, gyroid or a morph, with the picture as a texture and displacement) and **Volumetric text**
-  (the picture as a lit relief with shadow, ambient occlusion and fog, drawn in ASCII, Braille or blocks). They share an orbit
-  camera: drag in the viewer to orbit, Shift + drag to pan, the wheel to move the camera (the **Camera** toggle switches back to
-  zooming the picture). Depth is the picture's brightness by default; **Enhance with AI** downloads Depth Anything V2 once
-  (≈27–50 MB, after a confirmation) and runs it in a worker in your browser. Without WebGL2 these modes are listed but disabled.
-
-- **Simulation** (phase 6, WebGL2): **Reaction-diffusion / Life**. Gray-Scott reaction-diffusion whose feed and kill rates
-  follow the picture's brightness (coral, mitosis, labyrinth, worms, spots and fingerprint presets as editable sliders, seeds
-  from the picture's edges, random or the centre, embossed relief), or Life-like cellular automata (Life, HighLife, Day & Night,
-  Seeds or any `B/S` rule) seeded with the dithered picture, with an image lock that keeps the picture alive. Both are
-  deterministic on the frame time, so video exports are reproducible; *Restart simulation* starts again from the seed.
+<p align="center"><img src="docs/screenshots/mobile.jpg" alt="The studio on a phone: viewer, style chips and the settings sheet" width="300"></p>
 
 ## Run
 
@@ -70,43 +61,75 @@ All paths are relative, so the same files work under `https://<user>.github.io/<
 ```bash
 cd tests
 npm install
-npx playwright test
+npx playwright test               # the full suite takes about 20 minutes
 ```
 
 `@playwright/test` is pinned to 1.56.1 because its Chromium (revision 1194) is the one preinstalled in the development
-sandbox: do not run `playwright install`. The suite serves the repo with `python3 -m http.server`, generates its own
-fixtures (`tests/fixtures/`, git-ignored) and fails on any console error or CSP violation.
+sandbox, so do not run `playwright install`. The suite serves the repo with `python3 -m http.server` and generates its own
+fixtures in `tests/fixtures/`, which is git-ignored. It fails on any console error or CSP violation. `axe-core` is a test-only
+dependency and is never shipped.
+
+Generated assets are produced with the app itself:
+
+```bash
+node make-icons.mjs          # assets/icons/*.png from the unmodified assets/brand/horain-icon.svg
+node make-og-image.mjs       # assets/og-image.png (1200×630, Open Graph / Twitter card)
+node make-screenshots.mjs    # docs/screenshots/*.jpg (this README)
+```
+
+## Visit counter
+
+The footer can show an anonymous visit counter. The backend is a Cloudflare Worker with a D1 database in `worker/counter/`.
+It stores two numbers and nothing else: no cookies, no IPs and no user agents. The counter stays hidden, and no request is made,
+while `counterUrl` in `src/config.js` is empty. To enable it, deploy the Worker as described in `DEPLOY.md` §5, then set
+`counterUrl: 'https://count.ortzigar.org'`. A browser counts at most once per day, and never if it sends Global Privacy
+Control. If the Worker fails or takes more than 4 s, the counter stays hidden.
 
 ## Layout
 
 ```
-index.html        single page, CSP in a <meta> tag
+index.html        single page, CSP in a <meta> tag, Open Graph / Twitter metadata
+site.webmanifest  installable app manifest (brand icon)
 css/              tokens (6 themes), base, layout, components
-src/engine/       pipeline, preprocess, analysis, dither, color, palettes, glyphs, heavy worker client and tasks
-src/workers/      heavy.worker.js (job runner with cancellation by jobId)
+src/engine/       pipeline, preprocess, dither, color, glyphs, post-FX, depth, WebGL helpers, simulation, geometry…
+src/workers/      heavy.worker.js (jobs cancellable by jobId), depth.worker.js (optional AI depth)
 src/modes/        one module per output style (interface in PLAN.md 6) + registry
-src/ui/           header, dropzone, controls (generated from schemas), viewer, mode list, export panel, hero
-src/io/           file validation by magic bytes, sources, PNG/text exports, download
+src/ui/           header, dropzone, hero and gallery, controls (generated from schemas), presets, viewer, shortcuts, counter…
+src/io/           validation by magic bytes, sources, image/text/SVG/video export
 src/i18n/         ES and EN dictionaries
-assets/           brand logos, self-hosted fonts, icons
+assets/           brand logos (never edited), self-hosted fonts, icons, og-image.png
+docs/screenshots/ README screenshots (generated)
 vendor/           third-party modules (kept local: no runtime CDN)
-tests/            Playwright suite
+worker/counter/   visit counter Worker (deployed separately)
+tests/            Playwright suite and asset generators
 ```
 
 ## Adding an output style
 
-Create `src/modes/<id>.js` implementing the interface of PLAN.md section 6 (parameter schema, `resolution()`,
-`render()`, optional `toText()`/`toSVG()`/`toBinary()`/`toJSON()`/`toPLY()`), then import it in `src/modes/index.js`. The settings panel, the mode list,
-the gallery card, the exports and the share link are all generated from that module.
+Create `src/modes/<id>.js` implementing the interface in PLAN.md section 6: a parameter schema (optionally with
+`randomRange` or `random: false` for *Surprise me*), curated `presets`, `resolution()`, `render()`, and optionally
+`toText()`, `toSVG()`, `toBinary()`, `toJSON()` and `toPLY()`. Then import it in `src/modes/index.js`. The settings panel,
+mode list, gallery card, presets, exports and share link are all generated from that module.
 
 ## Privacy
 
-No analytics, no cookies, no third-party requests at runtime. The only exception is the optional AI depth model: after you
-confirm, transformers.js is loaded from jsDelivr and the model weights from Hugging Face; your picture stays on your device. Settings are stored in `localStorage` and a share link carries them in the
-URL hash; the image itself is never stored or sent anywhere.
+There are no cookies, no analytics and no third-party requests at runtime. The only exceptions are the optional AI depth
+model, which loads transformers.js from jsDelivr and the weights from Hugging Face only after you confirm, and the anonymous
+visit counter once it is deployed. Your settings and presets are stored in `localStorage`. A share link carries settings in
+the URL hash, and the image itself is never stored or sent anywhere.
 
 ## Credits
 
-Algorithms: Floyd-Steinberg, Jarvis-Judice-Ninke, Stucki, Atkinson, Burkes and Sierra error diffusion, Bayer ordered
-dithering, void-and-cluster blue noise (Ulichney). Fonts (SIL OFL): Unbounded, Geist, Geist Mono, JetBrains Mono,
-VT323, IBM Plex Mono, Space Mono. Licence: MIT.
+**Algorithms:**
+- Dithering: Floyd–Steinberg, Jarvis–Judice–Ninke, Stucki, Atkinson, Burkes and Sierra error diffusion; Bayer ordered dithering; void-and-cluster blue noise (Ulichney).
+- Geometry: Sobel, marching squares, Chaikin, Ramer–Douglas–Peucker and Zhang–Suen thinning.
+- Voronoi: Lloyd relaxation with d3-delaunay.
+- Noise and 3D: simplex and curl noise; SDF raymarching (a homage to donut.c).
+- Simulation: Gray-Scott with Karl Sims' Laplacian.
+- Depth: Depth Anything V2 through transformers.js.
+
+**Libraries:** video by [Mediabunny](vendor/README.md).
+
+**Fonts (SIL OFL):** Unbounded, Geist, Geist Mono, JetBrains Mono, VT323, IBM Plex Mono and Space Mono.
+
+Made by [ortzigar.org](https://ortzigar.org). Licence: MIT.
