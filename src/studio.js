@@ -55,6 +55,7 @@ export function createStudio({ onChangeFile }) {
   let dragging = false;
   let theme = themeOutputColors();
   let lastTime = 0;
+  let lastExportTime = null; // meta.exportTime of the last preview frame, if the mode reports one
   let autoScale = 1;
   let slowFrames = 0;
   let exporting = false;
@@ -150,6 +151,8 @@ export function createStudio({ onChangeFile }) {
     if (result.aborted) return; // a parameter changed while a heavy job ran: the loop renders again (dirty)
     if (result.lost) return; // WebGL context lost: keep the last frame until it is restored (the pipeline re-renders)
 
+    // a mode whose picture depends on its own clock (a simulation started at RESET) tells exports which time to render
+    lastExportTime = Number.isFinite(result.meta?.exportTime) ? result.meta.exportTime : null;
     lastLogical = { w: result.width / result.outScale, h: result.height / result.outScale };
     viewer.present(result, {
       drawOriginal: (g, w, h) => {
@@ -209,7 +212,7 @@ export function createStudio({ onChangeFile }) {
   }
 
   const exportBase = () => ({
-    source, mode: mode(), params: paramsNow(), time: lastTime, quality: 'full', isExport: true, theme,
+    source, mode: mode(), params: paramsNow(), time: lastExportTime ?? lastTime, quality: 'full', isExport: true, theme,
   });
 
   /** Render a full-quality export pass and return { result, state }. */
@@ -527,7 +530,11 @@ export function createStudio({ onChangeFile }) {
     },
     onAction: (param) => {
       if (param.action === 'depthAI') enableDepthAI();
-      else if (Array.isArray(param.resets)) {
+      else if (param.action && typeof mode().onAction === 'function') {
+        // a mode-specific action (e.g. restart a simulation): the mode updates its preview state
+        mode().onAction(param.action, pipeline.getState(mode().id));
+        scheduler.markDirty();
+      } else if (Array.isArray(param.resets)) {
         // e.g. "Reset camera": restore these params of the current mode to their defaults
         const m = mode();
         for (const id of param.resets) {

@@ -47,7 +47,7 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
   };
 
   // ---- one control row ---------------------------------------------------------------------
-  function buildRow(param, path, groupValues) {
+  function buildRow(param, path, group = null) {
     const id = uid('ctl');
     const label = tl(param.label);
     const row = el('div', `ctl ctl-${param.type}`);
@@ -74,7 +74,10 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
       row.appendChild(head);
     }
 
-    const commit = (v) => store.set(path, v);
+    const commit = (v) => {
+      store.set(path, v);
+      if (group) applyLinks(param, v, group);
+    };
     const reset = () => { store.set(path, param.default); api.update(true); };
     lab.addEventListener('dblclick', reset);
 
@@ -97,6 +100,9 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
         }
         head.appendChild(valWrap);
         row.appendChild(range);
+        // long values (e.g. 0.0545) need a wider field than the default
+        const chars = Math.max(Number(param.min).toFixed(dec).length, Number(param.max).toFixed(dec).length);
+        if (chars > 5) num.style.width = `${chars + 1.2}ch`;
 
         const paint = (v) => {
           range.style.setProperty('--pct', `${((v - param.min) / (param.max - param.min)) * 100}%`);
@@ -235,8 +241,30 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
           autocomplete: 'off', spellcheck: 'false',
         });
         row.appendChild(input);
-        input.addEventListener('input', () => commit(input.value));
-        api.update = () => { if (document.activeElement !== input) input.value = String(store.get(path) ?? ''); };
+        // optional strict validation (e.g. a cellular-automaton rule): flag the field and explain; the mode falls back
+        let msg = null;
+        if (typeof param.validate === 'function') {
+          msg = el('p', 'ctl-error', { id: `${id}-err`, role: 'status', 'aria-live': 'polite' });
+          msg.hidden = true;
+          row.appendChild(msg);
+        }
+        const check = () => {
+          if (!msg) return;
+          let ok = true;
+          try { ok = !!param.validate(input.value); } catch { ok = false; }
+          input.classList.toggle('is-invalid', !ok);
+          if (ok) { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); } else {
+            input.setAttribute('aria-invalid', 'true');
+            input.setAttribute('aria-describedby', msg.id);
+          }
+          msg.hidden = ok;
+          msg.textContent = ok ? '' : tl(param.invalid || { es: 'Valor no válido.', en: 'Invalid value.' });
+        };
+        input.addEventListener('input', () => { commit(input.value); check(); });
+        api.update = () => {
+          if (document.activeElement !== input) input.value = String(store.get(path) ?? '');
+          check();
+        };
         break;
       }
       case 'seed': {
@@ -264,6 +292,26 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
         break;
     }
     return api;
+  }
+
+  // ---- linked params ---------------------------------------------------------------------------
+  // A select may carry `links: { [value]: { paramId: value } }` (e.g. a pattern preset that fills editable sliders):
+  // choosing an option writes those values. Editing one of the linked params by hand switches the select to its
+  // `linkFallback` option ("custom") when the values no longer match the chosen option.
+  function applyLinks(param, value, group) {
+    if (param.type === 'select' && param.links && param.links[value]) {
+      for (const [pid, v] of Object.entries(param.links[value])) {
+        if (group.schema.some((x) => x.id === pid)) store.set(group.pathOf(pid), v);
+      }
+      return;
+    }
+    for (const sel of group.schema) {
+      if (sel.type !== 'select' || !sel.links || !sel.linkFallback) continue;
+      const chosen = sel.links[store.get(group.pathOf(sel.id))];
+      if (!chosen || !(param.id in chosen)) continue;
+      const matches = Object.entries(chosen).every(([pid, v]) => Math.abs(Number(store.get(group.pathOf(pid))) - v) < 1e-9);
+      if (!matches) store.set(group.pathOf(sel.id), sel.linkFallback);
+    }
   }
 
   // ---- one group -----------------------------------------------------------------------------
@@ -294,7 +342,7 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
 
     for (const param of schema) {
       if (hide.includes(param.id)) continue;
-      const r = buildRow(param, pathOf(param.id));
+      const r = buildRow(param, pathOf(param.id), { schema, pathOf });
       body.appendChild(r.el);
       rows.push({ ...r, group: id, resetKey });
     }
