@@ -15,6 +15,7 @@ import thermal from './thermal.js';
 import glitch from './glitch.js';
 import pixelsort from './pixelsort.js';
 import crosshatch from './crosshatch.js';
+import contours from './contours.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -33,6 +34,7 @@ export const MODES = [
   glitch,
   pixelsort,
   crosshatch,
+  contours,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);

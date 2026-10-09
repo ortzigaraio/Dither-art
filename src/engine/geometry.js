@@ -36,113 +36,129 @@ const SADDLE = {
 export function marchingSquares(field, w, h, level, opts = {}) {
   const closed = !!opts.closed;
   const pad = closed ? 1 : 0;
-  const x0 = -pad;
-  const y0 = -pad;
-  const x1 = w - 1 + pad; // exclusive upper bound of cell x
-  const y1 = h - 1 + pad;
   const W2 = w + 2; // stride of the padded node grid
-  const val = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? -Infinity : field[y * w + x]);
+  const B = scratchFor(2 * W2 * (h + 2));
+  const stamp = ++B.call;
+  const { ex, ey, seen, adj0, adj1 } = B;
+  let segA = B.segA;
+  let segB = B.segB;
+  let nseg = 0;
+  const NEG = -Infinity;
 
-  const px = new Map(); // edge key -> [x, y]
-  const segA = [];
-  const segB = [];
-
-  // Edge keys: horizontal edge from node (x, y) to (x+1, y) -> 2*n, vertical edge (x, y)-(x, y+1) -> 2*n+1,
-  // with n the index of node (x, y) in the padded grid.
-  const node = (x, y) => (y + 1) * W2 + (x + 1);
-  const crossing = (ax, ay, bx, by, va, vb) => {
+  // edge key: horizontal edge (x, y)-(x+1, y) -> 2*node(x, y); vertical edge (x, y)-(x, y+1) -> 2*node(x, y)+1
+  const addPoint = (key, ax, ay, bx, by, va, vb) => {
+    if (seen[key] === stamp) return;
+    seen[key] = stamp;
+    adj0[key] = -1;
+    adj1[key] = -1;
     let t;
-    if (va === -Infinity) t = 1;
-    else if (vb === -Infinity) t = 0;
+    if (va === NEG) t = 1;
+    else if (vb === NEG) t = 0;
     else t = va === vb ? 0.5 : (level - va) / (vb - va);
     t = t < 0 ? 0 : t > 1 ? 1 : t;
     let x = ax + (bx - ax) * t;
     let y = ay + (by - ay) * t;
     if (closed) { x = x < 0 ? 0 : x > w - 1 ? w - 1 : x; y = y < 0 ? 0 : y > h - 1 ? h - 1 : y; }
-    return [x, y];
+    ex[key] = x;
+    ey[key] = y;
   };
+  const link = (key, s) => { if (adj0[key] < 0) adj0[key] = s; else adj1[key] = s; };
 
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      const tl = val(x, y);
-      const tr = val(x + 1, y);
-      const br = val(x + 1, y + 1);
-      const bl = val(x, y + 1);
+  for (let y = -pad; y < h - 1 + pad; y++) {
+    for (let x = -pad; x < w - 1 + pad; x++) {
+      let tl, tr, br, bl;
+      if (x >= 0 && y >= 0 && x + 1 < w && y + 1 < h) {
+        const i = y * w + x;
+        tl = field[i]; tr = field[i + 1]; bl = field[i + w]; br = field[i + w + 1];
+      } else {
+        const inX0 = x >= 0, inX1 = x + 1 < w, inY0 = y >= 0, inY1 = y + 1 < h;
+        tl = inX0 && inY0 ? field[y * w + x] : NEG;
+        tr = inX1 && inY0 ? field[y * w + x + 1] : NEG;
+        bl = inX0 && inY1 ? field[(y + 1) * w + x] : NEG;
+        br = inX1 && inY1 ? field[(y + 1) * w + x + 1] : NEG;
+      }
       const c = (tl >= level ? 8 : 0) | (tr >= level ? 4 : 0) | (br >= level ? 2 : 0) | (bl >= level ? 1 : 0);
       if (c === 0 || c === 15) continue;
       let segs = CASES[c];
       if (!segs) {
-        const finite = [tl, tr, br, bl].filter((v) => v !== -Infinity);
-        const centre = finite.length ? finite.reduce((a, b) => a + b, 0) / 4 : -Infinity;
-        segs = centre >= level ? SADDLE[c].above : SADDLE[c].below;
+        let sum = 0;
+        for (const v of [tl, tr, br, bl]) if (v !== NEG) sum += v;
+        segs = sum / 4 >= level ? SADDLE[c].above : SADDLE[c].below;
       }
-      for (const [ea, eb] of segs) {
-        const keys = [ea, eb].map((e) => {
+      const n0 = (y + 1) * W2 + (x + 1);
+      const n1 = n0 + W2; // node (x, y+1)
+      for (let q = 0; q < segs.length; q++) {
+        const pair = segs[q];
+        if (nseg >= segA.length) { const grow = (arr) => { const z = new Int32Array(arr.length * 2); z.set(arr); return z; }; segA = B.segA = grow(segA); segB = B.segB = grow(segB); }
+        for (let e = 0; e < 2; e++) {
+          const edge = pair[e];
           let key;
-          if (e === 0) key = 2 * node(x, y);
-          else if (e === 2) key = 2 * node(x, y + 1);
-          else if (e === 3) key = 2 * node(x, y) + 1;
-          else key = 2 * node(x + 1, y) + 1;
-          if (!px.has(key)) {
-            if (e === 0) px.set(key, crossing(x, y, x + 1, y, tl, tr));
-            else if (e === 2) px.set(key, crossing(x, y + 1, x + 1, y + 1, bl, br));
-            else if (e === 3) px.set(key, crossing(x, y, x, y + 1, tl, bl));
-            else px.set(key, crossing(x + 1, y, x + 1, y + 1, tr, br));
-          }
-          return key;
-        });
-        segA.push(keys[0]);
-        segB.push(keys[1]);
+          if (edge === 0) { key = 2 * n0; addPoint(key, x, y, x + 1, y, tl, tr); } else if (edge === 2) { key = 2 * n1; addPoint(key, x, y + 1, x + 1, y + 1, bl, br); } else if (edge === 3) { key = 2 * n0 + 1; addPoint(key, x, y, x, y + 1, tl, bl); } else { key = 2 * (n0 + 1) + 1; addPoint(key, x + 1, y, x + 1, y + 1, tr, br); }
+          if (e === 0) segA[nseg] = key; else segB[nseg] = key;
+          link(key, nseg);
+        }
+        nseg++;
       }
     }
   }
-  return chainSegments(segA, segB, px);
+  return chainSegments(segA, segB, nseg, B);
+}
+
+const SCRATCH = { size: 0 };
+/** Edge buffers reused between calls (a call stamp tells which entries belong to the current call). */
+function scratchFor(size) {
+  if (SCRATCH.size < size) {
+    SCRATCH.size = size;
+    SCRATCH.ex = new Float32Array(size);
+    SCRATCH.ey = new Float32Array(size);
+    SCRATCH.seen = new Int32Array(size);
+    SCRATCH.adj0 = new Int32Array(size);
+    SCRATCH.adj1 = new Int32Array(size);
+    SCRATCH.used = new Uint8Array(0);
+    SCRATCH.call = 0;
+  }
+  if (!SCRATCH.segA) { SCRATCH.segA = new Int32Array(4096); SCRATCH.segB = new Int32Array(4096); }
+  if (SCRATCH.call > 2e9) { SCRATCH.seen.fill(0); SCRATCH.call = 0; }
+  return SCRATCH;
 }
 
 /** Join segments that share an edge key into polylines (each key is used by at most two segments). */
-function chainSegments(segA, segB, px) {
-  const n = segA.length;
-  const adj = new Map(); // key -> [seg, seg]
-  for (let s = 0; s < n; s++) {
-    for (const k of [segA[s], segB[s]]) {
-      const l = adj.get(k);
-      if (l) l.push(s); else adj.set(k, [s]);
-    }
-  }
+function chainSegments(segA, segB, n, B) {
+  const { ex, ey, adj0, adj1 } = B;
   const used = new Uint8Array(n);
   const out = [];
-  const walk = (startSeg, fromKey) => {
-    // follow segments from `fromKey` (an end of startSeg's chain), returning the keys visited after it
-    const keys = [];
-    let key = fromKey;
-    let prev = startSeg;
+  const other = (key, s) => (adj0[key] === s ? adj1[key] : adj0[key]);
+  // follow segments from `key` (the free end of segment `s`), appending the keys visited to `keys`
+  const walk = (s, key, keys) => {
+    let prev = s;
     for (;;) {
-      const l = adj.get(key);
-      let next = -1;
-      if (l) for (const s of l) if (s !== prev && !used[s]) { next = s; break; }
-      if (next < 0) break;
+      const next = other(key, prev);
+      if (next < 0 || used[next]) break;
       used[next] = 1;
       key = segA[next] === key ? segB[next] : segA[next];
       keys.push(key);
       prev = next;
     }
-    return keys;
   };
   for (let s = 0; s < n; s++) {
     if (used[s]) continue;
     used[s] = 1;
-    const fwd = walk(s, segB[s]);
+    const fwd = [];
+    walk(s, segB[s], fwd);
     let keys;
     let closed = false;
     if (fwd.length && fwd[fwd.length - 1] === segA[s]) {
       closed = true;
-      keys = [segA[s], segB[s], ...fwd.slice(0, -1)];
+      fwd.pop();
+      keys = [segA[s], segB[s], ...fwd];
     } else {
-      const back = walk(s, segA[s]);
-      keys = [...back.reverse(), segA[s], segB[s], ...fwd];
+      const back = [];
+      walk(s, segA[s], back);
+      back.reverse();
+      keys = [...back, segA[s], segB[s], ...fwd];
     }
     const pts = new Float32Array(keys.length * 2);
-    keys.forEach((k, i) => { const p = px.get(k); pts[i * 2] = p[0]; pts[i * 2 + 1] = p[1]; });
+    for (let i = 0; i < keys.length; i++) { pts[i * 2] = ex[keys[i]]; pts[i * 2 + 1] = ey[keys[i]]; }
     out.push({ points: pts, closed });
   }
   return out;
