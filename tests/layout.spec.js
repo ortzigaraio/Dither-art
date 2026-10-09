@@ -70,7 +70,7 @@ test.describe('responsive layout', () => {
     for (const cat of await page.locator('#mode-list .mode-cat').all()) await expect(cat).toBeHidden(); // one heading per category
     await expect(page.locator('#sheet-tabs')).toBeVisible();
     const tabs = await page.locator('#sheet-tabs .sheet-tab').allTextContents();
-    expect(tabs.map((x) => x.trim().toUpperCase())).toEqual(['IMAGE', 'MODE', 'COLOR', 'EXPORT']);
+    expect(tabs.map((x) => x.trim().toUpperCase())).toEqual(['IMAGE', 'MODE', 'COLOR', 'FX', 'EXPORT']);
 
     // tab IMAGEN shows input + image groups only
     await expect(page.locator('[data-group="image"]')).toBeVisible();
@@ -80,6 +80,10 @@ test.describe('responsive layout', () => {
     await expect(page.locator('[data-group="image"]')).toBeHidden();
     await page.click('.sheet-tab[data-tab="mode"]');
     await expect(page.locator('[data-group="mode"]')).toBeVisible();
+    await expect(page.locator('[data-group="presets"]')).toBeVisible();
+    await page.click('.sheet-tab[data-tab="fx"]');
+    await expect(page.locator('[data-group="postfx"]')).toBeVisible();
+    await expect(page.locator('[data-group="mode"]')).toBeHidden();
     await page.click('.sheet-tab[data-tab="export"]');
     await expect(page.locator('[data-group="export"]')).toBeVisible();
     await expect(page.locator('.sheet-tab[aria-selected="true"]')).toHaveAttribute('data-tab', 'export');

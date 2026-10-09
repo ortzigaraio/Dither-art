@@ -6,6 +6,7 @@ import { t, tl } from '../i18n/i18n.js';
 import { IMAGE_PARAMS } from '../engine/preprocess.js';
 import { colorSchemaFor, resolveColors, normalizeHex, rgbToHex } from '../engine/color.js';
 import { DEPTH_PARAMS } from '../engine/depth.js';
+import { POSTFX_PARAMS, postfxAvailable } from '../engine/postfx.js';
 import { LIMITS } from '../config.js';
 
 const decimalsOf = (step) => {
@@ -319,7 +320,7 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
     const group = el('details', 'group');
     group.dataset.group = id;
     group.dataset.tab = tab;
-    group.open = openState.has(id) ? openState.get(id) : true;
+    group.open = openState.has(id) ? openState.get(id) : id !== 'postfx'; // Post-FX starts folded (off by default)
     group.addEventListener('toggle', () => openState.set(id, group.open));
 
     const head = el('summary', 'group-head');
@@ -346,6 +347,14 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
       body.appendChild(r.el);
       rows.push({ ...r, group: id, resetKey });
     }
+    return group;
+  }
+
+  /** Remember the open/closed state of a group built outside this module (presets). */
+  function adopt(group) {
+    const id = group.dataset.group;
+    if (openState.has(id)) group.open = openState.get(id);
+    group.addEventListener('toggle', () => openState.set(id, group.open));
     return group;
   }
 
@@ -383,6 +392,8 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
         pathOf: (pid) => `global.${pid}`, resetKey: 'global', hide: mode.hide || [],
       }));
     }
+    const presetsGroup = extra.presets?.();
+    if (presetsGroup) host.appendChild(adopt(presetsGroup));
     host.appendChild(buildGroup({
       id: 'mode', tab: 'mode', title: t('studio.group.mode', { mode: tl(mode.name) }), schema: mode.params,
       pathOf: (pid) => `modes.${mode.id}.${pid}`, resetKey: 'mode',
@@ -400,6 +411,16 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
         pathOf: (pid) => `color.${pid}`, resetKey: 'color',
       }));
     }
+    // Post-FX (5.6) applies to the raster output of every mode
+    tabs.push('fx');
+    const fx = buildGroup({
+      id: 'postfx', tab: 'fx', title: t('studio.group.postfx'), schema: POSTFX_PARAMS,
+      pathOf: (pid) => `postfx.${pid}`, resetKey: 'postfx',
+    });
+    const note = el('p', 'group-note muted');
+    note.textContent = postfxAvailable() ? t('postfx.note') : t('postfx.noGL');
+    fx.querySelector('.group-body').prepend(note);
+    host.appendChild(fx);
     const exportGroup = extra.export?.();
     if (exportGroup) {
       tabs.push('export');
@@ -415,7 +436,7 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
     for (const r of rows) {
       r.update(force);
       if (typeof r.param.showIf === 'function') {
-        const values = r.group === 'image' ? all.global : r.group === 'color' ? all.color : r.group === 'depth' ? all.depth : all.mode;
+        const values = r.group === 'image' ? all.global : r.group === 'color' ? all.color : r.group === 'depth' ? all.depth : r.group === 'postfx' ? all.postfx : all.mode;
         let show = true;
         try { show = !!r.param.showIf(values, all); } catch { show = true; }
         r.el.hidden = !show;

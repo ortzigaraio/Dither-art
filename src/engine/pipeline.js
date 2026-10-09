@@ -12,6 +12,7 @@
 import { Analysis } from './analysis.js';
 import { cropRect, preprocess, preprocessKey } from './preprocess.js';
 import { depthField } from './depth.js';
+import { isActive as postfxActive, applyPostFX } from './postfx.js';
 
 const MAX_WORK_SIDE = 8192;
 const MAX_WORK_PIXELS = 16e6;
@@ -31,6 +32,7 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
   const analysis = new Analysis();
   const surface2d = makeCanvas();
   const framed = makeCanvas();
+  const fxCanvas = makeCanvas(); // Post-FX result (PLAN.md 5.6)
   const out2d = { canvas: surface2d, ctx2d: surface2d.getContext('2d'), gl: null };
   let outGl = null; // created on first use by a 'gl' mode
   const states = new Map(); // modeId -> { mode, state }
@@ -207,7 +209,13 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
     // a mode may render smaller than asked to respect size caps; the fallback picture is always 1x
     const effScale = error ? 1 : (meta.effectiveScale ?? outScale);
     const margin = Math.round((g.frame || 0) * effScale);
-    const surface = error || meta.surface === '2d' ? surface2d : out.canvas;
+    let surface = error || meta.surface === '2d' ? surface2d : out.canvas;
+    // Global Post-FX (5.6): raster only. Text/SVG exports read the mode state, so they never include it.
+    let postfx = false;
+    if (!error && postfxActive(params.postfx)) {
+      postfx = applyPostFX(surface, fxCanvas, params.postfx, { time, scale: effScale });
+      if (postfx) surface = fxCanvas;
+    }
     let canvas = surface;
     if (margin > 0 && !error) {
       framed.width = surface.width + margin * 2;
@@ -231,6 +239,7 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
       transparent: !!meta.transparent || (margin > 0 && !error),
       ms: performance.now() - t0,
       filterPath: lastPre.usedFilterPath,
+      postfx,
     };
   }
 
@@ -251,6 +260,7 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
       ws.canvas.width = ws.canvas.height = 1;
       surface2d.width = surface2d.height = 1;
       framed.width = framed.height = 1;
+      fxCanvas.width = fxCanvas.height = 1;
       if (outGl) {
         outGl.gl.getExtension('WEBGL_lose_context')?.loseContext();
         outGl.canvas.width = outGl.canvas.height = 1;
