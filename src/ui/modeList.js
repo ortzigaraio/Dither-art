@@ -2,7 +2,8 @@
 // (the same buttons, restyled by CSS). Rebuilt when the language changes.
 
 import { t, tl } from '../i18n/i18n.js';
-import { modesByCategory } from '../modes/index.js';
+import { modesByCategory, modeAvailable } from '../modes/index.js';
+import { toastWarn } from './toast.js';
 
 export function createModeList({ listEl, selectEl, onSelect }) {
   let active = null;
@@ -45,12 +46,26 @@ export function createModeList({ listEl, selectEl, onSelect }) {
           badge.textContent = b;
           btn.appendChild(badge);
         }
-        btn.addEventListener('click', () => onSelect(mode.id));
+        const available = modeAvailable(mode);
+        if (!available) {
+          // GPU modes stay listed but disabled, with the reason (PLAN.md 18.2)
+          btn.setAttribute('aria-disabled', 'true');
+          btn.title = t('err.noWebGL2');
+          const note = document.createElement('span');
+          note.className = 'mode-note';
+          note.textContent = t('mode.needsWebGL2');
+          name.appendChild(note);
+        }
+        btn.addEventListener('click', () => {
+          if (available) onSelect(mode.id);
+          else toastWarn(t('err.noWebGL2'));
+        });
         group.appendChild(btn);
 
         const opt = document.createElement('option');
         opt.value = mode.id;
-        opt.textContent = tl(mode.name);
+        opt.textContent = available ? tl(mode.name) : `${tl(mode.name)} (${t('mode.needsWebGL2')})`;
+        opt.disabled = !available;
         og.appendChild(opt);
       }
       listEl.appendChild(group);

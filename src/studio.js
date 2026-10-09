@@ -3,7 +3,7 @@
 
 import { t, tl, onLangChange } from './i18n/i18n.js';
 import { createStore, decodeShareHash } from './state.js';
-import { getMode } from './modes/index.js';
+import { getMode, modeAvailable, MODES } from './modes/index.js';
 import { createPipeline } from './engine/pipeline.js';
 import { cropRect } from './engine/preprocess.js';
 import { createScheduler } from './scheduler.js';
@@ -23,6 +23,13 @@ import { exportName, downloadBlob } from './io/download.js';
 import { canvasToBlob, fitExportScale, shrinkToLimit, copyImageBlob, copyText } from './io/exportImage.js';
 import { LIMITS } from './config.js';
 import * as heavy from './engine/heavy.js';
+import { loadDepthAI, depthAIStatus } from './engine/depth.js';
+import { orbitBy, panBy, dollyBy } from './engine/camera.js';
+import { confirmDepthDownload } from './ui/depthDialog.js';
+
+const AI_CONSENT_KEY = 'horain.depthAI';
+const hasAIConsent = () => { try { return localStorage.getItem(AI_CONSENT_KEY) === '1'; } catch { return false; } };
+const saveAIConsent = () => { try { localStorage.setItem(AI_CONSENT_KEY, '1'); } catch { /* storage blocked: ask again next time */ } };
 
 const isMobile = () => window.matchMedia('(max-width: 699px)').matches;
 
@@ -55,6 +62,11 @@ export function createStudio({ onChangeFile }) {
   let recorder = null;       // { rec, t0 } while the webcam is being recorded
   let resumeOnShow = false;  // playback to restart when the tab or the view comes back
   let exportSeq = 0;
+  // GPU modes need WebGL2: a remembered or shared state may point at one this browser cannot run (PLAN.md 18.2)
+  if (!modeAvailable(getMode(store.state.modeId))) {
+    store.state.modeId = MODES[0].id;
+    notices.push(() => toastWarn(t('err.noWebGL2')));
+  }
 
   const mode = () => getMode(store.state.modeId);
   const paramsNow = () => {
@@ -82,7 +94,11 @@ export function createStudio({ onChangeFile }) {
   }
 
   // ---- engine ------------------------------------------------------------------------------
-  const pipeline = createPipeline({ onInvalidate: () => scheduler.markDirty() });
+  const onContextEvent = (ev) => {
+    if (ev === 'lost') toastWarn(t('gl.lost'));
+    else toast(t('gl.restored'));
+  };
+  const pipeline = createPipeline({ onInvalidate: () => scheduler.markDirty(), onContextEvent });
   let exportPipeline = null;
   const getExportPipeline = () => exportPipeline || (exportPipeline = createPipeline());
 
@@ -132,6 +148,7 @@ export function createStudio({ onChangeFile }) {
       theme,
     });
     if (result.aborted) return; // a parameter changed while a heavy job ran: the loop renders again (dirty)
+    if (result.lost) return; // WebGL context lost: keep the last frame until it is restored (the pipeline re-renders)
 
     lastLogical = { w: result.width / result.outScale, h: result.height / result.outScale };
     viewer.present(result, {
@@ -200,6 +217,7 @@ export function createStudio({ onChangeFile }) {
     const pipe = getExportPipeline();
     const base = exportBase();
     const result = await pipe.render({ ...base, outScale });
+    if (result.lost) throw new Error('WebGL context lost');
     if (result.error) throw result.error;
     return { result, state: pipe.getState(base.mode.id), mode: base.mode };
   }
@@ -241,6 +259,8 @@ export function createStudio({ onChangeFile }) {
         blob = new Blob([m.toSVG(state, opts)], { type: 'image/svg+xml;charset=utf-8' });
       } else if (format === 'json') {
         blob = new Blob([m.toJSON(state)], { type: 'application/json;charset=utf-8' });
+      } else if (format === 'ply') {
+        blob = new Blob([m.toPLY(state)], { type: 'application/octet-stream' });
       } else {
         ext = format === 'ansi' ? 'ansi.txt' : format;
         const type = format === 'html' ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8';
@@ -335,6 +355,7 @@ export function createStudio({ onChangeFile }) {
           frameSrc.frameId++;
         }
         const r = await pipe.render({ source: target, mode: m, params, time, quality: 'full', isExport: true, outScale: scale, theme: th });
+        if (r.lost) throw new Error('WebGL context lost');
         if (r.error) throw r.error;
         return r.canvas;
       },
@@ -372,6 +393,7 @@ export function createStudio({ onChangeFile }) {
     if (!canExportVideo()) { toast(t('export.nothing'), { type: 'warn' }); return; }
     const kind = videoJobKind();
     if (kind === 'live') { toggleRecording(); return; }
+    if (mode().uses.includes('depth') && store.state.depth.source === 'ai') toastWarn(t('depth.slowExport'));
     openVideoDialog(kind, async (settings, ctl, { natural, caps }) => {
       const ac = new AbortController();
       ctl.signal.addEventListener('abort', () => ac.abort());
@@ -503,7 +525,83 @@ export function createStudio({ onChangeFile }) {
       input: () => (source ? createInputGroup(source, { onChange: onChangeFile }) : null),
       export: () => createExportGroup(mode(), actions, { video: canExportVideo() }),
     },
+    onAction: (param) => {
+      if (param.action === 'depthAI') enableDepthAI();
+      else if (Array.isArray(param.resets)) {
+        // e.g. "Reset camera": restore these params of the current mode to their defaults
+        const m = mode();
+        for (const id of param.resets) {
+          const def = m.params.find((x) => x.id === id);
+          if (def) store.set(`modes.${m.id}.${id}`, def.default);
+        }
+      }
+    },
   });
+
+  // ---- AI depth (PLAN.md 5.5): confirmation the first time, download progress, toast + brightness on failure ----
+  let aiRequest = null;
+  function enableDepthAI() {
+    if (aiRequest) return aiRequest;
+    aiRequest = (async () => {
+      if (depthAIStatus() !== 'ready') {
+        if (!hasAIConsent()) {
+          const ok = await confirmDepthDownload();
+          if (!ok) { store.set('depth.source', 'brightness'); return false; }
+          saveAIConsent();
+        }
+      }
+      store.set('depth.source', 'ai');
+      if (depthAIStatus() === 'ready') { scheduler.markDirty(); return true; }
+      const label = (p) => t('depth.loading', { pct: Math.round(p * 100) });
+      viewer.setBusy(true, label(0));
+      try {
+        await loadDepthAI({ onProgress: (p) => { if (!exporting) viewer.setBusy(true, label(p)); } });
+        toast(t('depth.ready'));
+        scheduler.markDirty();
+        return true;
+      } catch (err) {
+        console.warn('[dither] AI depth unavailable', err);
+        toastError(t('depth.failed'));
+        store.set('depth.source', 'brightness');
+        return false;
+      } finally {
+        if (!exporting) viewer.setBusy(false);
+      }
+    })().finally(() => { aiRequest = null; });
+    return aiRequest;
+  }
+  /** A remembered / shared state can ask for AI depth: load it (asking first) when a depth mode is on screen. */
+  function syncDepthAI() {
+    if (!active || !source) return;
+    if (mode().uses.includes('depth') && store.state.depth.source === 'ai' && depthAIStatus() !== 'ready') enableDepthAI();
+  }
+
+  // ---- 3D camera gestures (PLAN.md 4.6): drag = orbit, Shift + drag = pan, wheel = distance ----
+  // The store keeps the camera at the precision of each slider (1° for yaw / pitch); gestures move a float copy, so
+  // slow drags of a pixel at a time still add up. The copy follows the store whenever the store changed elsewhere.
+  const camFloat = {};
+  const camParams = () => {
+    const p = store.state.modes[store.state.modeId];
+    const out = {};
+    for (const k of ['yaw', 'pitch', 'distance', 'panX', 'panY']) {
+      const f = camFloat[k];
+      out[k] = f && f.mode === store.state.modeId && f.stored === p[k] ? f.value : p[k];
+    }
+    return out;
+  };
+  const setCam = (vals) => {
+    for (const [k, v] of Object.entries(vals)) {
+      store.set(`modes.${store.state.modeId}.${k}`, v);
+      camFloat[k] = { mode: store.state.modeId, value: v, stored: store.state.modes[store.state.modeId][k] };
+    }
+  };
+  const cameraHandler = {
+    orbit: (dx, dy) => setCam(orbitBy(camParams(), dx, dy)),
+    pan: (dx, dy, size) => setCam(panBy(camParams(), dx, dy, size)),
+    dolly: (dy) => setCam(dollyBy(camParams(), dy)),
+  };
+  const syncCamera = () => viewer.setCameraHandler(mode().camera ? cameraHandler : null);
+  syncCamera();
 
   const modeList = createModeList({
     listEl: document.getElementById('mode-list'),
@@ -516,12 +614,19 @@ export function createStudio({ onChangeFile }) {
   store.subscribe((path) => {
     pipeline.abortPending(); // parameters changed: a heavy job of the previous ones is stale
     if (path === 'modeId') {
+      if (!modeAvailable(mode())) { store.setModeId(MODES[0].id); toastWarn(t('err.noWebGL2')); return; }
       autoScale = 1;
       slowFrames = 0;
+      syncCamera();
+      syncDepthAI();
       modeList.setActive(store.state.modeId);
       controls.rebuild();
       scramble(document.querySelector('[data-group="mode"] .group-title'), t('studio.group.mode', { mode: tl(mode().name) }));
+    } else if (path === 'depth.source') {
+      controls.refresh();
+      syncDepthAI();
     } else if (path === 'replace' || path.startsWith('reset.')) {
+      if (path === 'replace') { syncCamera(); syncDepthAI(); }
       modeList.setActive(store.state.modeId);
       if (path === 'replace') controls.rebuild();
       else controls.refresh(true);
@@ -579,6 +684,7 @@ export function createStudio({ onChangeFile }) {
       slowFrames = 0;
       controls.rebuild();
       scheduler.markDirty();
+      syncDepthAI();
     },
 
     /** The studio only renders while its view is on screen. */
@@ -589,6 +695,7 @@ export function createStudio({ onChangeFile }) {
       if (on) {
         controls.refresh();
         scheduler.markDirty(); // the viewer refits by itself when it was in "fit" mode and its box changed
+        syncDepthAI();
       }
       scheduler.poke();
     },

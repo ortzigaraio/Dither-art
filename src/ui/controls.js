@@ -5,6 +5,7 @@
 import { t, tl } from '../i18n/i18n.js';
 import { IMAGE_PARAMS } from '../engine/preprocess.js';
 import { colorSchemaFor, resolveColors, normalizeHex, rgbToHex } from '../engine/color.js';
+import { DEPTH_PARAMS } from '../engine/depth.js';
 import { LIMITS } from '../config.js';
 
 const decimalsOf = (step) => {
@@ -33,7 +34,7 @@ function el(tag, className, attrs) {
  * @param {() => {ink:string,bg:string}} opts.getTheme
  * @param {(on:boolean)=>void} opts.onDragging  slider drag started/ended (draft quality)
  * @param {{ input?: () => HTMLElement|null, export?: () => HTMLElement|null }} opts.extra  non-schema groups
- * @param {(id:string)=>void} [opts.onAction]  button params
+ * @param {(param:object, path:string)=>void} [opts.onAction]  button params (e.g. reset the camera, enable AI depth)
  */
 export function createControls({ host, panel, tabsHost, store, getMode, getTheme, onDragging, extra = {}, onAction }) {
   let rows = []; // { update(), param, groupEl }
@@ -254,7 +255,8 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
         row.textContent = '';
         const b = el('button', 'btn btn-ghost btn-sm', { type: 'button', id });
         b.textContent = label;
-        b.addEventListener('click', () => onAction?.(param.id));
+        b.dataset.action = param.action || param.id;
+        b.addEventListener('click', () => onAction?.(param, path));
         row.appendChild(b);
         break;
       }
@@ -337,6 +339,12 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
       id: 'mode', tab: 'mode', title: t('studio.group.mode', { mode: tl(mode.name) }), schema: mode.params,
       pathOf: (pid) => `modes.${mode.id}.${pid}`, resetKey: 'mode',
     }));
+    if (mode.uses.includes('depth')) {
+      host.appendChild(buildGroup({
+        id: 'depth', tab: 'mode', title: t('studio.group.depth'), schema: DEPTH_PARAMS,
+        pathOf: (pid) => `depth.${pid}`, resetKey: 'depth',
+      }));
+    }
     if (mode.uses.includes('color')) {
       tabs.push('color');
       host.appendChild(buildGroup({
@@ -359,7 +367,7 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
     for (const r of rows) {
       r.update(force);
       if (typeof r.param.showIf === 'function') {
-        const values = r.group === 'image' ? all.global : r.group === 'color' ? all.color : all.mode;
+        const values = r.group === 'image' ? all.global : r.group === 'color' ? all.color : r.group === 'depth' ? all.depth : all.mode;
         let show = true;
         try { show = !!r.param.showIf(values, all); } catch { show = true; }
         r.el.hidden = !show;

@@ -41,7 +41,16 @@ Phases 0, 1 and 2, and the text and pixel modes of phase 3, are in place:
   Every vector mode keeps its polylines in memory and exports SVG: in px or on an A4 / A3 / Letter / custom page in mm with a
   margin, with Inkscape layers, stroke order optimised for pen plotters and a plotter mode (strokes only, no fills).
 
-The 3D and simulation styles come in later phases.
+- **3D modes** (phase 5, WebGL2): **LiDAR scan** (point cloud with a scan sweep, ring mode, noise and dropout; PLY export),
+  **Hidden-line CAD wireframe** (a height mesh with hidden lines removed, optional dashed hidden edges, four topologies and five
+  cameras; the SVG holds only the visible segments), **Raymarched 3D ASCII** (signed-distance torus — a homage to donut.c —,
+  sphere, rounded cube, octahedron, gyroid or a morph, with the picture as a texture and displacement) and **Volumetric text**
+  (the picture as a lit relief with shadow, ambient occlusion and fog, drawn in ASCII, Braille or blocks). They share an orbit
+  camera: drag in the viewer to orbit, Shift + drag to pan, the wheel to move the camera (the **Camera** toggle switches back to
+  zooming the picture). Depth is the picture's brightness by default; **Enhance with AI** downloads Depth Anything V2 once
+  (≈27–50 MB, after a confirmation) and runs it in a worker in your browser. Without WebGL2 these modes are listed but disabled.
+
+The simulation styles come in a later phase.
 
 ## Run
 
@@ -83,13 +92,13 @@ tests/            Playwright suite
 ## Adding an output style
 
 Create `src/modes/<id>.js` implementing the interface of PLAN.md section 6 (parameter schema, `resolution()`,
-`render()`, optional `toText()`/`toSVG()`/`toBinary()`/`toJSON()`), then import it in `src/modes/index.js`. The settings panel, the mode list,
+`render()`, optional `toText()`/`toSVG()`/`toBinary()`/`toJSON()`/`toPLY()`), then import it in `src/modes/index.js`. The settings panel, the mode list,
 the gallery card, the exports and the share link are all generated from that module.
 
 ## Privacy
 
-No analytics, no cookies, no third-party requests at runtime (the optional depth-estimation model is the only planned
-exception and is loaded only on request). Settings are stored in `localStorage` and a share link carries them in the
+No analytics, no cookies, no third-party requests at runtime. The only exception is the optional AI depth model: after you
+confirm, transformers.js is loaded from jsDelivr and the model weights from Hugging Face; your picture stays on your device. Settings are stored in `localStorage` and a share link carries them in the
 URL hash; the image itself is never stored or sent anywhere.
 
 ## Credits
