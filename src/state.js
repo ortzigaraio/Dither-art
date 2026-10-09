@@ -5,6 +5,7 @@
 import { IMAGE_PARAMS } from './engine/preprocess.js';
 import { COLOR_PARAMS, normalizeHex } from './engine/color.js';
 import { DEPTH_PARAMS } from './engine/depth.js';
+import { POSTFX_PARAMS } from './engine/postfx.js';
 import { MODES, getMode, hasMode } from './modes/index.js';
 import { LIMITS } from './config.js';
 
@@ -88,7 +89,7 @@ export function defaultState() {
     global: defaultsOf(IMAGE_PARAMS),
     color: defaultsOf(COLOR_PARAMS),
     depth: defaultsOf(DEPTH_PARAMS),
-    postfx: {},
+    postfx: defaultsOf(POSTFX_PARAMS),
     modes: Object.fromEntries(MODES.map((m) => [m.id, defaultsOf(m.params)])),
   };
 }
@@ -101,6 +102,7 @@ export function sanitizeState(raw) {
   state.global = sanitizeParams(IMAGE_PARAMS, src.global);
   state.color = sanitizeParams(COLOR_PARAMS, src.color);
   state.depth = sanitizeParams(DEPTH_PARAMS, src.depth);
+  state.postfx = sanitizeParams(POSTFX_PARAMS, src.postfx);
   const modes = isPlainObject(src.modes) ? src.modes : {};
   for (const m of MODES) state.modes[m.id] = sanitizeParams(m.params, has(modes, m.id) ? modes[m.id] : null);
   return state;
@@ -131,6 +133,7 @@ export function encodeShare(state) {
     global: state.global,
     color: state.color,
     depth: state.depth,
+    postfx: state.postfx,
     modes: { [state.modeId]: state.modes[state.modeId] },
   };
   return toBase64Url(JSON.stringify(payload));
@@ -158,6 +161,7 @@ function schemaFor(path) {
   if (root === 'global') return IMAGE_PARAMS.find((p) => p.id === a);
   if (root === 'color') return COLOR_PARAMS.find((p) => p.id === a);
   if (root === 'depth') return DEPTH_PARAMS.find((p) => p.id === a);
+  if (root === 'postfx') return POSTFX_PARAMS.find((p) => p.id === a);
   if (root === 'modes' && hasMode(a)) return getMode(a).params.find((p) => p.id === b);
   return null;
 }
@@ -169,13 +173,19 @@ export function createStore() {
 
   const notify = (path) => listeners.forEach((fn) => fn(path, state));
 
+  function write() {
+    saveTimer = 0;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: SHARE_VERSION, modeId: state.modeId, global: state.global, color: state.color, depth: state.depth, postfx: state.postfx, modes: state.modes }));
+    } catch { /* storage blocked: the app works the same */ }
+  }
   function persist() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: SHARE_VERSION, modeId: state.modeId, global: state.global, color: state.color, depth: state.depth, modes: state.modes }));
-      } catch { /* storage blocked: the app works the same */ }
-    }, 250);
+    saveTimer = setTimeout(write, 250);
+  }
+  // a change made just before leaving or reloading the page is not lost to the debounce
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => { if (saveTimer) { clearTimeout(saveTimer); write(); } });
   }
 
   return {
@@ -214,11 +224,12 @@ export function createStore() {
       return true;
     },
 
-    /** Reset a group to its defaults: 'global' | 'color' | 'depth' | 'mode'. */
+    /** Reset a group to its defaults: 'global' | 'color' | 'depth' | 'postfx' | 'mode'. */
     resetGroup(group) {
       if (group === 'global') state.global = defaultsOf(IMAGE_PARAMS);
       else if (group === 'color') state.color = defaultsOf(COLOR_PARAMS);
       else if (group === 'depth') state.depth = defaultsOf(DEPTH_PARAMS);
+      else if (group === 'postfx') state.postfx = defaultsOf(POSTFX_PARAMS);
       else if (group === 'mode') state.modes[state.modeId] = defaultsOf(getMode(state.modeId).params);
       else return;
       persist();

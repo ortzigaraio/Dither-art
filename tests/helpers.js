@@ -138,6 +138,8 @@ export async function canvasStats(page, selector = '#viewer-canvas') {
 export async function setControl(page, id, value, group = null) {
   const row = page.locator(`#controls ${group ? `[data-group="${group}"] ` : ''}[data-param="${id}"]`);
   await row.waitFor({ state: 'attached' });
+  // a folded group (Post-FX starts folded) is opened first, as a user would
+  await row.evaluate((el) => { const d = el.closest('details'); if (d && !d.open) d.open = true; });
   const cls = await row.getAttribute('class');
   if (cls.includes('ctl-range')) {
     const num = row.locator('.ctl-num');

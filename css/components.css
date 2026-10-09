@@ -921,6 +921,7 @@ body.is-dragging .drop-overlay { display: flex; }
   .studio-panel[data-tab="image"] .group:not([data-tab="image"]),
   .studio-panel[data-tab="mode"] .group:not([data-tab="mode"]),
   .studio-panel[data-tab="color"] .group:not([data-tab="color"]),
+  .studio-panel[data-tab="fx"] .group:not([data-tab="fx"]),
   .studio-panel[data-tab="export"] .group:not([data-tab="export"]) { display: none; }
   .viewer-toolbar { padding: 8px var(--gutter); }
   .viewer-toolbar .vw-full { display: none; }
@@ -1002,3 +1003,54 @@ body.is-dragging .drop-overlay { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   .dz-arrow { animation: none; }
 }
+
+/* ---- Phase 7: notes inside a settings group ---- */
+.group-note { margin: 0 0 10px; font-size: 12px; line-height: 1.45; }
+
+/* ---- presets group ---- */
+.preset-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.preset-chips .preset-surprise { margin-left: auto; }
+.preset-row { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.preset-row .input { flex: 1 1 auto; min-width: 0; }
+.preset-row .btn { flex: 0 0 auto; }
+.preset-user .preset-row { margin-top: 8px; }
+.preset-user .preset-row .btn { flex: 1 1 0; }
+.preset-files { margin: 4px 0 14px; }
+.preset-share .group-note { margin-top: 6px; }
+
+/* ---- visit counter: retro odometer (PLAN.md 17) ---- */
+.visit-counter {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  grid-template-areas: "label odo" ". today";
+  align-items: center;
+  gap: 4px 12px;
+}
+.visit-counter[hidden] { display: none; }
+.vc-label { grid-area: label; }
+.vc-odo { grid-area: odo; display: inline-flex; gap: 3px; }
+.vc-digit {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.5em;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.5em;
+  text-align: center;
+  color: var(--fg);
+}
+.vc-strip { display: flex; flex-direction: column; transform: translateY(0); transition: transform 1.4s cubic-bezier(.2, .8, .2, 1); }
+.vc-strip > span { display: block; height: 1.5em; }
+.vc-digit:nth-child(2) .vc-strip { transition-delay: 60ms; }
+.vc-digit:nth-child(3) .vc-strip { transition-delay: 120ms; }
+.vc-digit:nth-child(4) .vc-strip { transition-delay: 180ms; }
+.vc-digit:nth-child(5) .vc-strip { transition-delay: 240ms; }
+.vc-digit:nth-child(6) .vc-strip { transition-delay: 300ms; }
+.vc-still .vc-strip { transition: none; }
+.vc-today { grid-area: today; font-size: 12px; color: var(--fg-2); }
+@media (prefers-reduced-motion: reduce) { .vc-strip { transition: none; } }
