@@ -15,6 +15,7 @@ import thermal from './thermal.js';
 import glitch from './glitch.js';
 import pixelsort from './pixelsort.js';
 import crosshatch from './crosshatch.js';
+import linehalftone from './linehalftone.js';
 import contours from './contours.js';
 import voronoi from './voronoi.js';
 import flowfield from './flowfield.js';
@@ -45,6 +46,7 @@ export const MODES = [
   glitch,
   pixelsort,
   crosshatch,
+  linehalftone,
   contours,
   voronoi,
   flowfield,

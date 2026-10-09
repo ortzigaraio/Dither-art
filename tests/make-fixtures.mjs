@@ -71,7 +71,7 @@ const repoRoot = resolve(here, '..');
 export function serveRepo() {
   const types = {
     '.js': 'text/javascript', '.mjs': 'text/javascript', '.html': 'text/html', '.css': 'text/css', '.svg': 'image/svg+xml',
-    '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+    '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
   };
   const server = createServer((req, res) => {
     const rel0 = decodeURIComponent((req.url || '/').split('?')[0]);
