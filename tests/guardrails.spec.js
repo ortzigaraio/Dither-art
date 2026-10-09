@@ -594,6 +594,15 @@ test.describe('18.2 the page never looks alive but dead', () => {
     await expect(page.locator('p.noscript')).toHaveCount(0);
   });
 
+  test('a content blocker dropping the visit counter never stops the app', async ({ page }) => {
+    test.setTimeout(30_000);
+    await page.route('**/src/ui/odometer.js', (route) => route.abort('blockedbyclient'));
+    await page.goto('/');
+    await page.waitForSelector('html[data-ready="true"]', { timeout: 15_000 });
+    await page.waitForTimeout(1500);
+    await expect(page.locator('p.noscript')).toHaveCount(0);
+  });
+
   test('the failure notice names what failed', async ({ page }) => {
     test.setTimeout(30_000);
     await page.route('**/src/main.js', (route) => route.abort());
