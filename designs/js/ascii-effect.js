@@ -165,7 +165,12 @@
     canvas.addEventListener('pointerleave', () => { mouse.tk = 0; kick(); });
 
     if ('IntersectionObserver' in window) {
-      new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) kick(); }).observe(canvas);
+      let seen = false;
+      new IntersectionObserver((es) => {
+        visible = es[0].isIntersecting;
+        if (visible && !seen) { seen = true; start = performance.now(); } // play the intro when first seen
+        if (visible) kick();
+      }).observe(canvas);
     }
     if ('ResizeObserver' in window) {
       let last = '';
