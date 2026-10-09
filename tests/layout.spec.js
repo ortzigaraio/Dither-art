@@ -359,7 +359,9 @@ test.describe('home view', () => {
     expect(cfg).toMatchObject({ productName: 'Dither', fileSlug: 'dither', siteUrl: 'https://dither.ortzigar.org/', repoUrl: 'https://github.com/ortzigaraio/Dither-art' });
     const hrefs = await page.locator('a[href*="github.com"]').evaluateAll((els) => els.map((e) => e.href));
     expect(hrefs.length).toBeGreaterThanOrEqual(2);
-    for (const h of hrefs) expect(h).toBe(cfg.repoUrl);
+    // every GitHub link is the configured repository (or a file inside it, such as the LICENSE)
+    for (const h of hrefs) expect(h === cfg.repoUrl || h.startsWith(`${cfg.repoUrl}/blob/main/`), h).toBe(true);
+    expect(hrefs.filter((h) => h === cfg.repoUrl).length).toBeGreaterThanOrEqual(2);
     // the visible name never replaces the logo: no text node spells the Horain logo anywhere in the header
     const logoCount = await page.locator('.site-header img.logo').count();
     expect(logoCount).toBe(2);
