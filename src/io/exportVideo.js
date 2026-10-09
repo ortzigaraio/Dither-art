@@ -323,7 +323,16 @@ async function conversionRoute(job, caps) {
   const g = canvas.getContext('2d');
   const yielder = makeYielder();
   let conversion = null;
-  const onAbort = () => { conversion?.cancel().catch(() => {}); };
+  // Cancelling is a two-step affair. `conversion.cancel()` closes the encoder at once, but if it lands while
+  // Mediabunny is inside `add()` for a sample (our `process` is awaited there, and with a target frame rate it is
+  // called several times per decoded sample to pad the gaps), Mediabunny stores a fresh clone of that sample as its
+  // "last frame" *after* the close has already released the previous one: nobody closes the clone, and the
+  // finalizer later logs "A VideoSample was garbage collected without first being closed". So an abort first
+  // *pauses* the conversion (`pauseSignal`): every remaining `process` call returns at once, the track pumps park at
+  // their next checkpoint (outside `add()`), `execute()` resolves, and only then is the conversion cancelled.
+  const pause = new AbortController();
+  let framesOut = 0; // frames handed to the encoder; Mediabunny only reaches a pause checkpoint after the first one
+  const onAbort = () => pause.abort();
   job.signal?.addEventListener('abort', onAbort);
   const started = performance.now();
   try {
@@ -339,15 +348,23 @@ async function conversionRoute(job, caps) {
         processedWidth: job.outW,
         processedHeight: job.outH,
         process: async (sample) => {
-          if (job.signal?.aborted) return null;
+          if (job.signal?.aborted) {
+            // Skip the work. Before the first encoded frame Mediabunny never checks the pause request, so hand it
+            // one (blank) frame to get there; it is thrown away with the rest.
+            if (framesOut > 0) return null;
+            framesOut++;
+            return canvas;
+          }
           await yielder();
           const result = await job.render(sample.timestamp, (ctx, w, h) => sample.draw(ctx, 0, 0, w, h));
           drawFit(g, job.outW, job.outH, result, job.bg);
+          framesOut++;
           return canvas;
         },
       },
       audio: job.includeAudio ? {} : { discard: true },
     });
+    throwIfAborted(job.signal); // cancelled while the tracks were being probed: nothing has started yet
     if (!conversion.isValid) {
       const why = conversion.discardedTracks.map((d) => `${d.track.type}:${d.reason}`).join(', ');
       throw new Error(`the conversion is not valid (${why})`);
@@ -357,7 +374,12 @@ async function conversionRoute(job, caps) {
       const elapsed = (performance.now() - started) / 1000;
       job.onProgress?.(p, { remaining: p > 0.03 ? (elapsed / p) * (1 - p) : null });
     };
-    await conversion.execute();
+    await conversion.execute({ pauseSignal: pause.signal });
+    if (job.signal?.aborted) {
+      // paused (or finished just as the user cancelled): no sample is in flight any more, so this releases them all
+      await conversion.cancel();
+      throw new ExportCanceled();
+    }
     const blob = new Blob([output.target.buffer], { type: def.mime });
     output.target.buffer = null;
     return { blob, ext: def.ext, route: 'mediabunny', audioDropped };
@@ -551,6 +573,8 @@ export async function createLiveRecorder(job, caps) {
     },
     async cancel() {
       closed = true;
+      // let the frame being encoded finish first: cancelling under an add() can strand its sample (see conversionRoute)
+      while (busy) await sleep(5);
       await sink.cancel();
     },
   };
