@@ -4,6 +4,7 @@
 
 import { IMAGE_PARAMS } from './engine/preprocess.js';
 import { COLOR_PARAMS, normalizeHex } from './engine/color.js';
+import { DEPTH_PARAMS } from './engine/depth.js';
 import { MODES, getMode, hasMode } from './modes/index.js';
 import { LIMITS } from './config.js';
 
@@ -86,7 +87,7 @@ export function defaultState() {
     modeId: MODES[0].id,
     global: defaultsOf(IMAGE_PARAMS),
     color: defaultsOf(COLOR_PARAMS),
-    depth: {},
+    depth: defaultsOf(DEPTH_PARAMS),
     postfx: {},
     modes: Object.fromEntries(MODES.map((m) => [m.id, defaultsOf(m.params)])),
   };
@@ -99,6 +100,7 @@ export function sanitizeState(raw) {
   if (typeof src.modeId === 'string' && hasMode(src.modeId)) state.modeId = src.modeId;
   state.global = sanitizeParams(IMAGE_PARAMS, src.global);
   state.color = sanitizeParams(COLOR_PARAMS, src.color);
+  state.depth = sanitizeParams(DEPTH_PARAMS, src.depth);
   const modes = isPlainObject(src.modes) ? src.modes : {};
   for (const m of MODES) state.modes[m.id] = sanitizeParams(m.params, has(modes, m.id) ? modes[m.id] : null);
   return state;
@@ -128,6 +130,7 @@ export function encodeShare(state) {
     modeId: state.modeId,
     global: state.global,
     color: state.color,
+    depth: state.depth,
     modes: { [state.modeId]: state.modes[state.modeId] },
   };
   return toBase64Url(JSON.stringify(payload));
@@ -154,6 +157,7 @@ function schemaFor(path) {
   const [root, a, b] = path;
   if (root === 'global') return IMAGE_PARAMS.find((p) => p.id === a);
   if (root === 'color') return COLOR_PARAMS.find((p) => p.id === a);
+  if (root === 'depth') return DEPTH_PARAMS.find((p) => p.id === a);
   if (root === 'modes' && hasMode(a)) return getMode(a).params.find((p) => p.id === b);
   return null;
 }
@@ -169,7 +173,7 @@ export function createStore() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: SHARE_VERSION, modeId: state.modeId, global: state.global, color: state.color, modes: state.modes }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: SHARE_VERSION, modeId: state.modeId, global: state.global, color: state.color, depth: state.depth, modes: state.modes }));
       } catch { /* storage blocked: the app works the same */ }
     }, 250);
   }
@@ -210,10 +214,11 @@ export function createStore() {
       return true;
     },
 
-    /** Reset a group to its defaults: 'global' | 'color' | 'mode'. */
+    /** Reset a group to its defaults: 'global' | 'color' | 'depth' | 'mode'. */
     resetGroup(group) {
       if (group === 'global') state.global = defaultsOf(IMAGE_PARAMS);
       else if (group === 'color') state.color = defaultsOf(COLOR_PARAMS);
+      else if (group === 'depth') state.depth = defaultsOf(DEPTH_PARAMS);
       else if (group === 'mode') state.modes[state.modeId] = defaultsOf(getMode(state.modeId).params);
       else return;
       persist();
