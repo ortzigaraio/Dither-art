@@ -13,7 +13,7 @@ async function pick(page, id) {
   await page.waitForFunction((b) => Number(document.getElementById('viewer-canvas').dataset.frame) > b, before);
 }
 
-const EXPORT_KEYS = { png: ['png'], txt: ['txt'], html: ['html'], ansi: ['ansi'], ans: ['ans'], svg: ['svg'], json: ['json'] };
+const EXPORT_KEYS = { png: ['png'], txt: ['txt'], html: ['html'], ansi: ['ansi'], ans: ['ans'], svg: ['svg'], json: ['json'], ply: ['ply'] };
 
 test.describe('mode list', () => {
   test('groups by category, in registry order, with TXT / SVG / ANIM badges that match what the mode can do', async ({ page }) => {
@@ -97,7 +97,7 @@ test.describe('export panel', () => {
     // the registry check runs at load time: every declared format must have its function
     const res = await page.evaluate(async () => {
       const { MODES } = await import('/src/modes/index.js');
-      const fn = { txt: 'toText', html: 'toText', ansi: 'toText', ans: 'toBinary', svg: 'toSVG', json: 'toJSON' };
+      const fn = { txt: 'toText', html: 'toText', ansi: 'toText', ans: 'toBinary', svg: 'toSVG', json: 'toJSON', ply: 'toPLY' };
       const bad = [];
       for (const m of MODES) for (const e of m.exports) if (fn[e] && typeof m[fn[e]] !== 'function') bad.push(`${m.id}:${e}`);
       return bad;

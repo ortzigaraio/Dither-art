@@ -2,7 +2,8 @@
 // and the gallery of modes with lazily rendered thumbnails.
 
 import { t, tl, onLangChange } from '../i18n/i18n.js';
-import { MODES, getMode, hasMode } from '../modes/index.js';
+import { MODES, getMode, hasMode, modeAvailable } from '../modes/index.js';
+import { toastWarn } from './toast.js';
 import { createPipeline } from '../engine/pipeline.js';
 import { createScheduler } from '../scheduler.js';
 import { IMAGE_PARAMS } from '../engine/preprocess.js';
@@ -122,6 +123,7 @@ export function createHome({ onOpenMode }) {
     const mode = card.mode;
     const params = paramsFor(mode.id, mode.thumb || {}, 64);
     const r = await thumbPipe.render({ source: thumbSource, mode, params, time: 1.4, quality: 'full', outScale: 1, theme });
+    if (!r.canvas) return; // WebGL context lost: drawn again when the card comes back into view
     const c = card.canvas;
     if (c.width !== r.width || c.height !== r.height) { c.width = r.width; c.height = r.height; }
     const g = c.getContext('2d');
@@ -181,12 +183,17 @@ export function createHome({ onOpenMode }) {
       }
       body.append(name, blurb, badges);
       btn.append(canvas, body);
-      btn.addEventListener('click', () => onOpenMode(mode.id));
+      const available = modeAvailable(mode);
+      if (!available) btn.setAttribute('aria-disabled', 'true'); // GPU mode without WebGL2: listed, explained, not opened
+      btn.addEventListener('click', () => {
+        if (available) onOpenMode(mode.id);
+        else toastWarn(t('err.noWebGL2'));
+      });
       li.appendChild(btn);
       grid.appendChild(li);
-      const card = { mode, canvas, name, blurb, btn, themeKey: '' };
+      const card = { mode, canvas, name, blurb, btn, themeKey: '', available };
       cards.push(card);
-      thumbObserver?.observe(canvas);
+      if (available) thumbObserver?.observe(canvas);
     }
     relabel();
   }
@@ -194,7 +201,7 @@ export function createHome({ onOpenMode }) {
   function relabel() {
     for (const c of cards) {
       c.name.textContent = tl(c.mode.name);
-      c.blurb.textContent = tl(c.mode.blurb);
+      c.blurb.textContent = c.available ? tl(c.mode.blurb) : `${tl(c.mode.blurb)} · ${t('err.noWebGL2')}`;
       c.btn.setAttribute('aria-label', t('modes.open', { mode: tl(c.mode.name) }));
     }
   }
@@ -203,7 +210,7 @@ export function createHome({ onOpenMode }) {
     theme = themeOutputColors();
     scheduler.markDirty();
     for (const c of cards) {
-      if (c.themeKey && !thumbQueue.includes(c)) thumbQueue.push(c);
+      if (c.available && c.themeKey && !thumbQueue.includes(c)) thumbQueue.push(c);
     }
     pumpThumbs();
   });
