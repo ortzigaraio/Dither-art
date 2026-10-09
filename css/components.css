@@ -958,6 +958,18 @@ body.is-dragging .drop-overlay { display: flex; }
   padding: 0 4px;
 }
 .toast-close:hover { color: var(--fg); }
+.toast-action {
+  align-self: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 12px;
+  white-space: nowrap;
+}
+.toast-action:hover { border-color: var(--accent-text); color: var(--accent-text); }
 .toast.is-leaving { opacity: 0; transform: translateY(8px); transition: opacity var(--t-med), transform var(--t-med); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } }
 
