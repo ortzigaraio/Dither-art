@@ -5,10 +5,32 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dither by Horain</title>
-  <meta name="description" content="Dither turns images into ASCII art and generative art. Everything runs in your browser: nothing is uploaded.">
+  <meta name="description" content="Turn images, video and your webcam into ASCII, dithering, Braille, halftone, plotter SVG, 3D and generative art. 25 styles, everything runs in your browser: nothing is uploaded.">
   <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#15181E">
+  <link rel="canonical" href="https://dither.ortzigar.org/">
   <link rel="icon" type="image/svg+xml" href="./assets/brand/horain-icon.svg">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
+
+  <!-- Open Graph / Twitter (absolute URLs = config.siteUrl; checked by tests/seo.spec.js) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Dither by Horain">
+  <meta property="og:title" content="Dither by Horain · turn images &amp; video into art">
+  <meta property="og:description" content="ASCII, dithering, Braille, halftone, plotter SVG, 3D and generative art from your images, videos and webcam. 100% in your browser: nothing is uploaded.">
+  <meta property="og:url" content="https://dither.ortzigar.org/">
+  <meta property="og:image" content="https://dither.ortzigar.org/assets/og-image.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Dither by Horain: the same picture rendered as ASCII, halftone, 1-bit dithering and contour lines.">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Dither by Horain · turn images &amp; video into art">
+  <meta name="twitter:description" content="25 styles of generative art from your images, videos and webcam. 100% in your browser: nothing is uploaded.">
+  <meta name="twitter:image" content="https://dither.ortzigar.org/assets/og-image.png">
+  <meta name="twitter:image:alt" content="Dither by Horain: the same picture rendered as ASCII, halftone, 1-bit dithering and contour lines.">
 
   <link rel="stylesheet" href="./assets/fonts/fonts.css">
   <link rel="stylesheet" href="./css/tokens.css">
@@ -114,27 +136,44 @@
           </article>
           <article class="about-card">
             <h3 class="display" data-i18n="about.media.title">images &amp; video</h3>
-            <p data-i18n="about.media.body">Drop an image today; video and webcam are on the way.</p>
+            <p data-i18n="about.media.body">Drop an image or a video, or open your camera.</p>
           </article>
           <article class="about-card">
             <h3 class="display" data-i18n="about.export.title">export</h3>
-            <p data-i18n="about.export.body">Save PNG, TXT, HTML or ANSI, or copy the result to the clipboard.</p>
+            <p data-i18n="about.export.body">Save PNG, SVG, TXT, HTML, ANSI, PLY or video.</p>
           </article>
         </div>
-        <p class="credits muted" data-i18n="about.credits">Algorithms: error diffusion (Floyd&ndash;Steinberg, Jarvis&ndash;Judice&ndash;Ninke, Stucki, Atkinson, Burkes, Sierra), Bayer ordered dithering, void-and-cluster blue noise. Fonts: Unbounded, Geist, Geist Mono, JetBrains Mono, VT323, IBM Plex Mono, Space Mono (SIL OFL).</p>
+        <div class="about-more">
+          <section class="about-block" id="privacy" aria-labelledby="privacy-title">
+            <h3 id="privacy-title" class="display" data-i18n="privacy.title">privacy</h3>
+            <ul class="privacy-list">
+              <li data-i18n="privacy.files">Your pictures, videos and camera are processed on your device.</li>
+              <li data-i18n="privacy.storage">Settings are stored only in this browser.</li>
+              <li data-i18n="privacy.counter">We count visits anonymously.</li>
+              <li data-i18n="privacy.ai">AI depth is optional.</li>
+              <li data-i18n="privacy.none">No cookies, no third-party analytics.</li>
+            </ul>
+          </section>
+          <section class="about-block" aria-labelledby="horain-title">
+            <h3 id="horain-title" class="display" data-i18n="about.horain.title">built with horain</h3>
+            <p data-i18n="about.horain.body">Dither is the UI/UX test bench of Horain.</p>
+            <p class="credits muted" data-i18n="about.credits">Algorithms and fonts.</p>
+          </section>
+        </div>
       </section>
     </section>
 
     <!-- ============ STUDIO ============ -->
-    <section id="studio" class="view view-studio" aria-label="Studio" hidden>
-      <aside class="studio-modes" aria-labelledby="out-title">
+    <section id="studio" class="view view-studio" aria-labelledby="studio-h1" hidden>
+      <h1 id="studio-h1" class="sr-only" data-i18n="studio.h1">Dither studio</h1>
+      <section class="studio-modes" aria-labelledby="out-title">
         <h2 id="out-title" class="label panel-title"><span class="idx">02 /</span> <span data-i18n="studio.output">Output</span></h2>
         <label class="mode-select-wrap">
           <span class="sr-only" data-i18n="studio.mode">Mode</span>
           <select id="mode-select" class="select"></select>
         </label>
         <nav id="mode-list" class="mode-list" aria-label="Output styles" data-i18n-attr="aria-label:studio.modesNav"></nav>
-      </aside>
+      </section>
 
       <div class="studio-stage">
         <div class="viewer" id="viewer">
@@ -167,11 +206,11 @@
         <div class="transport" id="transport" hidden></div>
       </div>
 
-      <aside class="studio-panel" id="studio-panel" aria-labelledby="set-title">
+      <section class="studio-panel" id="studio-panel" aria-labelledby="set-title">
         <h2 id="set-title" class="label panel-title"><span class="idx">03 /</span> <span data-i18n="studio.settings">Settings</span></h2>
         <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Settings tabs" data-i18n-attr="aria-label:studio.tabs"></div>
         <div id="controls" class="controls"></div>
-      </aside>
+      </section>
 
     </section>
   </main>
@@ -186,9 +225,11 @@
       </span>
       <div id="visit-counter" class="visit-counter" hidden></div>
       <nav class="footer-links" aria-label="Footer" data-i18n-attr="aria-label:footer.nav">
-        <a href="https://github.com/ortzigaraio/Dither-art" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://github.com/ortzigaraio/Dither-art" target="_blank" rel="noopener noreferrer" data-i18n="footer.source">Source on GitHub</a>
         <a href="https://ortzigar.org" target="_blank" rel="noopener noreferrer" data-i18n="footer.madeBy">made by ortzigar.org</a>
-        <span data-i18n="footer.license">MIT license</span>
+        <a href="https://github.com/ortzigaraio/Dither-art/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" data-i18n="footer.license">MIT license</a>
+        <a href="#privacy" data-i18n="privacy.title">privacy</a>
+        <button type="button" class="link-btn" id="footer-keys" aria-keyshortcuts="?" data-i18n="footer.keys">Keyboard shortcuts</button>
       </nav>
     </div>
   </footer>

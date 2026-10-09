@@ -9,6 +9,7 @@
     "fixtures": "node make-fixtures.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.56.1"
+    "@playwright/test": "1.56.1",
+    "axe-core": "4.10.3"
   }
 }

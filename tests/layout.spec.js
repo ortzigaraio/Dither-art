@@ -165,14 +165,9 @@ test.describe('theme contrast (AA)', () => {
       ];
       for (const [name, fg, bg] of pairs) results.push({ theme, name, ratio: ratio(fg, bg) });
     }
-    // PLAN.md 4.1 fixes the PAPER accent (#E5402A with #FFFFFF text) at 4.12:1. That is a known
-    // shortfall recorded in PLAN.md 19; every other pair must reach AA for normal text.
-    const known = (r) => r.theme === 'paper' && r.name === 'accent-ink on accent';
-    const failing = results.filter((r) => r.ratio < 4.5 && !known(r));
+    // Every pair reaches AA for normal text in all six themes (PAPER's accent ink is #111111 since phase 7, PLAN.md 19)
+    const failing = results.filter((r) => r.ratio < 4.5);
     expect(failing.map((r) => `${r.theme}: ${r.name} = ${r.ratio.toFixed(2)}`)).toEqual([]);
-    const paper = results.find(known);
-    expect(paper.ratio).toBeGreaterThan(4.0);
-    expect(paper.ratio).toBeLessThan(4.5);
   });
 
   test('lime is never used as text colour on light themes', async ({ page }) => {
@@ -193,7 +188,7 @@ test.describe('accessibility basics', () => {
     await expect(page.locator('header')).toHaveCount(1);
     await expect(page.locator('main')).toHaveCount(1);
     await expect(page.locator('footer')).toHaveCount(1);
-    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('h1:visible')).toHaveCount(1);
     await expect(page.locator('.skip-link')).toHaveAttribute('href', '#main');
     const unlabeled = await page.evaluate(() => {
       const bad = [];
@@ -359,7 +354,9 @@ test.describe('home view', () => {
     expect(cfg).toMatchObject({ productName: 'Dither', fileSlug: 'dither', siteUrl: 'https://dither.ortzigar.org/', repoUrl: 'https://github.com/ortzigaraio/Dither-art' });
     const hrefs = await page.locator('a[href*="github.com"]').evaluateAll((els) => els.map((e) => e.href));
     expect(hrefs.length).toBeGreaterThanOrEqual(2);
-    for (const h of hrefs) expect(h).toBe(cfg.repoUrl);
+    // every GitHub link is the configured repository (or a file inside it, such as the LICENSE)
+    for (const h of hrefs) expect(h === cfg.repoUrl || h.startsWith(`${cfg.repoUrl}/blob/main/`), h).toBe(true);
+    expect(hrefs.filter((h) => h === cfg.repoUrl).length).toBeGreaterThanOrEqual(2);
     // the visible name never replaces the logo: no text node spells the Horain logo anywhere in the header
     const logoCount = await page.locator('.site-header img.logo').count();
     expect(logoCount).toBe(2);

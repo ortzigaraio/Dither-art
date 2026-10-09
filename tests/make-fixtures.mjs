@@ -66,11 +66,16 @@ async function makeImage(page) {
 
 const repoRoot = resolve(here, '..');
 
-/** Tiny static server for the repo root: the video fixture needs ES modules from vendor/ (file:// cannot import them). */
-function serveRepo() {
-  const types = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.html': 'text/html' };
+/** Tiny static server for the repo root: the video fixture needs ES modules from vendor/ (file:// cannot import them).
+ *  Also used by make-og-image.mjs and make-screenshots.mjs, which load the whole app. */
+export function serveRepo() {
+  const types = {
+    '.js': 'text/javascript', '.mjs': 'text/javascript', '.html': 'text/html', '.css': 'text/css', '.svg': 'image/svg+xml',
+    '.png': 'image/png', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+  };
   const server = createServer((req, res) => {
-    const rel = decodeURIComponent((req.url || '/').split('?')[0]);
+    const rel0 = decodeURIComponent((req.url || '/').split('?')[0]);
+    const rel = rel0.endsWith('/') ? `${rel0}index.html` : rel0;
     const file = resolve(repoRoot, '.' + rel);
     if (!file.startsWith(repoRoot)) { res.writeHead(403); res.end(); return; }
     readFile(file, (err, data) => {
