@@ -577,7 +577,27 @@ test.describe('18.2 the page never looks alive but dead', () => {
   test('a healthy start never shows the notice', async ({ page }) => {
     test.setTimeout(30_000);
     await gotoApp(page);
-    await page.waitForTimeout(6500); // the safety net fires at 6 s
+    await page.waitForTimeout(6500);
     await expect(page.locator('p.noscript')).toHaveCount(0);
+  });
+
+  test('a slow first load (modules arriving after 8 s) starts normally without a false alarm', async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.route('**/src/studio.js', async (route) => {
+      await new Promise((r) => setTimeout(r, 8000));
+      await route.continue();
+    });
+    await page.goto('/');
+    await page.waitForTimeout(7000);
+    await expect(page.locator('p.noscript')).toHaveCount(0);
+    await page.waitForSelector('html[data-ready="true"]', { timeout: 30_000 });
+    await expect(page.locator('p.noscript')).toHaveCount(0);
+  });
+
+  test('the failure notice names what failed', async ({ page }) => {
+    test.setTimeout(30_000);
+    await page.route('**/src/main.js', (route) => route.abort());
+    await page.goto('/');
+    await expect(page.locator('p.noscript[role="alert"]')).toContainText('main.js', { timeout: 12_000 });
   });
 });
