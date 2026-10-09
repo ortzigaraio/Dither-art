@@ -577,8 +577,24 @@ export function createStudio({ onChangeFile }) {
   }
 
   // ---- 3D camera gestures (PLAN.md 4.6): drag = orbit, Shift + drag = pan, wheel = distance ----
-  const camParams = () => store.state.modes[store.state.modeId];
-  const setCam = (vals) => { for (const [k, v] of Object.entries(vals)) store.set(`modes.${store.state.modeId}.${k}`, v); };
+  // The store keeps the camera at the precision of each slider (1° for yaw / pitch); gestures move a float copy, so
+  // slow drags of a pixel at a time still add up. The copy follows the store whenever the store changed elsewhere.
+  const camFloat = {};
+  const camParams = () => {
+    const p = store.state.modes[store.state.modeId];
+    const out = {};
+    for (const k of ['yaw', 'pitch', 'distance', 'panX', 'panY']) {
+      const f = camFloat[k];
+      out[k] = f && f.mode === store.state.modeId && f.stored === p[k] ? f.value : p[k];
+    }
+    return out;
+  };
+  const setCam = (vals) => {
+    for (const [k, v] of Object.entries(vals)) {
+      store.set(`modes.${store.state.modeId}.${k}`, v);
+      camFloat[k] = { mode: store.state.modeId, value: v, stored: store.state.modes[store.state.modeId][k] };
+    }
+  };
   const cameraHandler = {
     orbit: (dx, dy) => setCam(orbitBy(camParams(), dx, dy)),
     pan: (dx, dy, size) => setCam(panBy(camParams(), dx, dy, size)),
