@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dither — a low-tech journal</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/lowtech.css">
+</head>
+<body>
+<div class="charge" aria-hidden="true"><div class="charge-fill"></div></div>
+
+<aside class="status" aria-label="Device status">
+  <div class="batt" title="Battery 64%">
+    <span class="batt-body"><span class="batt-level"></span></span><span class="batt-cap"></span>
+  </div>
+  <dl>
+    <dt>Battery</dt><dd>64%</dd>
+    <dt>Weather</dt><dd>Partly cloudy, 18&nbsp;°C</dd>
+    <dt>Rendered by</dt><dd>your own CPU</dd>
+    <dt>Page weight</dt><dd>212 KB</dd>
+  </dl>
+</aside>
+
+<header class="mast">
+  <a class="logo" href="#">
+    <svg viewBox="0 0 28 28" aria-hidden="true"><g fill="currentColor"><rect x="0" y="0" width="4" height="4"/><rect x="8" y="0" width="4" height="4"/><rect x="16" y="0" width="4" height="4"/><rect x="4" y="4" width="4" height="4"/><rect x="12" y="4" width="4" height="4"/><rect x="0" y="8" width="4" height="4"/><rect x="8" y="8" width="4" height="4"/><rect x="4" y="12" width="4" height="4"/><rect x="0" y="16" width="4" height="4"/></g></svg>
+    <span>Dither</span><em>a low-tech journal</em>
+  </a>
+  <nav>
+    <a href="#" class="on">Articles</a> · <a href="#">Modes</a> · <a href="#">About</a> · <a href="#">Archive</a> · <a href="index.html">Index</a> · <a href="#">ES</a>
+  </nav>
+</header>
+
+<main class="col">
+  <p class="kicker">Essay — No. 14 — <time>October 2026</time></p>
+  <h1>How to dither a painting, and why it uses less energy</h1>
+  <p class="byline">Words and images by the Dither studio. Reading time 9 minutes. This page was downloaded once and is now rendered locally.</p>
+
+  <figure>
+    <img src="img/lt-campesinos.webp" width="720" height="632" alt="Three Basque farmers with hoes, dithered with four warm brown tones">
+    <figcaption><span class="cap-t">Campesinos.</span> Floyd–Steinberg, 4 colours. <span class="kb">29 KB</span> <a href="#">View original (114 KB)</a></figcaption>
+  </figure>
+
+  <p class="lede">Every image on this page has been reduced to four colours. It is a deliberate choice: a dithered image is a fraction of the size of the original, and it carries its own kind of beauty, the beauty of an old newspaper, an early Macintosh, an etching.</p>
+
+  <p>Dithering trades colour for pattern. Where the original painting has a thousand shades of ochre, the dithered version has two or three, arranged so closely that the eye mixes them back together. The error that each pixel makes when it is rounded to the nearest available colour is not discarded: it is passed on to its neighbours, seven sixteenths to the right, five sixteenths below.</p>
+
+  <h2>The fishermen of the harbour</h2>
+  <p>We began with the port. The painting is full of fine detail, rigging, faces, baskets of fish, and it is exactly the kind of image that a naive reduction destroys. Error diffusion keeps the edges of the oars and the folds in the jacket, because it never lets a local mistake accumulate.</p>
+
+  <figure>
+    <img src="img/lt-puerto.webp" width="720" height="557" alt="Fishermen carrying oars and baskets in a harbour, dithered in slate and cream" loading="lazy">
+    <figcaption><span class="cap-t">Puerto.</span> Floyd–Steinberg, 4 colours, slate. <span class="kb">32 KB</span> <a href="#">View original (134 KB)</a></figcaption>
+  </figure>
+
+  <blockquote>“A website that goes off-line when the sun doesn’t shine.” We borrowed the spirit, not the panel: Dither runs entirely in your browser, so the only energy it spends is your own.</blockquote>
+
+  <div class="pair">
+    <figure>
+      <img src="img/lt-herrero.webp" width="720" height="590" alt="A blacksmith at an anvil, dithered in rust and cream" loading="lazy">
+      <figcaption><span class="cap-t">Herrero.</span> 4 colours, rust. <span class="kb">22 KB</span></figcaption>
+    </figure>
+    <figure>
+      <img src="img/lt-labradores.webp" width="720" height="526" alt="Ploughmen working a field, dithered in olive and cream" loading="lazy">
+      <figcaption><span class="cap-t">Labradores.</span> 4 colours, olive. <span class="kb">17 KB</span></figcaption>
+    </figure>
+  </div>
+
+  <h2>What the numbers say</h2>
+  <table>
+    <thead><tr><th>Image</th><th>Original</th><th>Dithered</th><th>Saved</th></tr></thead>
+    <tbody>
+      <tr><td>Campesinos</td><td>114 KB</td><td>29 KB</td><td>75%</td></tr>
+      <tr><td>Puerto</td><td>134 KB</td><td>32 KB</td><td>76%</td></tr>
+      <tr><td>Herrero</td><td>80 KB</td><td>22 KB</td><td>72%</td></tr>
+      <tr><td>Labradores</td><td>51 KB</td><td>17 KB</td><td>67%</td></tr>
+    </tbody>
+  </table>
+
+  <p>Four colours is not a hard rule. The fish market below uses a warmer palette with a single red, because the painting is about the catch, and the catch is red.</p>
+
+  <figure class="wide">
+    <img src="img/lt-pescado.webp" width="720" height="720" alt="Fishermen behind a table of red fish, dithered in four warm tones with a red accent" loading="lazy">
+    <figcaption><span class="cap-t">Pescado.</span> Floyd–Steinberg, 4 colours, one red. <span class="kb">55 KB</span> <a href="#">View original (318 KB)</a></figcaption>
+  </figure>
+
+  <h2>Try it on your own images</h2>
+  <p>Open the studio, drop an image, and choose <em>Error diffusion → Floyd–Steinberg</em>. Set the palette to four colours. Export as PNG; it will be smaller than you expect. <a href="#">Open Dither →</a></p>
+
+  <hr>
+  <section class="foot-notes">
+    <p><strong>Colophon.</strong> Set in your system serif. No web fonts, no tracking, no cookies. Images dithered with Dither. Basque fishing and rural paintings from the Dither sample collection.</p>
+    <p><strong>Previous:</strong> <a href="#">Ordered dithering and the Bayer matrix</a><br><strong>Next:</strong> <a href="#">ASCII as a compression format</a></p>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Dither · a low-tech journal · this page: 212 KB · printed in pixels</p>
+</footer>
+</body>
+</html>
