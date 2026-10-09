@@ -5,9 +5,10 @@ import { t } from '../i18n/i18n.js';
 /**
  * @param {object} mode current mode module
  * @param {{ png:(scale:number)=>void, text:(format:string, opts?:object)=>void, copyText:()=>void,
- *           copyImage:()=>void, share:()=>void }} actions
+ *           copyImage:()=>void, share:()=>void, video:()=>void }} actions
+ * @param {{ video?: boolean }} [opts] video: this source and mode can be exported as a video
  */
-export function createExportGroup(mode, actions) {
+export function createExportGroup(mode, actions, opts = {}) {
   const exports = new Set(mode.exports || []);
   const group = document.createElement('details');
   group.className = 'group';
@@ -85,6 +86,10 @@ export function createExportGroup(mode, actions) {
       grid.appendChild(button(f, t(`export.${f}`), () => actions.text(f, f === 'ansi' ? { depth: Number(ansiDepth) } : {})));
     }
     body.appendChild(grid);
+  }
+
+  if (opts.video) {
+    body.appendChild(button('video', t('export.video'), actions.video, 'btn btn-primary btn-sm'));
   }
 
   const copy = document.createElement('div');

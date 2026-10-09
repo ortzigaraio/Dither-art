@@ -2,6 +2,20 @@
 // Every string goes through t(); the file name is user text, so it is set with textContent only.
 
 import { t } from '../i18n/i18n.js';
+import { formatClock } from '../io/exportVideo.js';
+
+/** "Video · 1280×720 · 30 fps · 00:12" (refreshed while a video plays, because the frame rate is measured then). */
+export function describeSource(source) {
+  const size = `${source.width}×${source.height}`;
+  if (source.kind === 'demo') return size;
+  const bits = [t(`studio.source.${source.kind === 'webcam' ? 'webcam' : source.kind === 'video' ? 'video' : 'image'}`), size];
+  if (source.kind === 'video') {
+    bits.push(`${Math.round(source.fps * 10) / 10} fps`);
+    if (Number.isFinite(source.duration)) bits.push(formatClock(source.duration));
+  }
+  if (source.downscaled) bits.push(`↓ ${source.originalWidth}×${source.originalHeight}`);
+  return bits.join(' · ');
+}
 
 export function createInputGroup(source, { onChange }) {
   const group = document.createElement('details');
@@ -26,13 +40,10 @@ export function createInputGroup(source, { onChange }) {
   info.className = 'src-line';
   const name = document.createElement('span');
   name.className = 'src-name';
-  const kindKey = source.kind === 'demo' ? 'studio.source.demo' : source.kind === 'video' ? 'studio.source.video' : 'studio.source.image';
-  name.textContent = source.kind === 'demo' ? t('studio.source.demo') : source.name;
+  name.textContent = source.kind === 'demo' ? t('studio.source.demo') : source.kind === 'webcam' ? t('studio.source.webcam') : source.name;
   const dims = document.createElement('span');
-  const size = `${source.width}×${source.height}`;
-  const bits = source.kind === 'demo' ? [size] : [t(kindKey), size];
-  if (source.downscaled) bits.push(`↓ ${source.originalWidth}×${source.originalHeight}`);
-  dims.textContent = bits.join(' · ');
+  dims.id = 'src-dims';
+  dims.textContent = describeSource(source);
   info.append(name, dims);
 
   const change = document.createElement('button');
