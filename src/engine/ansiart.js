@@ -137,42 +137,47 @@ export function halfBlockCells(src, idx, palette, cols, rows, bgCount) {
   const fg = new Uint8ClampedArray(n * 3);
   const bg = new Uint8ClampedArray(n * 3);
   const err = new Float32Array(n);
-  const colour = (p, out, o) => {
-    if (idx) { const c = palette[idx[p]]; out[o] = c[0]; out[o + 1] = c[1]; out[o + 2] = c[2]; } else { out[o] = src[p * 4]; out[o + 1] = src[p * 4 + 1]; out[o + 2] = src[p * 4 + 2]; }
-  };
-  const limited = idx && bgCount < palette.length;
-  const nearestBg = (r, g, b) => {
+  const limited = !!idx && bgCount < palette.length;
+  const dark = limited ? palette.slice(0, bgCount) : null;
+  const nearestDark = (r, g, b) => {
     let best = 0, bd = Infinity;
-    for (let i = 0; i < bgCount; i++) { const c = palette[i]; const d = (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2; if (d < bd) { bd = d; best = i; } }
-    return palette[best];
+    for (let i = 0; i < dark.length; i++) { const c = dark[i]; const d = (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2; if (d < bd) { bd = d; best = i; } }
+    return dark[best];
   };
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const i = y * cols + x;
       const top = (2 * y) * cols + x;
       const bot = top + cols;
-      const tIdx = idx ? idx[top] : -1;
-      const bIdx = idx ? idx[bot] : -1;
-      const cTop = new Uint8ClampedArray(3);
-      const cBot = new Uint8ClampedArray(3);
-      colour(top, cTop, 0);
-      colour(bot, cBot, 0);
+      let tr, tg, tb, br, bgc, bb;
+      if (idx) {
+        const t = palette[idx[top]], b = palette[idx[bot]];
+        tr = t[0]; tg = t[1]; tb = t[2]; br = b[0]; bgc = b[1]; bb = b[2];
+      } else {
+        tr = src[top * 4]; tg = src[top * 4 + 1]; tb = src[top * 4 + 2];
+        br = src[bot * 4]; bgc = src[bot * 4 + 1]; bb = src[bot * 4 + 2];
+      }
       let c = CH.UPPER;
-      let f = cTop, b = cBot;
+      let fr = tr, fgc = tg, fb = tb; // foreground / background of the chosen character
+      let r2 = br, g2 = bgc, b2 = bb;
       if (limited) {
-        const topOk = tIdx < bgCount;
-        const botOk = bIdx < bgCount;
-        if (!botOk && topOk) { c = CH.LOWER; f = cBot; b = cTop; } else if (!botOk && !topOk) { b = nearestBg(cBot[0], cBot[1], cBot[2]); }
+        const topOk = idx[top] < bgCount;
+        const botOk = idx[bot] < bgCount;
+        if (!botOk && topOk) { // lower half block: the bottom pixel becomes the foreground
+          c = CH.LOWER; fr = br; fgc = bgc; fb = bb; r2 = tr; g2 = tg; b2 = tb;
+        } else if (!botOk) { // neither can be a background: the nearest dark colour stands in
+          const d = nearestDark(br, bgc, bb);
+          r2 = d[0]; g2 = d[1]; b2 = d[2];
+        }
       }
       ch[i] = c;
-      fg.set(f, i * 3);
-      bg.set(b, i * 3);
-      // error against the source pixels
-      const st = [src[top * 4], src[top * 4 + 1], src[top * 4 + 2]];
-      const sb = [src[bot * 4], src[bot * 4 + 1], src[bot * 4 + 2]];
-      const t = c === CH.UPPER ? f : b;
-      const bo = c === CH.UPPER ? b : f;
-      err[i] = (st[0] - t[0]) ** 2 + (st[1] - t[1]) ** 2 + (st[2] - t[2]) ** 2 + (sb[0] - bo[0]) ** 2 + (sb[1] - bo[1]) ** 2 + (sb[2] - bo[2]) ** 2;
+      fg[i * 3] = fr; fg[i * 3 + 1] = fgc; fg[i * 3 + 2] = fb;
+      bg[i * 3] = r2; bg[i * 3 + 1] = g2; bg[i * 3 + 2] = b2;
+      // error against the two source pixels (the upper half shows fg for '▀' and bg for '▄')
+      const ur = c === CH.UPPER ? fr : r2, ug = c === CH.UPPER ? fgc : g2, ub = c === CH.UPPER ? fb : b2;
+      const lr = c === CH.UPPER ? r2 : fr, lg = c === CH.UPPER ? g2 : fgc, lb = c === CH.UPPER ? b2 : fb;
+      err[i] = (src[top * 4] - ur) ** 2 + (src[top * 4 + 1] - ug) ** 2 + (src[top * 4 + 2] - ub) ** 2
+        + (src[bot * 4] - lr) ** 2 + (src[bot * 4 + 1] - lg) ** 2 + (src[bot * 4 + 2] - lb) ** 2;
     }
   }
   return { ch, fg, bg, err };
