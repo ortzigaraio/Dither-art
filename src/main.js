@@ -6,6 +6,7 @@ import { initDropzone } from './ui/dropzone.js';
 import { toast, toastError, toastWarn } from './ui/toast.js';
 import { createHome } from './ui/hero.js';
 import { createStudio } from './studio.js';
+import { initVisitCounter } from './ui/visitCounter.js';
 import { MODES } from './modes/index.js';
 import { LIMITS } from './config.js';
 import { blueNoise } from './engine/dither.js';
@@ -172,6 +173,8 @@ function boot() {
   setView('home');
   app.home.init().catch((err) => console.warn('[dither] home init failed', err));
   document.documentElement.dataset.ready = 'true';
+  // Visit counter (PLAN.md 17): hidden without a Worker URL; any failure keeps it hidden, silently
+  initVisitCounter(document.getElementById('visit-counter')).catch(() => {});
   // Build the 64x64 blue-noise table (about 60 ms) while the browser is idle instead of on first use
   (window.requestIdleCallback || ((fn) => setTimeout(fn, 1500)))(() => blueNoise(), { timeout: 4000 });
 }
