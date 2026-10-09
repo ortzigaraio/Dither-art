@@ -133,6 +133,8 @@ test.describe('Phase 0 acceptance', () => {
 // ---------------------------------------------------------------------------
 test.describe('2. modes', () => {
   test('each registered mode renders a non-blank canvas (screenshots in tests/screenshots)', async ({ page }) => {
+    // animated modes never go quiet, so waitForRender() waits out its full settle window (~10 s) for each of them
+    test.setTimeout(300_000);
     const guard = watchPage(page);
     await gotoApp(page);
     const ids = await page.evaluate(async () => (await import('/src/modes/index.js')).MODE_IDS);

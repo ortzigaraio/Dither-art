@@ -21,9 +21,10 @@ import flowfield from './flowfield.js';
 import blueprint from './blueprint.js';
 import vectrex from './vectrex.js';
 import spiral from './spiral.js';
-import raymarch from './raymarch.js';
-import hiddenwire from './hiddenwire.js';
 import lidar from './lidar.js';
+import hiddenwire from './hiddenwire.js';
+import raymarch from './raymarch.js';
+import volumetext from './volumetext.js';
 import { hasWebGL2 } from '../engine/gl.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
@@ -49,9 +50,10 @@ export const MODES = [
   blueprint,
   vectrex,
   spiral,
-  raymarch,
-  hiddenwire,
   lidar,
+  hiddenwire,
+  raymarch,
+  volumetext,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
