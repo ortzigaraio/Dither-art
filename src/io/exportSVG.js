@@ -4,7 +4,8 @@
 //   { width, height, background, title, desc, layers: [layer] }      sizes in logical px
 //   layer = { id, label, color, width, opacity?, blend?, dash?, plotter?: 'keep'|'skip'|'outline',
 //             paths?:   [{ points: Float32Array, closed?, width?, color?, opacity? }],
-//             shapes?:  [{ rings: Float32Array[], fill }]            filled regions, even-odd
+//             shapes?:  [{ rings: Float32Array[], fill }]            filled regions, even-odd (layer.seal: a thin
+//                                                                  stroke of the fill colour hides seams)
 //             ribbons?: [{ points: Float32Array, widths: Float32Array }]  strokes of varying width (engraving)
 //             dots?:    { x, y, r: Float32Array, count, colors?: string[] }
 //             texts?:   [{ x, y, text, size, anchor?, angle?, weight?, color?, font? }]
@@ -193,7 +194,8 @@ export function sceneToSVG(scene, opts = {}) {
     for (const sh of L.shapes || []) {
       const d = sh.rings.map((r) => pathD(r, true)).join('');
       if (!d) continue;
-      if (!plotter) body.push(`<path d="${d}" fill="${safeColor(sh.fill ?? L.color)}" fill-rule="evenodd" stroke="none"/>`);
+      const fc = safeColor(sh.fill ?? L.color);
+      if (!plotter) body.push(`<path d="${d}" fill="${fc}" fill-rule="evenodd" ${L.seal ? `stroke="${fc}" stroke-width="${S(L.seal)}"` : 'stroke="none"'}/>`);
       else if (mode === 'outline') body.push(`<path d="${d}"/>`);
     }
 

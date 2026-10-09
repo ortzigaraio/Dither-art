@@ -16,6 +16,7 @@ import glitch from './glitch.js';
 import pixelsort from './pixelsort.js';
 import crosshatch from './crosshatch.js';
 import contours from './contours.js';
+import voronoi from './voronoi.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -35,6 +36,7 @@ export const MODES = [
   pixelsort,
   crosshatch,
   contours,
+  voronoi,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);

@@ -159,6 +159,7 @@ export function drawScene(g, scene, s, o = {}) {
         for (const r of sh.rings) tracePolyline(p, r, true);
         g.fillStyle = sh.fill || L.color;
         g.fill(p, 'evenodd');
+        if (L.seal) { g.strokeStyle = g.fillStyle; g.lineWidth = L.seal; g.stroke(p); } // hide anti-aliasing seams
       }
     }
     if (L.ribbons?.length) {
