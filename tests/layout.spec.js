@@ -64,7 +64,9 @@ test.describe('responsive layout', () => {
     expect(viewer.y).toBeLessThan(chips.y);
     expect(chips.y).toBeLessThan(panel.y);
     expect(viewer.height).toBeGreaterThan(300);
-    await expect(page.locator('#mode-list .mode-item')).toBeVisible();
+    const modeCount = await page.evaluate(async () => (await import('/src/modes/index.js')).MODE_IDS.length);
+    await expect(page.locator('#mode-list .mode-item')).toHaveCount(modeCount); // one chip per registered mode
+    await expect(page.locator('#mode-list .mode-item').first()).toBeVisible();
     await expect(page.locator('#mode-list .mode-cat')).toBeHidden();
     await expect(page.locator('#sheet-tabs')).toBeVisible();
     const tabs = await page.locator('#sheet-tabs .sheet-tab').allTextContents();
