@@ -38,7 +38,7 @@ function emitActivity() {
   let progress = 0;
   let task = '';
   for (const j of jobs.values()) {
-    if (j.settled) continue;
+    if (j.settled || j.background) continue;
     active++;
     progress = Math.max(progress, j.progress);
     task = j.task;
@@ -79,7 +79,10 @@ function spawnWorker() {
     if (!job) return;
     if (m.type === 'progress') {
       job.progress = m.value;
-      if (!job.settled) job.onProgress?.(m.value);
+      if (!job.settled) {
+        job.onProgress?.(m.value);
+        if (m.partial !== undefined) job.onPartial?.(m.partial);
+      }
       emitActivity();
     } else if (m.type === 'done') {
       settle(job, job.resolve, m.result);
@@ -148,7 +151,14 @@ function cancelJob(job) {
 
 async function runLocal(job, payload) {
   const ctl = {
-    progress(p) { job.progress = p; if (!job.settled) job.onProgress?.(p); emitActivity(); },
+    progress(p, partial) {
+      job.progress = p;
+      if (!job.settled) {
+        job.onProgress?.(p);
+        if (partial !== undefined) job.onPartial?.(partial);
+      }
+      emitActivity();
+    },
     check() { if (job.localCancelled) throw new CancelledError(); },
     async yield() { await new Promise((r) => setTimeout(r, 0)); if (job.localCancelled) throw new CancelledError(); },
   };
@@ -178,14 +188,19 @@ async function runLocal(job, payload) {
  * @param {number} [opts.watchdogMs]        defaults to LIMITS.workerWatchdogMs (30 s)
  * @param {(info:{jobId:number,task:string,elapsedMs:number,cancel:()=>void})=>void} [opts.onWatchdog]
  * @param {boolean} [opts.local]            run on the main thread
+ * @param {(partial:any)=>void} [opts.onPartial]  intermediate results attached to progress messages
+ * @param {boolean} [opts.background]       not shown by the "rendering N %" overlay (the mode animates instead)
  */
 export function run(task, payload, opts = {}) {
-  const { onProgress, signal, transfer = [], latestOnly = false, watchdogMs = LIMITS.workerWatchdogMs, onWatchdog, local = false } = opts;
+  const {
+    onProgress, onPartial, signal, transfer = [], latestOnly = false, watchdogMs = LIMITS.workerWatchdogMs, onWatchdog,
+    local = false, background = false,
+  } = opts;
   if (signal?.aborted) return Promise.reject(abortError());
 
   return new Promise((resolve, reject) => {
     const job = {
-      id: nextJobId++, task, resolve, reject, onProgress, onWatchdog, signal,
+      id: nextJobId++, task, resolve, reject, onProgress, onPartial, onWatchdog, signal, background,
       progress: 0, settled: false, watchdogFired: false, startedAt: performance.now(),
       local: false, localCancelled: false,
     };

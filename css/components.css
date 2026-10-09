@@ -638,6 +638,7 @@ body.is-dragging .drop-overlay { display: flex; }
 .export-grid .btn { width: 100%; }
 .export-grid .btn-primary { grid-column: 1 / -1; }
 .export-row { display: flex; flex-direction: column; gap: 6px; }
+.export-svg { display: flex; flex-direction: column; gap: 10px; padding: 10px 0 2px; border-top: 1px dashed var(--line); }
 
 /* ============================================================
    Viewer (PLAN.md 4.6)

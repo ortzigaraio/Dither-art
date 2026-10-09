@@ -2,11 +2,13 @@
 // relative path because workers do not see an import map.
 //
 // Protocol (main -> worker):  { type: 'start', jobId, task, payload, latestOnly }  |  { type: 'cancel', jobId }
-//          (worker -> main):  { type: 'ready' } | { type: 'progress', jobId, value } | { type: 'done', jobId, result }
+//          (worker -> main):  { type: 'ready' } | { type: 'progress', jobId, value, partial? } | { type: 'done', jobId, result }
 //                             | { type: 'error', jobId, message } | { type: 'cancelled', jobId }
 //
 // Cancellation is cooperative: tasks call ctl.yield(), which lets queued messages (a cancel, or a newer job with
 // `latestOnly`) arrive. A cancelled job never posts a result; it posts 'cancelled' instead.
+// A task may attach an intermediate result to a progress message (ctl.progress(value, partial)), e.g. the points of
+// every Lloyd iteration of the Voronoi stippling, so the viewer can animate the relaxation.
 
 import { TASKS, CancelledError } from '../engine/heavyTasks.js';
 
@@ -36,7 +38,11 @@ async function runJob(jobId, task, payload) {
   try {
     if (typeof fn !== 'function') throw new Error(`unknown task "${task}"`);
     const ctl = {
-      progress(value) { if (!job.cancelled) postMessage({ type: 'progress', jobId, value }); },
+      progress(value, partial) {
+        if (job.cancelled) return;
+        if (partial === undefined) postMessage({ type: 'progress', jobId, value });
+        else postMessage({ type: 'progress', jobId, value, partial }, transferablesOf(partial));
+      },
       check() { if (job.cancelled) throw new CancelledError(); },
       async yield() { await nextTurn(); if (job.cancelled) throw new CancelledError(); },
     };
