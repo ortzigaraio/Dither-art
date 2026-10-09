@@ -19,6 +19,7 @@ import contours from './contours.js';
 import voronoi from './voronoi.js';
 import flowfield from './flowfield.js';
 import vectrex from './vectrex.js';
+import blueprint from './blueprint.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -41,6 +42,7 @@ export const MODES = [
   voronoi,
   flowfield,
   vectrex,
+  blueprint,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
