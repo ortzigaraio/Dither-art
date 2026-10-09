@@ -14,6 +14,7 @@ import led from './led.js';
 import thermal from './thermal.js';
 import glitch from './glitch.js';
 import pixelsort from './pixelsort.js';
+import crosshatch from './crosshatch.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -31,6 +32,7 @@ export const MODES = [
   thermal,
   glitch,
   pixelsort,
+  crosshatch,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
