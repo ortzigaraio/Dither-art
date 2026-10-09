@@ -2,6 +2,9 @@
 
 import { t } from '../i18n/i18n.js';
 
+// Buttons offered for the file formats a mode declares in `exports` (PNG and video have their own controls)
+export const TEXT_FORMATS = ['txt', 'html', 'ansi', 'ans', 'svg', 'json'];
+
 /**
  * @param {object} mode current mode module
  * @param {{ png:(scale:number)=>void, text:(format:string, opts?:object)=>void, copyText:()=>void,
@@ -72,7 +75,7 @@ export function createExportGroup(mode, actions, opts = {}) {
     body.appendChild(button('png', t('export.png'), () => actions.png(Number(scale.sel.value)), 'btn btn-primary btn-sm'));
   }
 
-  const textFormats = ['txt', 'html', 'ansi'].filter((f) => exports.has(f));
+  const textFormats = TEXT_FORMATS.filter((f) => exports.has(f));
   let ansiDepth = '24';
   if (exports.has('ansi')) {
     const depth = select('export.ansiDepth', [['24', 'export.ansi.24'], ['256', 'export.ansi.256'], ['16', 'export.ansi.16']], (v) => { ansiDepth = v; });
