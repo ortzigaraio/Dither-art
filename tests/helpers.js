@@ -75,6 +75,20 @@ export async function settle(page, quietMs = 120) {
   return last;
 }
 
+/**
+ * Wait for the viewer to present a frame whose `data-<attr>` equals `value`, then for the loop to go quiet.
+ * `waitForRender(page, n)` only proves that *some* frame newer than `n` arrived: a pass that was already in flight
+ * with the old parameters (for example the zoom-driven re-render ~160 ms after a size change) satisfies it, and
+ * a worker-backed mode finishes the new parameters later. Polling the property under test is the honest condition.
+ */
+export async function waitForCanvasData(page, attr, value) {
+  await page.waitForFunction(
+    ([a, v]) => document.getElementById('viewer-canvas').dataset[a] === String(v),
+    [attr, value],
+  );
+  await settle(page);
+}
+
 /** Open the fixture image and wait for the first render in the studio. */
 export async function loadFixture(page, file = FIXTURE_PNG) {
   await page.setInputFiles('#file-input', file);
