@@ -10,6 +10,7 @@ import typoportrait from './typoportrait.js';
 import dither1bit from './dither1bit.js';
 import halftone from './halftone.js';
 import pixelart from './pixelart.js';
+import led from './led.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -23,6 +24,7 @@ export const MODES = [
   dither1bit,
   halftone,
   pixelart,
+  led,
 ];
 
 const PARAM_TYPES = new Set(['range', 'select', 'toggle', 'color', 'colors', 'text', 'button', 'seed']);
