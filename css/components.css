@@ -303,7 +303,7 @@ body.is-dragging .drop-overlay { display: flex; }
 .term-dots { display: inline-flex; gap: 5px; }
 .term-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; }
 .term-dots i:first-child { background: var(--accent); }
-.term canvas { width: 100%; height: auto; aspect-ratio: 640 / 420; background: var(--out-bg); }
+.term canvas { width: 100%; height: auto; aspect-ratio: 640 / 420; object-fit: contain; background: var(--out-bg); }
 
 .mode-card {
   display: flex;
@@ -319,7 +319,7 @@ body.is-dragging .drop-overlay { display: flex; }
   transition: border-color var(--t-fast), transform var(--t-med) var(--ease), box-shadow var(--t-med);
 }
 .mode-card:hover { border-color: var(--accent-text); transform: translateY(-3px); box-shadow: 0 14px 36px -22px var(--accent); }
-.mode-card canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; background: var(--out-bg); border-bottom: 1px solid var(--line); }
+.mode-card canvas { width: 100%; aspect-ratio: 3 / 2; height: auto; object-fit: cover; background: var(--out-bg); border-bottom: 1px solid var(--line); }
 .mode-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 .mode-card-name { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; letter-spacing: -.02em; text-transform: lowercase; }
 .mode-card-blurb { color: var(--fg-2); font-size: 13.5px; }
