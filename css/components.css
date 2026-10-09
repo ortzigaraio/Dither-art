@@ -365,6 +365,11 @@ body.is-dragging .drop-overlay { display: flex; }
 }
 .mode-item:hover { background: var(--panel-2); }
 .mode-item[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent-text); }
+/* GPU modes without WebGL2 (PLAN.md 18.2): listed, disabled, with the reason */
+.mode-item[aria-disabled="true"], .mode-card[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.mode-item[aria-disabled="true"]:hover { background: transparent; }
+.mode-card[aria-disabled="true"]:hover { border-color: var(--line); transform: none; box-shadow: none; }
+.mode-note { display: block; font-size: 11px; color: var(--fg-2); }
 .mode-item .eye { --eye: 10px; opacity: 0; transform: scale(.4); transition: opacity var(--t-fast), transform var(--t-med) var(--ease); }
 .mode-item[aria-current="true"] .eye { opacity: 1; transform: none; }
 .mode-item-name { flex: 1; }
@@ -673,6 +678,10 @@ body.is-dragging .drop-overlay { display: flex; }
   background-size: 18px 18px;
 }
 .viewer-viewport.is-panning { cursor: grabbing; }
+/* 3D modes: drag orbits the camera (PLAN.md 4.6) */
+.viewer.is-camera .viewer-viewport { cursor: grab; touch-action: none; }
+.viewer.is-camera .viewer-viewport.is-orbiting { cursor: grabbing; }
+.vw-camera[aria-pressed="true"] { border-color: var(--accent-text); color: var(--accent-text); }
 .viewer-world {
   position: absolute;
   left: 0;

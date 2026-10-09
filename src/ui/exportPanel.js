@@ -3,7 +3,7 @@
 import { t } from '../i18n/i18n.js';
 
 // Buttons offered for the file formats a mode declares in `exports` (PNG and video have their own controls)
-export const TEXT_FORMATS = ['txt', 'html', 'ansi', 'ans', 'svg', 'json'];
+export const TEXT_FORMATS = ['txt', 'html', 'ansi', 'ans', 'svg', 'json', 'ply'];
 
 // SVG page options of the vector modes (`mode.svgOptions`), kept while the panel is rebuilt (io/exportSVG.js)
 const svgPrefs = { page: 'px', orientation: 'auto', margin: 10, customW: 210, customH: 297, plotter: false, optimize: true };

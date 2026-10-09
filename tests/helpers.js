@@ -293,11 +293,14 @@ export async function renderMode(page, spec) {
     };
     const mode = getMode(s.mode);
     const pipe = createPipeline();
+    window.__probePipes = window.__probePipes || [];
+    window.__probePipes.push(pipe); // released by the next renderMode call (GL modes hold a WebGL context each)
+    while (window.__probePipes.length > 1) window.__probePipes.shift().dispose();
     const p = s.params || {};
     const params = {
       global: { ...defaultsOf(IMAGE_PARAMS), ...(p.global || {}) },
       color: { ...defaultsOf(COLOR_PARAMS), ...(p.color || {}) },
-      depth: {}, postfx: {},
+      depth: { ...(p.depth || {}) }, postfx: {},
       mode: { ...defaultsOf(mode.params), ...(p.mode || {}) },
     };
     const theme = s.theme || { ink: '#c4f169', bg: '#15181e' };
@@ -343,11 +346,12 @@ export async function renderMode(page, spec) {
       if (f === 'ans') outputs.ans = Array.from(mode.toBinary(state, 'ans'));
       else if (f === 'svg') outputs.svg = mode.toSVG(state, {});
       else if (f === 'json') outputs.json = mode.toJSON(state);
+      else if (f === 'ply') outputs.ply = mode.toPLY(state);
       else outputs[f] = mode.toText(state, f, s.textOpts || {});
     }
     return {
       meta: JSON.parse(JSON.stringify(last.meta || {})), width: last.width, height: last.height, error: last.error ? String(last.error) : null,
-      frames, outputs,
+      frames, outputs, extra: s.extra ? JSON.parse(JSON.stringify(s.extra.reduce((o, k) => { o[k] = state?.[k] ?? null; return o; }, {}))) : null,
     };
   }, spec);
 }

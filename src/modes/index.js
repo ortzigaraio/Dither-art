@@ -21,6 +21,7 @@ import flowfield from './flowfield.js';
 import blueprint from './blueprint.js';
 import vectrex from './vectrex.js';
 import spiral from './spiral.js';
+import { hasWebGL2 } from '../engine/gl.js';
 
 export const CATEGORIES = ['text', 'pixel', 'vector', '3d', 'sim'];
 
@@ -66,7 +67,7 @@ function checkMode(mode) {
   }
   // exports and badges must agree with what the mode can actually produce (the export panel offers exactly these)
   const ex = mode.exports || [];
-  const need = { txt: 'toText', html: 'toText', ansi: 'toText', ans: 'toBinary', svg: 'toSVG', json: 'toJSON' };
+  const need = { txt: 'toText', html: 'toText', ansi: 'toText', ans: 'toBinary', svg: 'toSVG', json: 'toJSON', ply: 'toPLY' };
   for (const [fmt, fn] of Object.entries(need)) {
     if (ex.includes(fmt) && typeof mode[fn] !== 'function') fail(`exports "${fmt}" needs ${fn}()`);
   }
@@ -74,11 +75,15 @@ function checkMode(mode) {
   if (ex.includes('txt') && !badges.includes('TXT')) fail('exports txt but has no TXT badge');
   if (ex.includes('svg') && !badges.includes('SVG')) fail('exports svg but has no SVG badge');
   if ((mode.animated || mode.animatedWhen) && !badges.includes('ANIM')) fail('animated but has no ANIM badge');
+  if (mode.surface === 'gl' && !badges.includes('GPU')) fail('draws with WebGL2 but has no GPU badge');
+  if (mode.category === '3d' && !badges.includes('3D')) fail('3D mode without the 3D badge');
   return mode;
 }
 MODES.forEach(checkMode);
 
 export const MODE_IDS = MODES.map((m) => m.id);
+/** A mode can run here: GPU modes need WebGL2 (otherwise they are listed disabled, PLAN.md 18.2). */
+export const modeAvailable = (m) => !!m && (m.surface !== 'gl' || hasWebGL2());
 export const hasMode = (id) => MODES.some((m) => m.id === id);
 export const getMode = (id) => MODES.find((m) => m.id === id) || MODES[0];
 export const modesByCategory = () => CATEGORIES

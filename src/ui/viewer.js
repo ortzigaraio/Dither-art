@@ -24,6 +24,7 @@ export function createViewer({ onZoomChange } = {}) {
   const btn1to1 = document.getElementById('vw-1to1');
   const btnSplit = document.getElementById('vw-split');
   const btnFull = document.getElementById('vw-full');
+  const btnCamera = document.getElementById('vw-camera');
 
   const ctx = canvas.getContext('2d');
   const octx = original.getContext('2d');
@@ -36,6 +37,10 @@ export function createViewer({ onZoomChange } = {}) {
   let renderCount = 0;
   let drawOriginal = null;
   let visible = true;
+  // 3D modes: drag = orbit, Shift + drag = pan, wheel = camera distance, while the camera toggle is on (PLAN.md 4.6)
+  let cameraHandler = null; // { orbit(dx, dy), pan(dx, dy, viewportHeight), dolly(deltaY) }
+  let cameraOn = true;
+  const cameraActive = () => !!cameraHandler && cameraOn;
 
   // ---- transform ------------------------------------------------------------
   function apply() {
@@ -95,6 +100,7 @@ export function createViewer({ onZoomChange } = {}) {
     if (e.target === handle || handle.contains(e.target)) return;
     viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (cameraActive()) { viewport.classList.add('is-orbiting'); return; }
     if (pointers.size === 1) viewport.classList.add('is-panning');
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
@@ -108,6 +114,13 @@ export function createViewer({ onZoomChange } = {}) {
     const dy = e.clientY - p.y;
     p.x = e.clientX;
     p.y = e.clientY;
+    if (cameraActive()) {
+      if (pointers.size === 1 && (dx || dy)) {
+        if (e.shiftKey) cameraHandler.pan(dx, dy, viewport.clientHeight);
+        else cameraHandler.orbit(dx, dy);
+      }
+      return;
+    }
     if (pointers.size === 1) {
       view.tx += dx;
       view.ty += dy;
@@ -124,20 +137,24 @@ export function createViewer({ onZoomChange } = {}) {
   const endPointer = (e) => {
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinchStart = null;
-    if (pointers.size === 0) viewport.classList.remove('is-panning');
+    if (pointers.size === 0) viewport.classList.remove('is-panning', 'is-orbiting');
   };
   viewport.addEventListener('pointerup', endPointer);
   viewport.addEventListener('pointercancel', endPointer);
 
   viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
+    if (cameraActive()) {
+      cameraHandler.dolly(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY);
+      return;
+    }
     const rect = viewport.getBoundingClientRect();
     const k = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
     setZoom(view.zoom * k, e.clientX - rect.left, e.clientY - rect.top);
   }, { passive: false });
 
   viewport.addEventListener('dblclick', (e) => {
-    if (e.target === handle) return;
+    if (e.target === handle || cameraActive()) return;
     fit();
   });
 
@@ -207,6 +224,15 @@ export function createViewer({ onZoomChange } = {}) {
   btnFit.addEventListener('click', fit);
   btn1to1.addEventListener('click', oneToOne);
   btnSplit.addEventListener('click', () => setSplit(!splitOn));
+  function syncCameraButton() {
+    btnCamera.hidden = !cameraHandler;
+    btnCamera.setAttribute('aria-pressed', String(cameraOn));
+    root.classList.toggle('is-camera', cameraActive());
+  }
+  btnCamera.addEventListener('click', () => {
+    cameraOn = !cameraOn;
+    syncCameraButton();
+  });
   btnFull.addEventListener('click', () => toggleFullscreen());
   btnFull.hidden = !root.requestFullscreen;
 
@@ -254,6 +280,7 @@ export function createViewer({ onZoomChange } = {}) {
       canvas.dataset.cols = String(result.meta?.cols ?? result.workWidth);
       canvas.dataset.rows = String(result.meta?.rows ?? result.workHeight);
       canvas.dataset.outScale = String(k);
+      canvas.dataset.depth = result.meta?.depthSource || ''; // 3D modes: which depth source drew this frame
     },
 
     /** `res` = "160×72" text, plus fps (0 hides it) and render milliseconds. */
@@ -279,6 +306,18 @@ export function createViewer({ onZoomChange } = {}) {
       view.fit = true;
       logical = { w: 0, h: 0 };
     },
+
+    /** 3D modes: route drag / Shift-drag / wheel to the camera (null = normal zoom and pan). */
+    setCameraHandler(h) {
+      cameraHandler = h || null;
+      syncCameraButton();
+    },
+    /** Camera interaction on/off (the toolbar toggle); viewer zoom and pan work when it is off. */
+    setCameraMode(on) {
+      cameraOn = !!on;
+      syncCameraButton();
+    },
+    get cameraActive() { return cameraActive(); },
 
     fit,
     setZoom,
