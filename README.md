@@ -9,7 +9,7 @@ by GitHub Pages. The full specification lives in [`PLAN.md`](PLAN.md) (in Spanis
 
 ## Status
 
-Phases 0, 1 and 2, and the text modes of phase 3, are in place:
+Phases 0, 1 and 2, and the text and pixel modes of phase 3, are in place:
 
 - Site skeleton, brand (espino logo, barbed-wire divider, the "eye"), six themes (HORAIN, CLARO, AMBER, CRT, PAPER, CAD),
   ES/EN interface and a validated dropzone (click, drag and drop anywhere, paste, demo).
@@ -25,7 +25,14 @@ Phases 0, 1 and 2, and the text modes of phase 3, are in place:
   export), **PETSCII** (our own 8×8 glyph set and a C64-style palette, JSON export), **Matrix rain** (animated, deterministic)
   and **Typographic portrait** (SVG/HTML export). CPU-heavy work runs in a cancellable Web Worker with a 30 s watchdog.
 
-The other output styles come in later phases.
+- **Pixel modes** (phase 3, part B): **1-bit dithering** (Bayer, blue noise and every error-diffusion kernel; Macintosh, Game Boy,
+  Obra Dinn, amber and phosphor inks), **Halftone** (mono, CMYK, additive RGB and duotone with a layered SVG, one layer per ink),
+  **Pixel art** (block average or median, k-means or retro palettes, outline, nearest-neighbour 1x/4x/8x),
+  **LED panel** (PNG and SVG), **Thermography** (eleven look-up-table palettes, isotherm, HUD and a gradients sub-mode),
+  **Glitch art** (eight deterministic effects, optional animation) and **Pixel sorting** (any angle, in the worker, with progress,
+  cancellation and a mask view).
+
+The vector, 3D and simulation styles come in later phases.
 
 ## Run
 
