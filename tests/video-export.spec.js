@@ -315,3 +315,57 @@ test.describe('fallback without WebCodecs', () => {
     await guard.assertClean(expect);
   });
 });
+
+// Regression (logic pass): cancelling while Mediabunny was padding to a higher frame rate left a cloned VideoSample
+// that nobody closed ("A VideoSample was garbage collected without first being closed", ~1 run in 10 of the cancel
+// test above). The fix pauses the conversion and cancels only once no sample is in flight. Here the abort lands
+// deterministically on each call of a padding cycle (15 -> 60 fps: 3 padded calls, then the sample itself), and
+// garbage collection is forced so a stranded sample would be reported every time.
+test.describe('video export cancel releases every sample', () => {
+  test('abort on every phase of the frame-rate padding, then GC: no stranded VideoSample', async ({ page }) => {
+    test.setTimeout(120_000);
+    const guard = watchPage(page);
+    const leaks = [];
+    page.on('console', (m) => { if (/garbage collected/i.test(m.text())) leaks.push(m.text()); });
+    await gotoApp(page);
+    const results = await page.evaluate(async () => {
+      const vx = await import('/src/io/exportVideo.js');
+      const caps = await vx.detectCapabilities(320, 240);
+      const blob = await (await fetch('/tests/fixtures/fixture.webm')).blob();
+      const file = new File([blob], 'fixture.webm', { type: 'video/webm' });
+      const out = [];
+      for (const abortAt of [5, 6, 7, 8, 1]) {
+        const ac = new AbortController();
+        const pic = document.createElement('canvas');
+        pic.width = 64; pic.height = 48;
+        let calls = 0;
+        const job = {
+          file, format: 'webm', fps: 60, quality: 'low', outW: 320, outH: 240, includeAudio: true,
+          trim: { start: 0, end: 3 }, bg: '#000', signal: ac.signal,
+          async render(time, paint) {
+            calls++;
+            if (paint) paint(pic.getContext('2d'), 64, 48);
+            if (calls === abortAt) {
+              setTimeout(() => ac.abort(), 20); // lands while this frame is still being "rendered"
+              await new Promise((r) => setTimeout(r, 80));
+            }
+            return pic;
+          },
+        };
+        let outcome = 'finished';
+        try { await vx.exportFromFile(job, caps); } catch (err) { outcome = err?.name || String(err); }
+        out.push({ abortAt, outcome, calls });
+      }
+      return { out };
+    });
+    for (const r of results.out) expect(r.outcome, `abort at call ${r.abortAt}`).toBe('ExportCanceled');
+    // force garbage collection (DevTools protocol) so the finalizer of a stranded sample would run now
+    const cdp = await page.context().newCDPSession(page);
+    for (let i = 0; i < 4; i++) {
+      await cdp.send('HeapProfiler.collectGarbage');
+      await page.waitForTimeout(200);
+    }
+    expect(leaks).toEqual([]);
+    await guard.assertClean(expect);
+  });
+});
