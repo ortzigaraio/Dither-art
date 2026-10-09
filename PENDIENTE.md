@@ -57,4 +57,15 @@ Referencias aportadas: la landing de Hermes Agent (fondo azul eléctrico, ilustr
   - Página aparte o sección con contraste total: blanco y negro más los colores de la paleta Horain (lima `#C4F169`, tinta `#15181E`, etc.).
   - Pensada para poder extraerla después a la web principal de Horain.
 
-Decisiones abiertas: ver las preguntas al dueño en el chat.
+### Decisiones del dueño (2026-10-09)
+- **Color**: fondo negro (`#050505`) con secciones e imágenes en azul eléctrico tipo Hermes (`#1E1EFF`, a afinar). El blanco solo se usa como tinta.
+- **Titulares**: añadir una tipografía condensada libre (OFL, autoalojada en `assets/fonts/`, por ejemplo Big Shoulders Display o Six Caps) solo para los titulares grandes en mayúsculas. Geist y Geist Mono se mantienen para el resto.
+- **Imágenes**: obras de **dominio público** (grabados, estatuas y retratos clásicos del Met Open Access, el Rijksmuseum o Wikimedia). Como este entorno no tiene acceso a internet, el dueño las sube a `assets/source/` y se procesan con los modos de Dither (halftone lineal, dithering, halftone azul, collage con damero). Se guarda el crédito de cada obra.
+- **Quiénes somos**: página aparte `about.html` en este repo, con textos de ejemplo marcados como `TODO` que el dueño reemplaza. Va en blanco y negro con la paleta Horain y está pensada para copiarse al repo de Horain.
+
+### Imágenes sugeridas para subir (dominio público)
+1. Un grabado de Durero (por ejemplo «Melencolia I» o «El caballero, la muerte y el diablo»), para el halftone lineal grande del hero.
+2. Un retrato con armadura o un busto clásico (Met Open Access), para el halftone azul.
+3. Una escultura (Laocoonte, Victoria de Samotracia o similar), para el collage con damero y las líneas radiales.
+4. Un grabado de Doré (por ejemplo de «La Divina Comedia»), para la composición vertical con el scroll de revelado.
+5. Un paisaje o un cielo nocturno, para la sección de video y animación.
