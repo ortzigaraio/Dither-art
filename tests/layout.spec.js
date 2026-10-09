@@ -67,7 +67,7 @@ test.describe('responsive layout', () => {
     const modeCount = await page.evaluate(async () => (await import('/src/modes/index.js')).MODE_IDS.length);
     await expect(page.locator('#mode-list .mode-item')).toHaveCount(modeCount); // one chip per registered mode
     await expect(page.locator('#mode-list .mode-item').first()).toBeVisible();
-    await expect(page.locator('#mode-list .mode-cat')).toBeHidden();
+    for (const cat of await page.locator('#mode-list .mode-cat').all()) await expect(cat).toBeHidden(); // one heading per category
     await expect(page.locator('#sheet-tabs')).toBeVisible();
     const tabs = await page.locator('#sheet-tabs .sheet-tab').allTextContents();
     expect(tabs.map((x) => x.trim().toUpperCase())).toEqual(['IMAGE', 'MODE', 'COLOR', 'EXPORT']);
@@ -280,6 +280,7 @@ test.describe('home view', () => {
     await page.locator('#modes').scrollIntoViewIfNeeded();
     for (const id of ids) {
       const card = page.locator(`.mode-card[data-mode-id="${id}"]`);
+      await card.scrollIntoViewIfNeeded(); // thumbnails render lazily, when their card nears the viewport
       await expect(card).toBeVisible();
       await expect.poll(async () => (await canvasStats(page, `.mode-card[data-mode-id="${id}"] canvas`)).variance).toBeGreaterThan(0);
     }
