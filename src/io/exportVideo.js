@@ -145,10 +145,7 @@ export function estimateExport({ width, height, fps, quality, duration, includeA
   };
 }
 
-export function formatClock(seconds) {
-  const s = Math.max(0, Math.round(seconds));
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-}
+export { formatClock } from './clock.js';
 
 // ---- helpers ------------------------------------------------------------------------------------------------
 
@@ -191,6 +188,21 @@ function makeYielder(everyMs = 30) {
       last = performance.now();
     }
   };
+}
+
+/** Resolves when the tab is visible again (at once if it is), or when `signal` aborts. */
+function whenVisible(signal) {
+  if (!document.hidden || signal?.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      document.removeEventListener('visibilitychange', check);
+      signal?.removeEventListener('abort', done);
+      resolve();
+    };
+    const check = () => { if (!document.hidden) done(); };
+    document.addEventListener('visibilitychange', check);
+    signal?.addEventListener('abort', done);
+  });
 }
 
 function throwIfAborted(signal) {
@@ -257,6 +269,9 @@ function createRecorderSink(job, caps, extraTracks = []) {
     async add() {
       if (manual) vtrack.requestFrame();
     },
+    /** Real time: leave a hidden stretch out of the file (MediaRecorder would otherwise freeze the last frame). */
+    pause() { if (rec.state === 'recording') rec.pause(); },
+    resume() { if (rec.state === 'paused') rec.resume(); },
     finish() {
       return new Promise((resolve) => {
         rec.onstop = () => {
@@ -297,6 +312,10 @@ function createRecorderSink(job, caps, extraTracks = []) {
  */
 export async function exportFromFile(job, caps) {
   throwIfAborted(job.signal);
+  // the dialog never offers an empty range (start = end, a 0 s clip); refuse one from any other caller too
+  const start = Number(job.trim?.start);
+  const end = Number(job.trim?.end);
+  if (!(start >= 0) || !(end - start >= 0.05)) throw new RangeError('empty trim range');
   let fellBack = !caps.codec[job.format]; // no WebCodecs encoder: the real-time recorder runs from the start
   if (caps.codec[job.format]) {
     try {
@@ -408,6 +427,7 @@ async function recorderFileRoute(job, caps) {
   let audioTrack = null;
   let audioDropped = false;
   let sink = null;
+  let onVisibility = null;
   try {
     await new Promise((resolve, reject) => {
       video.addEventListener('loadeddata', resolve, { once: true });
@@ -435,6 +455,22 @@ async function recorderFileRoute(job, caps) {
     const started = performance.now();
     let busy = false;
     let finished = false;
+    // Real time only works while the tab is visible (hidden tabs get no video frame callbacks): pause the clip and
+    // the recorder meanwhile, so no frames are skipped and the hidden stretch is not in the file
+    let hiddenPause = false;
+    onVisibility = () => {
+      if (finished) return;
+      if (document.hidden && !video.paused) {
+        hiddenPause = true;
+        video.pause();
+        sink.pause();
+      } else if (!document.hidden && hiddenPause) {
+        hiddenPause = false;
+        sink.resume();
+        video.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     const done = new Promise((resolve, reject) => {
       const finish = () => { if (!finished) { finished = true; resolve(); } };
       const onFrame = async () => {
@@ -490,6 +526,7 @@ async function recorderFileRoute(job, caps) {
     if (job.signal?.aborted) throw new ExportCanceled();
     throw err;
   } finally {
+    if (onVisibility) document.removeEventListener('visibilitychange', onVisibility);
     if (sink) await sink.cancel();
     video.pause();
     video.removeAttribute('src');
@@ -509,7 +546,7 @@ export async function exportTimeline(job, caps) {
   throwIfAborted(job.signal);
   const frames = Math.max(1, Math.round(job.duration * job.fps));
   const yielder = makeYielder();
-  const started = performance.now();
+  let started = performance.now();
   const progress = (p) => {
     const elapsed = (performance.now() - started) / 1000;
     job.onProgress?.(p, { remaining: p > 0.03 ? (elapsed / p) * (1 - p) : null });
@@ -521,6 +558,15 @@ export async function exportTimeline(job, caps) {
     for (let i = 0; i < frames; i++) {
       throwIfAborted(job.signal);
       const t = i / job.fps;
+      if (!offline && document.hidden) {
+        // real time in a hidden tab: timers are throttled and the recorder would freeze a frame; wait instead
+        sink.pause();
+        const hiddenAt = performance.now();
+        await whenVisible(job.signal);
+        throwIfAborted(job.signal);
+        started += performance.now() - hiddenAt;
+        sink.resume();
+      }
       if (!offline) await sleep(started + t * 1000 - performance.now()); // real time: wait for the frame's slot
       const result = await job.render(t, null);
       drawFit(g, job.outW, job.outH, result, job.bg);
@@ -571,6 +617,8 @@ export async function createLiveRecorder(job, caps) {
       const blob = await sink.finish();
       return { blob, ext: FORMATS[job.format].ext, route: sink.route };
     },
+    pause() { sink.pause?.(); },
+    resume() { sink.resume?.(); },
     async cancel() {
       closed = true;
       // let the frame being encoded finish first: cancelling under an add() can strand its sample (see conversionRoute)

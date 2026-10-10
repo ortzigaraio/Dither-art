@@ -95,6 +95,24 @@ export class Analysis {
     this._depthKey = '';
   }
 
+  /** Drop every buffer (the pipeline is being disposed). */
+  release() {
+    this.reset(0, 0, null, null);
+    this._luma = null;
+    this._sobel = null;
+    this._depth = null;
+  }
+
+  /** Bytes held by the cached buffers (diagnostics). */
+  get bytes() {
+    let n = 0;
+    if (this._rgba) n += this._rgba.byteLength;
+    if (this._luma) n += this._luma.byteLength;
+    if (this._sobel) n += this._sobel.mag.byteLength + this._sobel.angle.byteLength;
+    if (this._depth) n += this._depth.byteLength;
+    return n;
+  }
+
   rgba() {
     if (!this._rgba) {
       const g = this._canvas.getContext('2d', { willReadFrequently: true });

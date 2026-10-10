@@ -34,6 +34,9 @@ export const LIMITS = {
   slowRenderFrames: 5,
   workerWatchdogMs: 30000,
   mobileMaxFps: 30,
+  // AI depth model: give up (and use brightness) when the download makes no progress for this long, or takes longer
+  depthStallMs: 60000,
+  depthLoadMs: 600000,
   // 18.3 external state
   maxStateString: 500,
   maxHashChars: 16000,
