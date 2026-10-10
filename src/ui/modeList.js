@@ -2,7 +2,7 @@
 // (the same buttons, restyled by CSS). Rebuilt when the language changes.
 
 import { t, tl } from '../i18n/i18n.js';
-import { modesByCategory, modeAvailable } from '../modes/index.js';
+import { modesByCategory, modeAvailable } from '../modes/registry.js';
 import { toastWarn } from './toast.js';
 
 export function createModeList({ listEl, selectEl, onSelect }) {

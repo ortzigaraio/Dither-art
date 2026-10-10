@@ -3,7 +3,7 @@
 // State is mirrored in data attributes on the bar so it can be inspected and styled.
 
 import { t, onLangChange } from '../i18n/i18n.js';
-import { formatClock } from '../io/exportVideo.js';
+import { formatClock } from '../io/clock.js';
 
 const SPEEDS = [0.25, 0.5, 1, 1.5, 2];
 const SCRUB_STEPS = 1000;

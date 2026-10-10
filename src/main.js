@@ -7,7 +7,8 @@ import { toast, toastError, toastWarn } from './ui/toast.js';
 import { createHome } from './ui/hero.js';
 import { createStudio } from './studio.js';
 import { openShortcutsHelp } from './ui/shortcuts.js';
-import { MODES } from './modes/index.js';
+import { MODE_META, DEFAULT_MODE_ID, loadMode } from './modes/registry.js';
+import { requestedModeId } from './state.js';
 import { LIMITS } from './config.js';
 import { blueNoise } from './engine/dither.js';
 import { validateFile, FileError } from './io/validate.js';
@@ -148,18 +149,24 @@ async function openDemo() {
 }
 
 function updateHeroSub() {
-  const n = MODES.length;
+  const n = MODE_META.length;
   $('#hero-sub').textContent = t(n === 1 ? 'hero.sub.one' : 'hero.sub', { n });
 }
 
 async function openMode(modeId) {
-  app.studio.store.setModeId(modeId);
+  await app.studio.selectMode(modeId);
   if (app.source) setView('studio');
   else await openDemo();
 }
 
-function boot() {
+async function boot() {
   initI18n();
+  // Modes load on demand (modes/registry.js). A share link or the saved session may ask for another mode than
+  // ASCII: load its code before the studio reads the state, so the choice is kept (a failure falls back to ASCII).
+  const wanted = requestedModeId();
+  if (wanted !== DEFAULT_MODE_ID) {
+    await loadMode(wanted).catch((err) => console.warn('[dither] could not load mode', wanted, err));
+  }
   app.studio = createStudio({ onChangeFile: () => app.dropzone.openPicker() });
   app.home = createHome({ onOpenMode: openMode });
   initHeader({ onNavigate: navigate });
