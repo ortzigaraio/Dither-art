@@ -5,6 +5,7 @@
 
 import { DITHER_OPTIONS, isErrorDiffusion } from './dither.js';
 import { lumaFromRGBA, sobelLuma } from './analysis.js';
+import { CUTOUT_MODES, CUTOUT_FILLS, denoise, applyCutout } from './cutout.js';
 
 const range = (id, min, max, def, label, extra = {}) => ({ id, type: 'range', min, max, step: 1, default: def, label, ...extra });
 
@@ -56,6 +57,44 @@ export const IMAGE_PARAMS = [
   range('cropLeft', 0, 90, 0, { es: 'Recorte izquierda', en: 'Crop left' }, { unit: '%' }),
 ];
 
+/** Smart cut-out + noise reduction: shown as their own group ("Recorte y limpieza") in the panel. */
+export const CUTOUT_PARAMS = [
+  range('denoise', 0, 10, 0, { es: 'Reducir ruido', en: 'Reduce noise' }, {
+    help: { es: 'Alisa el grano y las motas sin borrar los contornos. Ayuda mucho en fotos oscuras, webcam y JPG muy comprimidos.', en: 'Smooths grain and speckle without erasing outlines. Helps a lot with dark photos, webcam and heavily compressed JPGs.' },
+  }),
+  {
+    id: 'cutout', type: 'select', default: 'off', options: CUTOUT_MODES,
+    label: { es: 'Recorte inteligente', en: 'Smart cut-out' },
+    help: { es: 'Aísla el sujeto y deja el fondo liso. Automático aprende el color del borde de la imagen; funciona mejor con fondos sencillos.', en: 'Isolates the subject and flattens the background. Auto learns the colour of the image border; it works best on plain backgrounds.' },
+  },
+  range('cutoutTol', 1, 100, 30, { es: 'Tolerancia del fondo', en: 'Background tolerance' }, {
+    unit: '%', showIf: (p) => p.cutout !== 'off',
+    help: { es: 'Sube si quedan restos de fondo; baja si se come parte del sujeto.', en: 'Raise it if background remains; lower it if it eats into the subject.' },
+  }),
+  {
+    id: 'cutoutConnected', type: 'toggle', default: true, showIf: (p) => p.cutout !== 'off',
+    label: { es: 'Solo fondo conectado al borde', en: 'Only background touching the edge' },
+    help: { es: 'Activado respeta las zonas del mismo color dentro del sujeto (ojos, camisa blanca). Desactivado quita ese color en toda la imagen.', en: 'On, it keeps same-colour areas inside the subject (eyes, a white shirt). Off, it removes that colour everywhere.' },
+  },
+  range('cutoutClean', 0, 100, 25, { es: 'Limpiar motas', en: 'Clean specks' }, {
+    unit: '%', showIf: (p) => p.cutout !== 'off',
+    help: { es: 'Borra islas pequeñas sueltas que no son el sujeto.', en: 'Deletes small stray islands that are not the subject.' },
+  }),
+  range('cutoutSoft', 0, 6, 1, { es: 'Suavizar borde', en: 'Soften edge' }, {
+    unit: 'px', showIf: (p) => p.cutout !== 'off',
+  }),
+  {
+    id: 'cutoutFill', type: 'select', default: 'auto', options: CUTOUT_FILLS, showIf: (p) => p.cutout !== 'off',
+    label: { es: 'Relleno del fondo', en: 'Background fill' },
+  },
+  {
+    id: 'cutoutInvert', type: 'toggle', default: false, showIf: (p) => p.cutout !== 'off',
+    label: { es: 'Conservar el fondo (quitar el sujeto)', en: 'Keep background (remove subject)' },
+  },
+];
+
+IMAGE_PARAMS.push(...CUTOUT_PARAMS);
+
 // ---------------------------------------------------------------------------
 // Geometry
 // ---------------------------------------------------------------------------
@@ -78,6 +117,7 @@ export function preprocessKey(g) {
     g.brightness, g.contrast, g.saturation, g.hue, g.grayscale, g.sepia, g.invert,
     g.thresholdOn ? g.threshold : -1, g.sharpness, g.edges, g.flipX ? 1 : 0,
     g.cropTop, g.cropRight, g.cropBottom, g.cropLeft,
+    g.denoise, g.cutout === 'off' ? 'x' : [g.cutout, g.cutoutTol, g.cutoutConnected ? 1 : 0, g.cutoutClean, g.cutoutSoft, g.cutoutFill, g.cutoutInvert ? 1 : 0].join(','),
   ].join('|');
 }
 
@@ -331,11 +371,14 @@ export function preprocess(ws, frame, srcW, srcH, g, opts = {}) {
   ctx.restore();
 
   const needJS = css !== '' && !useCtx;
-  const needCPU = needJS || g.sharpness > 0 || g.edges > 0 || g.thresholdOn;
+  const cut = g.cutout && g.cutout !== 'off';
+  const needCPU = needJS || g.denoise > 0 || cut || g.sharpness > 0 || g.edges > 0 || g.thresholdOn;
   if (!needCPU) return { imageData: null, usedFilterPath: css ? 'ctx' : 'none' };
 
   const id = ctx.getImageData(0, 0, W, H);
   if (needJS) applyColorFiltersJS(id.data, g);
+  if (g.denoise > 0) denoise(id.data, W, H, g.denoise);
+  if (cut) applyCutout(id.data, W, H, g, matte);
   if (g.sharpness > 0) sharpen(id.data, W, H, g.sharpness);
   if (g.edges > 0) blendEdges(id.data, W, H, g.edges, edgeBlend);
   if (g.thresholdOn) applyThreshold(id.data, g.threshold);

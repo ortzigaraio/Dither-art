@@ -92,6 +92,7 @@ export default {
   'studio.source.video': 'Video',
   'studio.source.webcam': 'Camera',
   'studio.group.image': 'Image settings',
+  'studio.group.cutout': 'Cut-out & clean-up',
   'studio.group.mode': 'Mode: {mode}',
   'studio.group.color': 'Color',
   'studio.group.depth': 'Depth',
