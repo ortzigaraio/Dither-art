@@ -31,6 +31,9 @@ Pasos manuales del dueño (`DEPLOY.md`):
 - [ ] Desplegar el Worker del contador (§5) y poner `counterUrl: 'https://count.ortzigar.org'` en `src/config.js`.
 - [ ] Si `dither.ortzigar.org` usa el proxy de Cloudflare (nube naranja): desactivar **Rocket Loader** y la **ofuscación de emails**, porque reescriben o inyectan scripts que la CSP bloquea.
 
+- [ ] Recorte con IA (segmentación de sujeto) como opción de «Recorte inteligente»; hoy el recorte es por color y funciona mejor con fondos sencillos.
+- [ ] Probar el recorte y «Retrato fino» con fotos reales del dueño y ajustar los valores por defecto.
+
 Mejoras visuales detectadas, que el dueño dirigirá:
 - Matrix: la imagen apenas se ve en la lluvia.
 - Flow field: sale demasiado oscuro.

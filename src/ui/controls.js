@@ -3,7 +3,7 @@
 // The panel is built from: ENTRADA (input), IMAGEN (global schema), MODO (mode schema), COLOR, EXPORTAR.
 
 import { t, tl } from '../i18n/i18n.js';
-import { IMAGE_PARAMS } from '../engine/preprocess.js';
+import { IMAGE_PARAMS, CUTOUT_PARAMS } from '../engine/preprocess.js';
 import { colorSchemaFor, resolveColors, normalizeHex, rgbToHex } from '../engine/color.js';
 import { DEPTH_PARAMS } from '../engine/depth.js';
 import { POSTFX_PARAMS, postfxAvailable } from '../engine/postfx.js';
@@ -387,8 +387,12 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
 
     if (mode.uses.includes('image')) {
       host.appendChild(buildGroup({
-        id: 'image', tab: 'image', title: t('studio.group.image'), schema: IMAGE_PARAMS,
+        id: 'image', tab: 'image', title: t('studio.group.image'), schema: IMAGE_PARAMS.filter((q) => !CUTOUT_PARAMS.includes(q)),
         pathOf: (pid) => `global.${pid}`, resetKey: 'global', hide: mode.hide || [],
+      }));
+      host.appendChild(buildGroup({
+        id: 'cutout', tab: 'image', title: t('studio.group.cutout'), schema: CUTOUT_PARAMS,
+        pathOf: (pid) => `global.${pid}`, resetKey: 'cutout', hide: mode.hide || [],
       }));
     }
     const presetsGroup = extra.presets?.();
@@ -435,7 +439,7 @@ export function createControls({ host, panel, tabsHost, store, getMode, getTheme
     for (const r of rows) {
       r.update(force);
       if (typeof r.param.showIf === 'function') {
-        const values = r.group === 'image' ? all.global : r.group === 'color' ? all.color : r.group === 'depth' ? all.depth : r.group === 'postfx' ? all.postfx : all.mode;
+        const values = r.group === 'image' || r.group === 'cutout' ? all.global : r.group === 'color' ? all.color : r.group === 'depth' ? all.depth : r.group === 'postfx' ? all.postfx : all.mode;
         let show = true;
         try { show = !!r.param.showIf(values, all); } catch { show = true; }
         r.el.hidden = !show;
