@@ -9,8 +9,12 @@
 // - Without Worker support (or when the worker cannot start) the same tasks run on the main thread, in cooperative
 //   chunks, with the same cancellation semantics.
 
-import { TASKS, CancelledError } from './heavyTasks.js';
 import { LIMITS } from '../config.js';
+
+// The task code is only needed here for the main-thread fallback (the worker imports it itself): load it on demand,
+// so the boot path does not carry it (with its Delaunay and PETSCII dependencies).
+let tasksModule = null;
+const loadTasks = () => (tasksModule ||= import('./heavyTasks.js'));
 
 const WORKER_URL = new URL('../workers/heavy.worker.js', import.meta.url);
 const GRACE_MS = 400;
@@ -150,6 +154,18 @@ function cancelJob(job) {
 }
 
 async function runLocal(job, payload) {
+  let TASKS;
+  let CancelledError;
+  try {
+    ({ TASKS, CancelledError } = await loadTasks());
+  } catch (err) {
+    tasksModule = null; // a network error: try again next time
+    if (!job.localCancelled) settle(job, job.reject, err);
+    jobs.delete(job.id);
+    emitActivity();
+    return;
+  }
+  if (job.localCancelled) return; // cancelled while the task code was loading
   const ctl = {
     progress(p, partial) {
       job.progress = p;

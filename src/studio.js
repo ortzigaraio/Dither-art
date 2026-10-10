@@ -3,7 +3,7 @@
 
 import { t, tl, onLangChange } from './i18n/i18n.js';
 import { createStore, decodeShareHash, sanitizeState } from './state.js';
-import { getMode, modeAvailable, MODES } from './modes/index.js';
+import { getLoadedMode, loadMode, modeAvailable, MODE_META, DEFAULT_MODE_ID } from './modes/registry.js';
 import { createPipeline } from './engine/pipeline.js';
 import { cropRect } from './engine/preprocess.js';
 import { createScheduler } from './scheduler.js';
@@ -15,8 +15,6 @@ import { createInputGroup, describeSource } from './ui/inputPanel.js';
 import { createPresetsGroup } from './ui/presets.js';
 import { stateWithPreset, surprise as surpriseParams } from './presets.js';
 import { createTransport } from './ui/transport.js';
-import { openExportDialog } from './ui/exportDialog.js';
-import * as vx from './io/exportVideo.js';
 import { WebcamSource } from './io/sources.js';
 import { themeOutputColors, onThemeChange } from './ui/header.js';
 import { scramble } from './ui/scramble.js';
@@ -35,6 +33,16 @@ const hasAIConsent = () => { try { return localStorage.getItem(AI_CONSENT_KEY) =
 const saveAIConsent = () => { try { localStorage.setItem(AI_CONSENT_KEY, '1'); } catch { /* storage blocked: ask again next time */ } };
 
 const isMobile = () => window.matchMedia('(max-width: 699px)').matches;
+
+// Video export code (encoder setup, dialog) loads the first time a video export or a recording is prepared.
+let videoKit = null;
+let vx = null; // io/exportVideo.js once loaded
+const loadVideoKit = () => (videoKit ||= Promise.all([import('./io/exportVideo.js'), import('./ui/exportDialog.js')])
+  .then(([videoModule, dialogModule]) => {
+    vx = videoModule;
+    return { vx: videoModule, openExportDialog: dialogModule.openExportDialog };
+  })
+  .catch((err) => { videoKit = null; throw err; }));
 
 /**
  * @param {{ onChangeFile: () => void }} hooks
@@ -67,12 +75,33 @@ export function createStudio({ onChangeFile }) {
   let resumeOnShow = false;  // playback to restart when the tab or the view comes back
   let exportSeq = 0;
   // GPU modes need WebGL2: a remembered or shared state may point at one this browser cannot run (PLAN.md 18.2)
-  if (!modeAvailable(getMode(store.state.modeId))) {
-    store.state.modeId = MODES[0].id;
+  if (!modeAvailable(getLoadedMode(store.state.modeId))) {
+    store.state.modeId = DEFAULT_MODE_ID;
     notices.push(() => toastWarn(t('err.noWebGL2')));
   }
 
-  const mode = () => getMode(store.state.modeId);
+  // the store only ever points at a loaded mode (setModeId refuses others; selectMode loads first)
+  const mode = () => getLoadedMode(store.state.modeId);
+
+  // Switch mode, loading its code on demand. The last choice wins: a slower load that finishes after a newer
+  // choice is dropped, so a stale mode never replaces the one the user picked last.
+  let modeReq = 0;
+  async function selectMode(id) {
+    const req = ++modeReq;
+    let m;
+    try {
+      m = await loadMode(id);
+    } catch (err) {
+      if (req === modeReq) {
+        console.warn('[dither] could not load mode', id, err);
+        toastError(t('err.modeLoad'));
+      }
+      return false;
+    }
+    if (req !== modeReq) return false;
+    if (!modeAvailable(m)) { toastWarn(t('err.noWebGL2')); return false; }
+    return store.setModeId(id);
+  }
   const paramsNow = () => {
     const s = store.state;
     return { global: s.global, color: s.color, depth: s.depth, postfx: s.postfx, mode: s.modes[s.modeId] };
@@ -102,9 +131,14 @@ export function createStudio({ onChangeFile }) {
     if (ev === 'lost') toastWarn(t('gl.lost'));
     else toast(t('gl.restored'));
   };
-  const pipeline = createPipeline({ onInvalidate: () => scheduler.markDirty(), onContextEvent });
+  const pipeline = createPipeline({ onInvalidate: () => scheduler.markDirty(), onContextEvent, label: 'preview' });
   let exportPipeline = null;
-  const getExportPipeline = () => exportPipeline || (exportPipeline = createPipeline());
+  const getExportPipeline = () => exportPipeline || (exportPipeline = createPipeline({ label: 'export' }));
+  /** An export pass can hold an 8192 px canvas and its buffers: give them back as soon as the export is done. */
+  const releaseExportPipeline = () => {
+    exportPipeline?.dispose();
+    exportPipeline = null;
+  };
 
   const viewer = createViewer({ onZoomChange: onZoom });
 
@@ -136,6 +170,7 @@ export function createStudio({ onChangeFile }) {
 
   async function renderFrame(nowSec) {
     if (!source) return;
+    const src = source;
     const m = mode();
     const animated = !!(source.animated || modeMoves(m));
     // A video file is rendered at its own clock, so animated modes follow the picture; everything else uses the loop clock
@@ -153,10 +188,15 @@ export function createStudio({ onChangeFile }) {
     });
     if (result.aborted) return; // a parameter changed while a heavy job ran: the loop renders again (dirty)
     if (result.lost) return; // WebGL context lost: keep the last frame until it is restored (the pipeline re-renders)
+    // The source or the mode changed while this frame was rendering (async modes, worker jobs): it is stale. Drawing
+    // it would show (and record) the old picture with the new source's "original"; the change already asked for a
+    // fresh render.
+    if (src !== source || m !== mode()) return;
 
     // a mode whose picture depends on its own clock (a simulation started at RESET) tells exports which time to render
     lastExportTime = Number.isFinite(result.meta?.exportTime) ? result.meta.exportTime : null;
     lastLogical = { w: result.width / result.outScale, h: result.height / result.outScale };
+    document.getElementById('viewer-canvas').dataset.mode = m.id; // which mode drew the picture on screen (diagnostics and tests)
     viewer.present(result, {
       drawOriginal: (g, w, h) => {
         const crop = cropRect(store.state.global, source.width, source.height);
@@ -211,6 +251,7 @@ export function createStudio({ onChangeFile }) {
       console.warn('[dither] export failed', err);
       toastError(t('export.failed'));
     } finally {
+      releaseExportPipeline();
       exporting = false;
       viewer.setBusy(false);
     }
@@ -256,10 +297,18 @@ export function createStudio({ onChangeFile }) {
   function shareUrl() {
     return `${location.origin}${location.pathname}${store.shareHash()}`;
   }
-  function applyPreset(preset, modeId = store.state.modeId) {
+  async function applyPreset(preset, modeId = store.state.modeId) {
+    const req = ++modeReq; // a preset is a mode choice as well
+    try {
+      await loadMode(modeId);
+    } catch {
+      if (req === modeReq) toastError(t('presets.err.invalid'));
+      return false;
+    }
+    if (req !== modeReq) return false;
     const next = stateWithPreset(store.state, modeId, preset);
     if (!next) { toastError(t('presets.err.invalid')); return false; }
-    if (!modeAvailable(getMode(next.modeId))) { toastWarn(t('err.noWebGL2')); return false; }
+    if (!modeAvailable(getLoadedMode(next.modeId))) { toastWarn(t('err.noWebGL2')); return false; }
     store.replace(next);
     toast(t('presets.applied', { name: typeof preset.name === 'string' ? preset.name : tl(preset.name) }));
     return true;
@@ -350,8 +399,22 @@ export function createStudio({ onChangeFile }) {
     if (resumeOnShow && source?.kind === 'video') source.play();
     resumeOnShow = false;
   }
-  // The loop (and with it the video) sleeps while the tab is hidden (PLAN.md 18.2)
-  document.addEventListener('visibilitychange', () => (document.hidden ? suspendPlayback() : resumePlayback()));
+  // The loop (and with it the video) sleeps while the tab is hidden (PLAN.md 18.2). A webcam recording pauses too:
+  // no preview frames are rendered meanwhile, so the hidden time is cut out instead of freezing the last frame.
+  function onVisibility() {
+    if (document.hidden) {
+      suspendPlayback();
+      if (recorder && recorder.hiddenAt == null) { recorder.hiddenAt = performance.now(); recorder.rec.pause?.(); }
+    } else {
+      resumePlayback();
+      if (recorder && recorder.hiddenAt != null) {
+        recorder.t0 += performance.now() - recorder.hiddenAt;
+        recorder.hiddenAt = null;
+        recorder.rec.resume?.();
+      }
+    }
+  }
+  document.addEventListener('visibilitychange', onVisibility);
 
   /** A canvas the engine can treat as a source: the exporter paints each decoded frame into it. */
   function makeFrameSource(from) {
@@ -369,7 +432,7 @@ export function createStudio({ onChangeFile }) {
 
   /** Frame renderer for the exporter: its own pipeline, always full quality, with parameters frozen at the start. */
   function makeVideoRenderer(settings, natural) {
-    const pipe = createPipeline();
+    const pipe = createPipeline({ label: 'video-export' });
     const m = mode();
     const params = structuredClone(paramsNow());
     const th = { ...theme };
@@ -404,11 +467,12 @@ export function createStudio({ onChangeFile }) {
     exporting = true; // blocks other exports while the dialog is open
     let dialogOpen = false;
     try {
-      const probe = await renderExport(1);
+      const [probe, kit] = await Promise.all([renderExport(1), loadVideoKit()]);
       const aspect = probe.result.width / probe.result.height;
       const natural = Math.max(2, probe.result.height / (probe.result.outScale || 1));
-      const caps = await vx.detectCapabilities(Math.round(natural * aspect), Math.round(natural));
-      openExportDialog({
+      releaseExportPipeline(); // the job renders with its own pipeline
+      const caps = await kit.vx.detectCapabilities(Math.round(natural * aspect), Math.round(natural));
+      kit.openExportDialog({
         kind, source, aspect, naturalHeight: natural, caps,
         onStart: (settings, ctl) => onStart(settings, ctl, { natural, caps }),
         onClose: () => { exporting = false; },
@@ -467,12 +531,22 @@ export function createStudio({ onChangeFile }) {
   function toggleRecording() {
     if (recorder) { stopRecording(); return; }
     if (source?.kind !== 'webcam') return;
+    const cam = source;
     openVideoDialog('live', async (settings, ctl, { caps }) => {
-      const rec = await vx.createLiveRecorder({
-        format: settings.format, fps: settings.effectiveFps, quality: settings.quality,
-        outW: settings.outW, outH: settings.outH, bg: theme.bg,
-      }, caps);
-      recorder = { rec, t0: performance.now(), mode: mode() };
+      let rec;
+      try {
+        rec = await vx.createLiveRecorder({
+          format: settings.format, fps: settings.effectiveFps, quality: settings.quality,
+          outW: settings.outW, outH: settings.outH, bg: theme.bg,
+        }, caps);
+      } catch (err) {
+        // e.g. the encoder or MediaRecorder refused the settings: say so instead of an unhandled rejection
+        console.warn('[dither] could not start recording', err);
+        toastError(t('export.failed'));
+        return;
+      }
+      if (source !== cam) { await rec.cancel(); ctl.close(); return; } // the camera went away meanwhile
+      recorder = { rec, t0: performance.now(), mode: mode(), hiddenAt: null };
       exporting = false;
       transport.setRecording(true);
       scheduler.markDirty();
@@ -601,7 +675,7 @@ export function createStudio({ onChangeFile }) {
         return true;
       } catch (err) {
         console.warn('[dither] AI depth unavailable', err);
-        toastError(t('depth.failed'));
+        toastError(t(err?.message === 'timeout' ? 'depth.timeout' : 'depth.failed'));
         store.set('depth.source', 'brightness');
         return false;
       } finally {
@@ -646,7 +720,7 @@ export function createStudio({ onChangeFile }) {
   const modeList = createModeList({
     listEl: document.getElementById('mode-list'),
     selectEl: document.getElementById('mode-select'),
-    onSelect: (id) => store.setModeId(id),
+    onSelect: (id) => { selectMode(id); },
   });
   modeList.setActive(store.state.modeId);
 
@@ -654,7 +728,7 @@ export function createStudio({ onChangeFile }) {
   store.subscribe((path) => {
     pipeline.abortPending(); // parameters changed: a heavy job of the previous ones is stale
     if (path === 'modeId') {
-      if (!modeAvailable(mode())) { store.setModeId(MODES[0].id); toastWarn(t('err.noWebGL2')); return; }
+      if (!modeAvailable(mode())) { store.setModeId(DEFAULT_MODE_ID); toastWarn(t('err.noWebGL2')); return; }
       autoScale = 1;
       slowFrames = 0;
       syncCamera();
@@ -696,10 +770,10 @@ export function createStudio({ onChangeFile }) {
 
   // ---- keyboard shortcuts (PLAN.md 4.7) ----------------------------------------------------------------
   function cycleMode(dir) {
-    const list = MODES.filter((m) => modeAvailable(m));
+    const list = MODE_META.filter((m) => modeAvailable(m));
     const i = list.findIndex((m) => m.id === store.state.modeId);
     const next = list[(i + dir + list.length) % list.length];
-    store.setModeId(next.id);
+    selectMode(next.id);
     document.querySelector(`#mode-list [data-mode-id="${next.id}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   initShortcuts({
@@ -731,7 +805,8 @@ export function createStudio({ onChangeFile }) {
       if (playsAsVideo(next)) {
         next.onFrame = onSourceFrame;
         if (next.kind === 'webcam') {
-          next.onEnded = () => { toastWarn(t('cam.ended')); cancelRecording(); };
+          // unplugged (or taken by another app) mid-recording: keep what was recorded so far instead of losing it
+          next.onEnded = () => { toastWarn(t('cam.ended')); if (recorder) stopRecording(); };
           WebcamSource.listCameras().then((list) => { if (source === next) transport.setCameras(list); });
         }
       }
@@ -768,6 +843,7 @@ export function createStudio({ onChangeFile }) {
     actions,
     scheduler,
     applyPreset,
+    selectMode,
     surprise: surpriseMe,
   };
 }

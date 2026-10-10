@@ -3,7 +3,9 @@
 // and the gallery of modes with lazily rendered, looping thumbnails.
 
 import { t, tl, onLangChange } from '../i18n/i18n.js';
-import { MODES, getMode, hasMode, modeAvailable } from '../modes/index.js';
+import { MODE_META, getLoadedMode, loadMode, modeAvailable, metaOf } from '../modes/registry.js';
+
+const getMode = getLoadedMode; // every caller below runs once the mode is loaded
 import { toastWarn } from './toast.js';
 import { createPipeline } from '../engine/pipeline.js';
 import { createScheduler } from '../scheduler.js';
@@ -78,12 +80,20 @@ export function createHome({ onOpenMode }) {
   let demo = null;
   let lookIndex = -1;
 
-  const pipeline = createPipeline({ onInvalidate: () => scheduler.markDirty() });
+  const pipeline = createPipeline({ onInvalidate: () => scheduler.markDirty(), label: 'hero' });
   const dctx = demoCanvas.getContext('2d');
 
   // ---- hero demo ----------------------------------------------------------------------------
-  const looks = () => LOOKS.filter((l) => hasMode(l.modeId) && modeAvailable(getMode(l.modeId))).map(resolveLook);
-  let lookList = null;
+  // The tour: every look whose mode can run here. A look's mode is fetched about a second before its turn (modes
+  // load on demand); until it has arrived the tour stays on the first look.
+  const tour = LOOKS.filter((l) => modeAvailable(metaOf(l.modeId)));
+  const resolved = new Map();
+  const fetching = new Set();
+  const prefetch = (id) => {
+    if (getLoadedMode(id) || fetching.has(id)) return;
+    fetching.add(id);
+    loadMode(id).catch(() => fetching.delete(id)); // offline: tried again on its next turn
+  };
 
   function labelFor(look) {
     const mode = getMode(look.modeId);
@@ -95,10 +105,15 @@ export function createHome({ onOpenMode }) {
 
   async function frame(now) {
     if (!demo) return;
-    lookList ||= looks();
     const still = reducedMotion();
-    const idx = still ? 0 : Math.floor(now / ROTATE_EVERY) % lookList.length;
-    const look = lookList[idx];
+    let idx = still ? 0 : Math.floor(now / ROTATE_EVERY) % tour.length;
+    if (!still && now % ROTATE_EVERY > ROTATE_EVERY - 1.2) prefetch(tour[(idx + 1) % tour.length].modeId);
+    if (!getLoadedMode(tour[idx].modeId)) {
+      prefetch(tour[idx].modeId);
+      idx = 0;
+    }
+    if (!resolved.has(idx)) resolved.set(idx, resolveLook(tour[idx]));
+    const look = resolved.get(idx);
     if (idx !== lookIndex) {
       lookIndex = idx;
       demoLabel.textContent = labelFor(look);
@@ -183,10 +198,10 @@ export function createHome({ onOpenMode }) {
 
   async function renderThumbFrame(card, i) {
     if (!thumbPipe) {
-      thumbPipe = createPipeline();
+      thumbPipe = createPipeline({ label: 'thumbnails' });
       thumbSource = await DemoSource.create({ animated: true, still: THUMB_T0 });
     }
-    const mode = card.mode;
+    const mode = await loadMode(card.mode.id); // card.mode is the plain meta: the code loads with the first thumbnail
     const params = paramsFor(mode.id, mode.thumb || {}, 64);
     const time = THUMB_T0 + i * THUMB_STEP;
     const t0 = performance.now();
@@ -238,6 +253,14 @@ export function createHome({ onOpenMode }) {
       }
     } finally {
       thumbBusy = false;
+      // every card has its frames: the thumbnail pipeline (a WebGL context, work canvases) is not needed until the
+      // theme changes or more cards come into view
+      if (!thumbQueue.length && !loopQueue.length && thumbPipe) {
+        thumbPipe.dispose();
+        thumbPipe = null;
+        thumbSource?.dispose();
+        thumbSource = null;
+      }
     }
   }
 
@@ -265,7 +288,7 @@ export function createHome({ onOpenMode }) {
   function buildGallery() {
     grid.textContent = '';
     cards.length = 0;
-    for (const mode of MODES) {
+    for (const mode of MODE_META) {
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';

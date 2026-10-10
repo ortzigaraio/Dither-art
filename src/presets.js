@@ -7,8 +7,8 @@ import { IMAGE_PARAMS } from './engine/preprocess.js';
 import { COLOR_PARAMS } from './engine/color.js';
 import { DEPTH_PARAMS } from './engine/depth.js';
 import { POSTFX_PARAMS } from './engine/postfx.js';
-import { getMode, hasMode } from './modes/index.js';
-import { defaultsOf, sanitizeParams, sanitizeValue, sanitizeState } from './state.js';
+import { getLoadedMode, hasMode } from './modes/registry.js';
+import { defaultsOf, sanitizeParams, sanitizeValue, sanitizeState, holdRaw } from './state.js';
 
 export const PRESET_FORMAT = 'dither-preset';
 export const PRESET_BUNDLE = 'dither-presets';
@@ -37,10 +37,12 @@ export function cleanName(v) {
  * Build the next state for a preset: the mode params are the mode defaults with the preset on top; global, color,
  * depth and post-fx values are merged over the current ones only when the preset declares them.
  * The result always goes through sanitizeState(), so a curated or imported preset can never inject bad values.
+ * The mode must be loaded (registry.loadMode()); null otherwise.
  */
 export function stateWithPreset(current, modeId, preset) {
   if (!hasMode(modeId) || !isPlainObject(preset)) return null;
-  const mode = getMode(modeId);
+  const mode = getLoadedMode(modeId);
+  if (!mode) return null;
   const next = clone(current);
   next.modeId = modeId;
   next.modes[modeId] = { ...defaultsOf(mode.params), ...(isPlainObject(preset.mode) ? preset.mode : {}) };
@@ -52,7 +54,7 @@ export function stateWithPreset(current, modeId, preset) {
 
 /** Curated presets of a mode (data declared in the mode module). */
 export function curatedPresets(modeId) {
-  return hasMode(modeId) ? (getMode(modeId).presets || []) : [];
+  return getLoadedMode(modeId)?.presets || [];
 }
 
 // ---------------------------------------------------------------------------
@@ -113,7 +115,7 @@ export function snapshot(state, name) {
   return {
     format: PRESET_FORMAT,
     version: PRESET_VERSION,
-    name: cleanName(name) || getMode(state.modeId).id,
+    name: cleanName(name) || state.modeId,
     modeId: state.modeId,
     mode: clone(state.modes[state.modeId]),
     global: clone(state.global),
@@ -123,18 +125,22 @@ export function snapshot(state, name) {
   };
 }
 
-/** Validate one untrusted preset object. Returns a clean preset, or null when it cannot be used. */
+/**
+ * Validate one untrusted preset object. Returns a clean preset, or null when it cannot be used.
+ * For a mode whose code is not loaded yet, the mode values are only reduced to a safe shape (holdRaw); applying the
+ * preset loads the mode and validates them in full (stateWithPreset -> sanitizeState).
+ */
 export function sanitizePreset(raw) {
   if (!isPlainObject(raw)) return null;
   if (has(raw, 'format') && raw.format !== PRESET_FORMAT) return null;
   if (typeof raw.modeId !== 'string' || !hasMode(raw.modeId)) return null;
-  const mode = getMode(raw.modeId);
+  const mode = getLoadedMode(raw.modeId);
   const out = {
     format: PRESET_FORMAT,
     version: PRESET_VERSION,
-    name: cleanName(raw.name) || mode.id,
-    modeId: mode.id,
-    mode: sanitizeParams(mode.params, raw.mode),
+    name: cleanName(raw.name) || raw.modeId,
+    modeId: raw.modeId,
+    mode: mode ? sanitizeParams(mode.params, raw.mode) : (holdRaw(raw.mode) || {}),
   };
   if (isPlainObject(raw.global)) out.global = sanitizeParams(IMAGE_PARAMS, raw.global);
   if (isPlainObject(raw.color)) out.color = sanitizeParams(COLOR_PARAMS, raw.color);
