@@ -2,7 +2,7 @@
 // Every string goes through t(); the file name is user text, so it is set with textContent only.
 
 import { t } from '../i18n/i18n.js';
-import { formatClock } from '../io/exportVideo.js';
+import { formatClock } from '../io/clock.js';
 
 /** "Video · 1280×720 · 30 fps · 00:12" (refreshed while a video plays, because the frame rate is measured then). */
 export function describeSource(source) {

@@ -1,0 +1,89 @@
+/* Dither — The Gallery: brutalist, loud, a little rude. */
+:root {
+  --paper: #f5f1e8;
+  --ink: #0a0a0a;
+  --red: #ff2d1a;
+  --acid: #c6ff00;
+  --pink: #ff4fd8;
+  --display: 'Unbounded', 'Geist', sans-serif;
+  --cond: 'Big Shoulders Display', 'Geist', sans-serif;
+  --mono: 'Space Mono', 'Geist Mono', monospace;
+}
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--mono); overflow-x: hidden; cursor: crosshair; }
+a { color: inherit; }
+img { display: block; width: 100%; height: auto; }
+
+.top { display: grid; grid-template-columns: auto 1fr auto; gap: 20px; align-items: center; padding: 12px 20px; border-bottom: 3px solid var(--ink); font-size: 13px; text-transform: uppercase; }
+.brand { font-family: var(--display); font-weight: 900; font-size: 22px; text-decoration: none; letter-spacing: -.02em; }
+.top nav { display: flex; gap: 0; justify-content: center; }
+.top nav a { padding: 4px 14px; border: 2px solid var(--ink); margin-left: -2px; text-decoration: none; background: var(--paper); }
+.top nav a:hover { background: var(--ink); color: var(--acid); }
+.count { font-weight: 700; }
+
+.hero { position: relative; padding: 36px 20px 30px; border-bottom: 3px solid var(--ink); overflow-x: clip; }
+.hero h1 { font-family: var(--display); font-weight: 900; font-size: clamp(52px, 11.4vw, 196px); line-height: .86; margin: 0; letter-spacing: -.055em; text-transform: uppercase; }
+.red { color: var(--red); }
+.small-h { font-size: .36em; letter-spacing: -.03em; vertical-align: middle; }
+.strike { font-size: .36em; text-decoration: line-through; text-decoration-thickness: .12em; text-decoration-color: var(--red); vertical-align: middle; }
+.hand { font-size: .36em; background: var(--acid); padding: 0 .15em; vertical-align: middle; display: inline-block; transform: rotate(-3deg); }
+.sticker { position: absolute; margin: 0; font-family: var(--display); font-weight: 900; text-transform: uppercase; text-align: center; line-height: 1; display: grid; place-items: center; border-radius: 50%; border: 3px solid var(--ink); }
+.s1 { right: 4%; top: 30px; width: 150px; height: 150px; background: var(--red); color: var(--paper); font-size: 17px; transform: rotate(12deg); animation: spin 18s linear infinite; }
+.s2 { right: 17%; bottom: -46px; width: 112px; height: 112px; background: var(--acid); font-size: 14px; transform: rotate(-14deg); z-index: 2; border-radius: 0; }
+@keyframes spin { to { transform: rotate(372deg); } }
+
+.ticker { background: var(--ink); color: var(--acid); overflow: hidden; border-bottom: 3px solid var(--ink); font-family: var(--cond); font-weight: 800; font-size: 34px; text-transform: uppercase; padding: 8px 0; white-space: nowrap; }
+.ticker div { display: inline-flex; animation: tick 22s linear infinite; }
+@keyframes tick { to { transform: translateX(-50%); } }
+
+.filters { display: flex; flex-wrap: wrap; gap: 0; padding: 22px 20px 0; }
+.filters button { font: 700 14px var(--mono); text-transform: uppercase; background: var(--paper); border: 3px solid var(--ink); padding: 10px 18px; margin: 0 -3px -3px 0; cursor: pointer; }
+.filters button.on, .filters button:hover { background: var(--ink); color: var(--paper); }
+.filters sup { color: var(--red); }
+
+/* masonry */
+.masonry { columns: 4 300px; column-gap: 22px; padding: 30px 20px 40px; }
+.card { break-inside: avoid; margin: 0 0 22px; border: 3px solid var(--ink); background: var(--paper); position: relative; transition: transform .25s cubic-bezier(.3, 1.6, .5, 1), box-shadow .25s; }
+.card:hover { transform: translate(-6px, -6px); box-shadow: 10px 10px 0 var(--ink); z-index: 2; }
+.card .img { overflow: hidden; border-bottom: 3px solid var(--ink); position: relative; }
+.card img { transition: transform .5s cubic-bezier(.2, .9, .2, 1), filter .2s; }
+.cap { padding: 10px 12px 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; }
+.cap b { font-family: var(--cond); font-size: 30px; line-height: .9; color: var(--red); grid-row: span 2; }
+.cap h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 17px; line-height: 1.05; text-transform: uppercase; letter-spacing: -.02em; }
+.cap span { font-size: 11px; text-transform: uppercase; opacity: .7; }
+.card:hover .cap { background: var(--ink); color: var(--paper); }
+
+.h-tilt:hover img { transform: rotate(-3deg) scale(1.12); }
+.h-invert:hover img { filter: invert(1) contrast(1.2); }
+.h-zoom:hover img { transform: scale(1.35); }
+.h-shake:hover img { animation: shake .18s steps(2) infinite; }
+@keyframes shake { 0% { transform: translate(2px, -2px) scale(1.05); } 50% { transform: translate(-3px, 2px) scale(1.05); } 100% { transform: translate(1px, 3px) scale(1.05); } }
+.h-blend .img::after { content: "LOOK"; position: absolute; inset: 0; display: grid; place-items: center; background: var(--acid); mix-blend-mode: multiply; opacity: 0; transition: opacity .2s; font: 900 64px var(--display); color: var(--ink); }
+.h-blend:hover .img::after { opacity: 1; }
+
+.quote { padding: 26px 18px 20px; background: var(--acid); }
+.quote p { margin: 0 0 14px; font-family: var(--display); font-weight: 900; font-size: 46px; line-height: .92; letter-spacing: -.05em; text-transform: uppercase; }
+.quote span { font-size: 12px; text-transform: uppercase; }
+.quote.dark { background: var(--ink); color: var(--paper); }
+.quote.dark p { color: var(--red); }
+.red-block { background: var(--red); color: var(--paper); padding: 26px 18px; }
+.red-block p { margin: 0; font-family: var(--cond); font-weight: 900; font-size: 56px; line-height: .9; text-transform: uppercase; }
+.red-block a { color: var(--ink); font-family: var(--mono); font-size: 16px; display: inline-block; margin-top: 14px; background: var(--paper); padding: 6px 10px; border: 3px solid var(--ink); text-decoration: none; }
+.ascii-card canvas { display: block; width: 100%; aspect-ratio: 4 / 4.6; border-bottom: 3px solid var(--ink); }
+
+.foot { border-top: 3px solid var(--ink); padding: 30px 20px 26px; background: var(--ink); color: var(--paper); }
+.huge { margin: 0; font-family: var(--display); font-weight: 900; font-size: clamp(56px, 14.5vw, 250px); line-height: .82; letter-spacing: -.06em; color: var(--red); }
+.foot-row { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 24px; font-size: 13px; text-transform: uppercase; }
+
+@media (max-width: 700px) {
+  .top { grid-template-columns: 1fr auto; }
+  .top nav { display: none; }
+  .count { font-size: 11px; text-align: right; }
+  .s1 { width: 96px; height: 96px; font-size: 11px; top: auto; bottom: -40px; right: 12px; }
+  .s2 { display: none; }
+  .hero { padding-bottom: 54px; }
+  .masonry { columns: 1; }
+  .filters button { padding: 8px 10px; font-size: 12px; }
+  .ticker { font-size: 26px; }
+}

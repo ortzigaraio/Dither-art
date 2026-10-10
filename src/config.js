@@ -1,8 +1,7 @@
 // Single place for site settings and the hard limits of PLAN.md §18.
 // `counterUrl` is public (not a secret). Leave it empty until the visit-counter Worker is deployed (DEPLOY.md).
 
-// The product is called Dither ("by Horain"): it reuses the Horain brand (logo, themes, tokens) but is its own tool
-// (PLAN.md section 0, owner's clarification). Internal ids (theme "horain", css --horain-* tokens) keep the brand name.
+// The product is called Dither.
 export const config = {
   productName: 'Dither',
   fileSlug: 'dither', // prefix of exported file names: dither-<mode>-<YYYYMMDD-HHMMSS>.<ext>
@@ -35,6 +34,9 @@ export const LIMITS = {
   slowRenderFrames: 5,
   workerWatchdogMs: 30000,
   mobileMaxFps: 30,
+  // AI depth model: give up (and use brightness) when the download makes no progress for this long, or takes longer
+  depthStallMs: 60000,
+  depthLoadMs: 600000,
   // 18.3 external state
   maxStateString: 500,
   maxHashChars: 16000,

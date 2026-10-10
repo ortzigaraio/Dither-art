@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dither — design mockups</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+<header class="head">
+  <span class="brand">Dither</span>
+  <span class="mono">Design mockups · 7 directions · static HTML/CSS</span>
+</header>
+
+<section class="hero">
+  <div class="hero-text">
+    <p class="mono">00 — Live component</p>
+    <h1>Seven ways to<br>dress a dither.</h1>
+    <p class="lede">Style studies for Dither, the in-browser tool that turns images into dithering, halftone, line engraving and ASCII. Each page recreates the mood of a reference site using the owner’s Basque paintings, every one of them treated with an effect.</p>
+    <p class="mono hint">↘ Move the cursor over the ASCII canvas</p>
+  </div>
+  <div class="ascii-wrap">
+    <canvas class="ascii-fx" data-src="../assets/source/clean/campesinos.webp" data-cell="8" data-fg="#e9e6dd" data-accent="#ff5a1f" data-bg="#111111" data-fit="contain" data-radius="150"></canvas>
+    <span class="mono cap">js/ascii-effect.js — cursor lens, scramble, lerp</span>
+  </div>
+</section>
+
+<main class="list">
+  <a class="item" href="hermes.html">
+    <span class="n mono">01</span>
+    <div class="thumb"><img src="img/h-herrero.webp" width="760" height="622" alt="Blacksmith as white engraved lines on electric blue" loading="lazy"></div>
+    <div class="txt"><h2>Hermes</h2><p>Black and #1E1EFF blocks, huge condensed uppercase, mono labels, square buttons, engraved line-halftone hero and a lerp-damped cropped reveal &amp; pan parallax.</p><span class="mono">hermes.html</span></div>
+  </a>
+  <a class="item" href="lowtech.html">
+    <span class="n mono">02</span>
+    <div class="thumb"><img src="img/lt-pescado.webp" width="720" height="720" alt="Fish market dithered in four warm tones" loading="lazy"></div>
+    <div class="txt"><h2>Low-tech</h2><p>Cream paper, a narrow serif column, heavily dithered four-colour images with their weight in KB, and a battery / status widget.</p><span class="mono">lowtech.html</span></div>
+  </a>
+  <a class="item" href="poolsuite.html">
+    <span class="n mono">03</span>
+    <div class="thumb"><img src="img/ps-pescado.webp" width="560" height="560" alt="Fishermen in a pastel Bayer dither" loading="lazy"></div>
+    <div class="txt"><h2>Summer OS</h2><p>A retro Mac OS desktop in pastel summer colours with draggable pixel windows, an effects panel and a Dither FM music player.</p><span class="mono">poolsuite.html</span></div>
+  </a>
+  <a class="item" href="gallery.html">
+    <span class="n mono">04</span>
+    <div class="thumb"><img src="img/g-pescado.webp" width="700" height="700" alt="Fishermen as black halftone on pink" loading="lazy"></div>
+    <div class="txt"><h2>Gallery</h2><p>Brutalist and irreverent: a masonry wall of treated works, giant type, stickers, a ticker and loud hover effects.</p><span class="mono">gallery.html</span></div>
+  </a>
+  <a class="item" href="aquirin.html">
+    <span class="n mono">05</span>
+    <div class="thumb"><img src="img/a-acc-4.webp" width="640" height="495" alt="Harbour fishermen dithered in stone greys" loading="lazy"></div>
+    <div class="txt"><h2>Studio</h2><p>Refined minimal portfolio with large imagery and soft transitions, plus a springy hover Accordion and a before/after Compare slider.</p><span class="mono">aquirin.html</span></div>
+  </a>
+  <a class="item" href="jeenyuhs.html">
+    <span class="n mono">06</span>
+    <div class="thumb"><img src="img/j-frame-3.webp" width="360" height="360" alt="Grainy black and white frame of fishermen" loading="lazy"></div>
+    <div class="txt"><h2>dith-er</h2><p>Cinematic documentary: full-bleed grainy black-and-white stills, letterboxing, a running film strip and chapter navigation.</p><span class="mono">jeenyuhs.html</span></div>
+  </a>
+  <a class="item" href="schemas.html">
+    <span class="n mono">07</span>
+    <div class="thumb"><img src="img/s-herrero.webp" width="700" height="573" alt="Blacksmith as navy halftone dots" loading="lazy"></div>
+    <div class="txt"><h2>Schemas</h2><p>Experimental data-art notebook: grids, annotations, kernel and Bayer diagrams, small multiples and seeded generative overlays.</p><span class="mono">schemas.html</span></div>
+  </a>
+</main>
+
+<footer class="foot mono"><span>Images treated with designs/tools/make_images.py</span><span>Screenshots in designs/screens/</span></footer>
+<script src="js/ascii-effect.js"></script>
+</body>
+</html>

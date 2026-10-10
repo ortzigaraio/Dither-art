@@ -1,7 +1,7 @@
 # Dither
 
-*Dither by Horain* turns images, video and your webcam into art: ASCII, dithering, Braille, halftone, plotter-ready SVG,
-3D, simulations and more, with 25 styles in total. **Everything runs in your browser.** Files are decoded, processed and
+*Dither* turns images, video and your webcam into art: ASCII, dithering, Braille, halftone, plotter-ready SVG,
+3D, simulations and more, with 26 styles in total. **Everything runs in your browser.** Files are decoded, processed and
 exported on your device, and nothing is uploaded.
 
 **Live:** <https://dither.ortzigar.org> · Spec: [`PLAN.md`](PLAN.md) (Spanish) · Agent rules: [`CLAUDE.md`](CLAUDE.md) ·
@@ -9,8 +9,7 @@ Publishing: [`DEPLOY.md`](DEPLOY.md)
 
 ![Home: the hero runs the real engine on a procedural demo, touring the styles](docs/screenshots/home.jpg)
 
-Dither is also the UI/UX test bench for **Horain**. Its six themes, tokens and components (`css/tokens.css`,
-`css/components.css`) are designed here and do not depend on the app's logic, so they can be copied into the Horain app as they are.
+Its six themes, tokens and components (`css/tokens.css`, `css/components.css`) do not depend on the app's logic.
 
 It is a static site with no framework, no bundler and no build step: plain HTML, CSS, ES modules, WebGL2, Canvas2D and Web
 Workers, served as-is by GitHub Pages.
@@ -22,7 +21,7 @@ Workers, served as-is by GitHub Pages.
 | ![Studio with the ASCII mode](docs/screenshots/studio-ascii.jpg) | ![Halftone CMYK in the light theme](docs/screenshots/studio-halftone-light.jpg) |
 | ![1-bit dithering through the Full CRT post-FX in the CRT theme](docs/screenshots/studio-crt.jpg) | ![Blueprint CAD in the CAD theme](docs/screenshots/studio-blueprint.jpg) |
 
-- **25 styles in five families.**
+- **26 styles in five families.**
   - **Text:** ASCII, Braille, ANSI art (`.ans` export), PETSCII, Matrix rain and a typographic portrait.
   - **Pixel:** 1-bit dithering (Bayer, blue noise and every error-diffusion kernel), halftone (mono, CMYK, RGB and duotone), pixel art, LED panel, thermography, glitch art and pixel sorting.
   - **Vector:** engraving/crosshatch, contour lines, Voronoi/stipple, flow field, blueprint CAD, Vectrex and a one-line spiral or squiggle.
@@ -72,7 +71,7 @@ dependency and is never shipped.
 Generated assets are produced with the app itself:
 
 ```bash
-node make-icons.mjs          # assets/icons/*.png from the unmodified assets/brand/horain-icon.svg
+node make-icons.mjs          # assets/icons/*.png from assets/icons/dither-icon.svg
 node make-og-image.mjs       # assets/og-image.png (1200×630, Open Graph / Twitter card)
 node make-screenshots.mjs    # docs/screenshots/*.jpg (this README)
 ```

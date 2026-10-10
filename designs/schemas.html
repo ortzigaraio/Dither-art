@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schemas of Diffusion — Dither</title>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/schemas.css">
+</head>
+<body>
+<header class="run">
+  <span>DITHER / RESEARCH NOTES</span>
+  <span>VOL. 03 — NO. 14</span>
+  <span class="hide-sm">REF. DTH-2026-014</span>
+  <span><a href="index.html">INDEX ↗</a></span>
+</header>
+
+<main class="paper">
+  <section class="titleblock">
+    <p class="label">[A] Working paper · Image processing · Open notebook</p>
+    <h1>Schemas of <i>Diffusion</i></h1>
+    <p class="subtitle">How a painting becomes a probability field — notes on error, threshold and the uncertainty of every pixel.</p>
+    <table class="meta">
+      <tr><th>Authors</th><td>Dither Lab</td><th>Revision</th><td>r14 / 2026-10-09</td></tr>
+      <tr><th>Corpus</th><td>5 Basque paintings, 1.6 Mpx</td><th>Methods</th><td>FS · Bayer · AM · line</td></tr>
+      <tr><th>Runtime</th><td>Browser, WebGL2 + Workers</td><th>Licence</th><td>CC BY 4.0</td></tr>
+    </table>
+  </section>
+
+  <section class="abstract">
+    <p class="label">Abstract</p>
+    <p>A dithered image is a map of decisions made under uncertainty. For each pixel the algorithm must choose a single ink from a tiny palette, and the difference between what it wanted and what it could have — the <em>error</em> — is redistributed to the pixels that have not yet been decided. We visualise this process on a small corpus of paintings, compare four families of screens, and argue that the residual pattern is itself a legible diagram of the image.</p>
+  </section>
+
+  <figure class="fig fig1">
+    <div class="fig-frame">
+      <img src="img/s-puerto.webp" width="1000" height="740" alt="Harbour market painting rendered as fine navy wave lines on off-white">
+      <canvas id="field" aria-hidden="true"></canvas>
+      <svg class="ann" viewBox="0 0 1000 740" preserveAspectRatio="none" aria-hidden="true">
+        <g class="lead"><circle cx="300" cy="230" r="46"/><path d="M340 210 L560 80 L900 80"/></g>
+        <g class="lead"><circle cx="520" cy="560" r="64"/><path d="M584 560 L700 640 L900 640"/></g>
+        <g class="lead"><rect x="40" y="430" width="160" height="120"/><path d="M120 430 L120 340 L40 340"/></g>
+      </svg>
+      <span class="tag t1">a · faces: high-frequency, low error</span>
+      <span class="tag t2">b · fish: tone plateau, error accumulates</span>
+      <span class="tag t3">c · shadow</span>
+    </div>
+    <figcaption><b>Fig. 1</b> — Puerto de pescadores, engraved line screen (period 4 px, phase gain 0.9). Overlay: sampled gradient field (n = 420), arrows show the local direction of tonal change; marker size ∝ |∇L|.</figcaption>
+  </figure>
+
+  <section class="cols">
+    <div class="text">
+      <h2><span>1.</span> The kernel</h2>
+      <p>Floyd and Steinberg’s kernel<sup>1</sup> distributes the quantisation error of a pixel to four unvisited neighbours with the weights 7, 3, 5 and 1 sixteenths. The weights sum to one: no light is lost, it is only displaced. Over the whole image the displacement becomes a texture, and the texture is what we read as grey.</p>
+      <p>The ordered alternative, Bayer’s threshold matrix<sup>2</sup>, removes the dependency between pixels entirely. Each position on an 8 × 8 tile is given a fixed threshold, and the image is compared against that tile repeated to infinity. It is parallel, deterministic and — to a trained eye — unmistakably mechanical.</p>
+    </div>
+    <aside class="side">
+      <p><sup>1</sup> R. W. Floyd &amp; L. Steinberg, “An adaptive algorithm for spatial greyscale”, <i>Proc. SID</i> 17, 1976.</p>
+      <p><sup>2</sup> B. E. Bayer, “An optimum method for two-level rendition of continuous-tone pictures”, <i>IEEE ICC</i>, 1973.</p>
+      <p class="note">Note — in the browser both run per frame on 1.6 Mpx in &lt; 40 ms (FS, worker) and &lt; 2 ms (Bayer, fragment shader).</p>
+    </aside>
+  </section>
+
+  <section class="diagrams">
+    <figure class="fig">
+      <svg class="kernel" viewBox="0 0 360 240" role="img" aria-label="Floyd–Steinberg error diffusion kernel">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#e4572e"/></marker></defs>
+        <g class="cells">
+          <rect x="30" y="40" width="100" height="80"/><rect x="130" y="40" width="100" height="80" class="cur"/><rect x="230" y="40" width="100" height="80"/>
+          <rect x="30" y="120" width="100" height="80"/><rect x="130" y="120" width="100" height="80"/><rect x="230" y="120" width="100" height="80"/>
+        </g>
+        <g class="w"><text x="180" y="88">x</text><text x="280" y="88">7/16</text><text x="80" y="168">3/16</text><text x="180" y="168">5/16</text><text x="280" y="168">1/16</text></g>
+        <g class="arr"><path d="M205 70 L255 70" marker-end="url(#ar)"/><path d="M160 100 L105 140" marker-end="url(#ar)"/><path d="M180 105 L180 140" marker-end="url(#ar)"/><path d="M200 100 L255 140" marker-end="url(#ar)"/></g>
+        <text class="axis" x="30" y="26">x − 1</text><text class="axis" x="164" y="26">x</text><text class="axis" x="290" y="26">x + 1</text>
+        <text class="axis" x="336" y="84">y</text><text class="axis" x="336" y="164">y+1</text>
+      </svg>
+      <figcaption><b>Fig. 2</b> — Error diffusion kernel. Weights sum to 16/16; scan is serpentine.</figcaption>
+    </figure>
+    <figure class="fig">
+      <div class="bayer" id="bayer" role="img" aria-label="Bayer 8 by 8 threshold matrix"></div>
+      <figcaption><b>Fig. 3</b> — Bayer 8 × 8 threshold matrix, values 0–63; fill = threshold.</figcaption>
+    </figure>
+    <figure class="fig">
+      <canvas id="uncert" class="uncert" aria-hidden="true"></canvas>
+      <figcaption><b>Fig. 4</b> — Per-row residual error, 64 Monte-Carlo runs with random serpentine seeds; median in orange.</figcaption>
+    </figure>
+  </section>
+
+  <section class="multiples">
+    <div class="mh"><h2><span>2.</span> Four screens, one corpus</h2><p class="label">Fig. 5 · small multiples · same scale</p></div>
+    <div class="grid4">
+      <figure><span class="letter">A</span><img src="img/s-herrero.webp" width="700" height="573" alt="Blacksmith as navy halftone dots" loading="lazy"><svg class="hist" viewBox="0 0 100 24" data-seed="3" aria-hidden="true"></svg><figcaption>AM halftone · cell 7 px · 0°</figcaption></figure>
+      <figure><span class="letter">B</span><img src="img/s-labradores.webp" width="700" height="485" alt="Ploughmen as navy Bayer 8 by 8 dither" loading="lazy"><svg class="hist" viewBox="0 0 100 24" data-seed="7" aria-hidden="true"></svg><figcaption>Ordered · Bayer 8 × 8 · 1-bit</figcaption></figure>
+      <figure><span class="letter">C</span><img src="img/s-remeros.webp" width="560" height="803" alt="Rowers as vertical navy line screen" loading="lazy"><svg class="hist" viewBox="0 0 100 24" data-seed="11" aria-hidden="true"></svg><figcaption>Line screen · 90° · period 4</figcaption></figure>
+      <figure><span class="letter">D</span><img src="img/s-pescado.webp" width="600" height="600" alt="Fish market as navy and orange error diffusion" loading="lazy"><svg class="hist" viewBox="0 0 100 24" data-seed="19" aria-hidden="true"></svg><figcaption>Error diffusion · FS · 3 inks</figcaption></figure>
+    </div>
+    <table class="data">
+      <thead><tr><th></th><th>Method</th><th>PSNR (dB)</th><th>SSIM</th><th>Ink cover</th><th>Bytes / px</th><th>Uncertainty</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td>AM halftone</td><td>27.4</td><td>0.71</td><td>41%</td><td>0.09</td><td><span class="bar" style="--v:.32"></span></td></tr>
+        <tr><td>B</td><td>Bayer 8 × 8</td><td>24.9</td><td>0.63</td><td>47%</td><td>0.04</td><td><span class="bar" style="--v:.18"></span></td></tr>
+        <tr><td>C</td><td>Line screen</td><td>25.8</td><td>0.66</td><td>38%</td><td>0.11</td><td><span class="bar" style="--v:.44"></span></td></tr>
+        <tr><td>D</td><td>Floyd–Steinberg</td><td>29.1</td><td>0.78</td><td>45%</td><td>0.12</td><td><span class="bar" style="--v:.71"></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="cols">
+    <div class="text">
+      <h2><span>3.</span> Reading the residue</h2>
+      <p>If we subtract the dithered image from the original we are left with the residue: the exact shape of the algorithm’s doubt. In flat areas it is a fine, even noise; at edges it organises itself into worms and ridges that follow the contours of the painting. The residue is not noise in the statistical sense. It is a second drawing, made of everything the first one could not say.</p>
+      <p>We propose to treat this residue as an output in its own right — a diagram of uncertainty that can be exported, plotted and read alongside the image it came from.</p>
+    </div>
+    <aside class="side">
+      <p class="note">Method — residues computed in linear light; values clipped to ±0.5 and mapped to the diverging navy/orange scale used throughout.</p>
+      <div class="legend"><span>−0.5</span><i></i><span>+0.5</span></div>
+    </aside>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>Dither Research Notes · Vol. 03</span><span>Set in Geist &amp; IBM Plex Mono</span><span>Generated overlays are seeded and reproducible (seed 0x0D17)</span>
+</footer>
+<script src="js/schemas.js"></script>
+</body>
+</html>

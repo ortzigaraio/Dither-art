@@ -3,7 +3,7 @@
 
 export const PALETTES = {
   horain: {
-    name: { es: 'Horain', en: 'Horain' },
+    name: { es: 'Lima y tinta', en: 'Lime & ink' },
     colors: ['#15181E', '#66696F', '#C4F169', '#EDFAD1', '#F7F8FA'],
   },
   mac1bit: {

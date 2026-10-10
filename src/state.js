@@ -6,7 +6,7 @@ import { IMAGE_PARAMS } from './engine/preprocess.js';
 import { COLOR_PARAMS, normalizeHex } from './engine/color.js';
 import { DEPTH_PARAMS } from './engine/depth.js';
 import { POSTFX_PARAMS } from './engine/postfx.js';
-import { MODES, getMode, hasMode } from './modes/index.js';
+import { DEFAULT_MODE_ID, MODE_IDS, hasMode, getLoadedMode, loadedModes, onModeLoaded } from './modes/registry.js';
 import { LIMITS } from './config.js';
 
 const STORAGE_KEY = 'horain.params';
@@ -72,6 +72,27 @@ export function sanitizeValue(param, v) {
   }
 }
 
+/**
+ * Saved settings of a mode whose code has not been loaded yet (modes load on demand, registry.js): they cannot be
+ * checked against the schema yet, so only their shape is kept (a flat object of at most 64 numbers, booleans,
+ * short strings or short lists of strings, null) until the mode loads and sanitizeParams() validates them.
+ * They are never used before that.
+ */
+export function holdRaw(values) {
+  if (!isPlainObject(values)) return null;
+  const out = {};
+  let n = 0;
+  for (const k of Object.keys(values)) {
+    if (n >= 64 || k.length > 64 || k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+    const v = values[k];
+    const ok = v === null || typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v))
+      || (typeof v === 'string' && v.length <= LIMITS.maxStateString)
+      || (Array.isArray(v) && v.length <= 16 && v.every((x) => typeof x === 'string' && x.length <= 16));
+    if (ok) { out[k] = Array.isArray(v) ? v.slice() : v; n++; }
+  }
+  return out;
+}
+
 /** Keep only known ids of `schema`; every other key (including __proto__) is dropped. */
 export function sanitizeParams(schema, values) {
   const src = isPlainObject(values) ? values : {};
@@ -85,12 +106,14 @@ export function sanitizeParams(schema, values) {
 
 export function defaultState() {
   return {
-    modeId: MODES[0].id,
+    modeId: DEFAULT_MODE_ID,
     global: defaultsOf(IMAGE_PARAMS),
     color: defaultsOf(COLOR_PARAMS),
     depth: defaultsOf(DEPTH_PARAMS),
     postfx: defaultsOf(POSTFX_PARAMS),
-    modes: Object.fromEntries(MODES.map((m) => [m.id, defaultsOf(m.params)])),
+    // settings of the loaded modes; held (unchecked) settings of modes not loaded yet live in heldModes
+    modes: Object.fromEntries(loadedModes().map((m) => [m.id, defaultsOf(m.params)])),
+    heldModes: {},
   };
 }
 
@@ -98,13 +121,23 @@ export function defaultState() {
 export function sanitizeState(raw) {
   const src = isPlainObject(raw) ? raw : {};
   const state = defaultState();
-  if (typeof src.modeId === 'string' && hasMode(src.modeId)) state.modeId = src.modeId;
+  // the active mode must be loaded (main.js loads the requested one before the studio starts)
+  if (typeof src.modeId === 'string' && hasMode(src.modeId) && getLoadedMode(src.modeId)) state.modeId = src.modeId;
   state.global = sanitizeParams(IMAGE_PARAMS, src.global);
   state.color = sanitizeParams(COLOR_PARAMS, src.color);
   state.depth = sanitizeParams(DEPTH_PARAMS, src.depth);
   state.postfx = sanitizeParams(POSTFX_PARAMS, src.postfx);
   const modes = isPlainObject(src.modes) ? src.modes : {};
-  for (const m of MODES) state.modes[m.id] = sanitizeParams(m.params, has(modes, m.id) ? modes[m.id] : null);
+  const held = isPlainObject(src.heldModes) ? src.heldModes : {};
+  for (const id of MODE_IDS) {
+    const raw = has(modes, id) ? modes[id] : has(held, id) ? held[id] : null;
+    const m = getLoadedMode(id);
+    if (m) state.modes[id] = sanitizeParams(m.params, raw);
+    else if (raw) {
+      const kept = holdRaw(raw);
+      if (kept) state.heldModes[id] = kept;
+    }
+  }
   return state;
 }
 
@@ -162,8 +195,39 @@ function schemaFor(path) {
   if (root === 'color') return COLOR_PARAMS.find((p) => p.id === a);
   if (root === 'depth') return DEPTH_PARAMS.find((p) => p.id === a);
   if (root === 'postfx') return POSTFX_PARAMS.find((p) => p.id === a);
-  if (root === 'modes' && hasMode(a)) return getMode(a).params.find((p) => p.id === b);
+  if (root === 'modes' && hasMode(a)) return getLoadedMode(a)?.params.find((p) => p.id === b) || null;
   return null;
+}
+
+/** Give a freshly loaded mode its settings in `state`: the held ones once validated, else its defaults. */
+export function adoptMode(state, mode) {
+  if (!state || !mode) return;
+  state.heldModes ||= {};
+  if (!state.modes[mode.id]) state.modes[mode.id] = sanitizeParams(mode.params, state.heldModes[mode.id] || null);
+  delete state.heldModes[mode.id];
+}
+
+/**
+ * The mode a share link (`#s=`) or the saved session asks for, before the studio starts, so main.js can load its
+ * code first. Anything unexpected gives the default mode.
+ */
+export function requestedModeId(hash = typeof location !== 'undefined' ? location.hash : '') {
+  try {
+    const m = /^#s=([A-Za-z0-9_-]+)$/.exec(hash || '');
+    if (m) {
+      if (m[1].length > LIMITS.maxHashChars) return DEFAULT_MODE_ID;
+      const raw = JSON.parse(fromBase64Url(m[1]));
+      return isPlainObject(raw) && hasMode(raw.modeId) ? raw.modeId : DEFAULT_MODE_ID;
+    }
+  } catch { return DEFAULT_MODE_ID; }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw || raw.length > LIMITS.maxHashChars * 4) return DEFAULT_MODE_ID;
+    const s = JSON.parse(raw);
+    return isPlainObject(s) && hasMode(s.modeId) ? s.modeId : DEFAULT_MODE_ID;
+  } catch {
+    return DEFAULT_MODE_ID;
+  }
 }
 
 export function createStore() {
@@ -176,7 +240,9 @@ export function createStore() {
   function write() {
     saveTimer = 0;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: SHARE_VERSION, modeId: state.modeId, global: state.global, color: state.color, depth: state.depth, postfx: state.postfx, modes: state.modes }));
+      // modes not loaded in this session keep their saved (held) settings
+      const modes = { ...(state.heldModes || {}), ...state.modes };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: SHARE_VERSION, modeId: state.modeId, global: state.global, color: state.color, depth: state.depth, postfx: state.postfx, modes }));
     } catch { /* storage blocked: the app works the same */ }
   }
   function persist() {
@@ -187,6 +253,9 @@ export function createStore() {
   if (typeof window !== 'undefined') {
     window.addEventListener('pagehide', () => { if (saveTimer) { clearTimeout(saveTimer); write(); } });
   }
+
+  // a mode whose code arrives later gets its settings (validated now that its schema is known)
+  onModeLoaded((m) => adoptMode(state, m));
 
   return {
     get state() { return state; },
@@ -216,8 +285,11 @@ export function createStore() {
       return true;
     },
 
+    /** Switch to a loaded mode (registry.loadMode() first); false for an unknown, unloaded or current mode. */
     setModeId(id) {
-      if (!hasMode(id) || id === state.modeId) return false;
+      const m = getLoadedMode(id);
+      if (!m || id === state.modeId) return false;
+      adoptMode(state, m);
       state.modeId = id;
       persist();
       notify('modeId');
@@ -230,7 +302,7 @@ export function createStore() {
       else if (group === 'color') state.color = defaultsOf(COLOR_PARAMS);
       else if (group === 'depth') state.depth = defaultsOf(DEPTH_PARAMS);
       else if (group === 'postfx') state.postfx = defaultsOf(POSTFX_PARAMS);
-      else if (group === 'mode') state.modes[state.modeId] = defaultsOf(getMode(state.modeId).params);
+      else if (group === 'mode') state.modes[state.modeId] = defaultsOf(getLoadedMode(state.modeId).params);
       else return;
       persist();
       notify(`reset.${group}`);
@@ -239,6 +311,8 @@ export function createStore() {
     /** Replace everything with an (already sanitized) state. */
     replace(next) {
       state = next;
+      state.heldModes ||= {};
+      for (const m of loadedModes()) adoptMode(state, m);
       persist();
       notify('replace');
     },

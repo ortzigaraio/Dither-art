@@ -291,6 +291,9 @@ export function drawScaled(ctx, src, sx, sy, sw, sh, dw, dh, scratch) {
     level++;
   }
   ctx.drawImage(cur, cx, cy, cw, ch, 0, 0, dw, dh);
+  // halving steps this frame did not need (a smaller source or a larger work size): give their memory back
+  for (let i = level; i < scratch.length; i++) if (scratch[i]) scratch[i].width = scratch[i].height = 0;
+  scratch.length = level;
 }
 
 /**

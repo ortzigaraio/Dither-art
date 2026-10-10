@@ -15,6 +15,7 @@
 // the worker imports (both must be same-origin; the worker's default library is the pinned jsDelivr build).
 
 import { boxBlur } from './analysis.js';
+import { LIMITS } from '../config.js';
 
 export const AI_SIZE_LABEL = '≈27–50 MB';
 
@@ -73,7 +74,7 @@ export function depthSettings(p = {}) {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_WORKER_URL = new URL('../workers/depth.worker.js', import.meta.url).href;
-const cfg = { workerUrl: DEFAULT_WORKER_URL, libUrl: null };
+const cfg = { workerUrl: DEFAULT_WORKER_URL, libUrl: null, stallMs: LIMITS.depthStallMs, timeoutMs: LIMITS.depthLoadMs };
 
 const ai = {
   status: 'idle', // idle | loading | ready | failed
@@ -101,9 +102,12 @@ function sameOrigin(url) {
  * Inject the worker URL and/or the library URL the worker imports (tests, self-hosting). Same-origin only.
  * Resets a loaded or failed model so the next request starts over with the new configuration.
  */
-export function configureDepthAI({ workerUrl, libUrl } = {}) {
+export function configureDepthAI({ workerUrl, libUrl, stallMs, timeoutMs } = {}) {
   if (workerUrl !== undefined) cfg.workerUrl = workerUrl === null ? DEFAULT_WORKER_URL : (sameOrigin(workerUrl) || cfg.workerUrl);
   if (libUrl !== undefined) cfg.libUrl = libUrl === null ? null : sameOrigin(libUrl);
+  const ms = (v, fallback) => (v === null ? fallback : Number.isFinite(v) && v > 0 ? v : undefined);
+  if (stallMs !== undefined) cfg.stallMs = ms(stallMs, LIMITS.depthStallMs) ?? cfg.stallMs;
+  if (timeoutMs !== undefined) cfg.timeoutMs = ms(timeoutMs, LIMITS.depthLoadMs) ?? cfg.timeoutMs;
   resetDepthAI();
 }
 
@@ -169,7 +173,19 @@ export function loadDepthAI({ onProgress } = {}) {
   const off = onProgress ? onDepthAI((i) => onProgress(i.progress)) : null;
   ai.load = new Promise((resolve, reject) => {
     let worker;
+    // Time limits (PENDIENTE: a stalled CDN or Hugging Face download must not leave the studio waiting forever):
+    // no progress for cfg.stallMs, or cfg.timeoutMs in total, gives up with 'timeout' (the caller falls back to
+    // brightness).
+    let stallTimer = 0;
+    const totalTimer = setTimeout(() => fail('timeout'), cfg.timeoutMs);
+    const armStall = () => {
+      clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => fail('timeout'), cfg.stallMs);
+    };
+    const stopTimers = () => { clearTimeout(stallTimer); clearTimeout(totalTimer); };
     const fail = (msg) => {
+      stopTimers();
+      if (ai.worker !== worker && ai.status !== 'loading') return; // already settled or reset
       worker?.terminate();
       if (ai.worker === worker) ai.worker = null;
       ai.status = 'failed';
@@ -185,10 +201,13 @@ export function loadDepthAI({ onProgress } = {}) {
       return;
     }
     ai.worker = worker;
+    armStall();
     worker.addEventListener('error', (ev) => { ev.preventDefault?.(); if (ai.status === 'loading') fail(ev.message || 'worker error'); });
     worker.addEventListener('message', (e) => {
       const m = e.data || {};
+      if (ai.status === 'loading' && m.type === 'progress') armStall(); // still downloading
       if (ai.status === 'loading' && m.type === 'ready') {
+        stopTimers();
         ai.status = 'ready';
         ai.progress = 1;
         ai.device = String(m.device || '');

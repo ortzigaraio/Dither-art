@@ -413,8 +413,8 @@ test.describe('controls UI', () => {
 
   test('colour defaults follow the theme until the user picks one', async ({ page }) => {
     await page.selectOption('#theme-select', 'horain');
-    expect((await getControl(page, 'ink')).toLowerCase()).toBe('#c4f169');
-    expect((await getControl(page, 'bg')).toLowerCase()).toBe('#15181e');
+    expect((await getControl(page, 'ink')).toLowerCase()).toBe('#f4f2ec');
+    expect((await getControl(page, 'bg')).toLowerCase()).toBe('#050505');
     await page.selectOption('#theme-select', 'amber');
     expect((await getControl(page, 'ink')).toLowerCase()).toBe('#ffb000');
     // once chosen, the colour sticks across themes

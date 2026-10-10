@@ -4,58 +4,110 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self' blob: data: https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co https://count.ortzigar.org https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; form-action 'none'">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dither by Horain</title>
-  <meta name="description" content="Turn images, video and your webcam into ASCII, dithering, Braille, halftone, plotter SVG, 3D and generative art. 25 styles, everything runs in your browser: nothing is uploaded.">
+  <title>Dither · images and video into art</title>
+  <meta name="description" content="Turn images, video and your webcam into ASCII, dithering, linear halftone, Braille, plotter SVG, 3D and generative art. 26 styles, everything runs in your browser: nothing is uploaded.">
   <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#15181E">
+  <meta name="theme-color" content="#050505">
   <link rel="canonical" href="https://dither.ortzigar.org/">
-  <link rel="icon" type="image/svg+xml" href="./assets/brand/horain-icon.svg">
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/dither-icon.svg">
   <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
   <link rel="manifest" href="./site.webmanifest">
 
   <!-- Open Graph / Twitter (absolute URLs = config.siteUrl; checked by tests/seo.spec.js) -->
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Dither by Horain">
-  <meta property="og:title" content="Dither by Horain · turn images &amp; video into art">
-  <meta property="og:description" content="ASCII, dithering, Braille, halftone, plotter SVG, 3D and generative art from your images, videos and webcam. 100% in your browser: nothing is uploaded.">
+  <meta property="og:site_name" content="Dither">
+  <meta property="og:title" content="Dither · turn images &amp; video into art">
+  <meta property="og:description" content="ASCII, dithering, linear halftone, Braille, plotter SVG, 3D and generative art from your images, videos and webcam. 100% in your browser: nothing is uploaded.">
   <meta property="og:url" content="https://dither.ortzigar.org/">
   <meta property="og:image" content="https://dither.ortzigar.org/assets/og-image.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Dither by Horain: the same picture rendered as ASCII, halftone, 1-bit dithering and contour lines.">
+  <meta property="og:image:alt" content="Dither: a painting of fishermen redrawn as white engraved lines on electric blue, next to the headline Turn images and video into art.">
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Dither by Horain · turn images &amp; video into art">
-  <meta name="twitter:description" content="25 styles of generative art from your images, videos and webcam. 100% in your browser: nothing is uploaded.">
+  <meta name="twitter:title" content="Dither · turn images &amp; video into art">
+  <meta name="twitter:description" content="26 styles of generative art from your images, videos and webcam. 100% in your browser: nothing is uploaded.">
   <meta name="twitter:image" content="https://dither.ortzigar.org/assets/og-image.png">
-  <meta name="twitter:image:alt" content="Dither by Horain: the same picture rendered as ASCII, halftone, 1-bit dithering and contour lines.">
+  <meta name="twitter:image:alt" content="Dither: a painting of fishermen redrawn as white engraved lines on electric blue, next to the headline Turn images and video into art.">
 
   <link rel="stylesheet" href="./assets/fonts/fonts.css">
+  <link rel="stylesheet" href="./assets/fonts/display/display.css">
   <link rel="stylesheet" href="./css/tokens.css">
   <link rel="stylesheet" href="./css/base.css">
   <link rel="stylesheet" href="./css/layout.css">
   <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/landing.css">
+
+  <!-- Critical fonts (the hero headline, the UI and the labels), fetched with the CSS instead of after layout -->
+  <link rel="preload" href="./assets/fonts/display/big-shoulders-display-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 
   <script src="./src/boot.js"></script>
   <script type="module" src="./src/main.js"></script>
+  <!-- modulepreload:start (generated by tests/make-preload.mjs) -->
+  <link rel="modulepreload" href="./src/i18n/i18n.js">
+  <link rel="modulepreload" href="./src/ui/header.js">
+  <link rel="modulepreload" href="./src/ui/dropzone.js">
+  <link rel="modulepreload" href="./src/ui/toast.js">
+  <link rel="modulepreload" href="./src/ui/hero.js">
+  <link rel="modulepreload" href="./src/studio.js">
+  <link rel="modulepreload" href="./src/ui/shortcuts.js">
+  <link rel="modulepreload" href="./src/modes/registry.js">
+  <link rel="modulepreload" href="./src/state.js">
+  <link rel="modulepreload" href="./src/config.js">
+  <link rel="modulepreload" href="./src/engine/dither.js">
+  <link rel="modulepreload" href="./src/io/validate.js">
+  <link rel="modulepreload" href="./src/io/sources.js">
+  <link rel="modulepreload" href="./src/i18n/es.js">
+  <link rel="modulepreload" href="./src/i18n/en.js">
+  <link rel="modulepreload" href="./src/engine/pipeline.js">
+  <link rel="modulepreload" href="./src/scheduler.js">
+  <link rel="modulepreload" href="./src/engine/preprocess.js">
+  <link rel="modulepreload" href="./src/engine/color.js">
+  <link rel="modulepreload" href="./src/engine/glyphs.js">
+  <link rel="modulepreload" href="./src/ui/viewer.js">
+  <link rel="modulepreload" href="./src/ui/controls.js">
+  <link rel="modulepreload" href="./src/ui/modeList.js">
+  <link rel="modulepreload" href="./src/ui/exportPanel.js">
+  <link rel="modulepreload" href="./src/ui/inputPanel.js">
+  <link rel="modulepreload" href="./src/ui/presets.js">
+  <link rel="modulepreload" href="./src/presets.js">
+  <link rel="modulepreload" href="./src/ui/transport.js">
+  <link rel="modulepreload" href="./src/ui/scramble.js">
+  <link rel="modulepreload" href="./src/io/download.js">
+  <link rel="modulepreload" href="./src/io/exportImage.js">
+  <link rel="modulepreload" href="./src/engine/heavy.js">
+  <link rel="modulepreload" href="./src/engine/depth.js">
+  <link rel="modulepreload" href="./src/engine/camera.js">
+  <link rel="modulepreload" href="./src/ui/depthDialog.js">
+  <link rel="modulepreload" href="./src/modes/ascii.js">
+  <link rel="modulepreload" href="./src/modes/meta.js">
+  <link rel="modulepreload" href="./src/engine/gl.js">
+  <link rel="modulepreload" href="./src/engine/postfx.js">
+  <link rel="modulepreload" href="./src/engine/analysis.js">
+  <link rel="modulepreload" href="./src/engine/palettes.js">
+  <link rel="modulepreload" href="./src/io/clock.js">
+  <link rel="modulepreload" href="./src/io/exportText.js">
+  <link rel="modulepreload" href="./src/engine/ansiart.js">
+  <!-- modulepreload:end -->
 </head>
 <body data-view="home">
   <a class="skip-link" href="#main" data-i18n="a11y.skip">Skip to content</a>
 
   <header class="site-header" id="site-header">
     <div class="header-inner">
-      <a class="brand" href="./" aria-label="Dither by Horain">
-        <span class="brand-name">dither</span>
-        <span class="brand-by" data-i18n="brand.by">by</span>
-        <img class="logo logo-on-dark" src="./assets/brand/horain-espino-on-dark.svg" alt="Horain" width="97" height="28">
-        <img class="logo logo-on-light" src="./assets/brand/horain-espino.svg" alt="Horain" width="96" height="26">
+      <a class="brand" href="./" aria-label="Dither, home" data-i18n-attr="aria-label:brand.home">
+        <span class="brand-name wordmark">Dither</span>
       </a>
+      <p class="header-tag mono" aria-hidden="true"><span data-i18n="header.tagline">Image &rarr; art engine</span></p>
 
       <nav class="site-nav" aria-label="Primary" data-i18n-attr="aria-label:nav.primary" id="site-nav">
         <a href="#studio" data-nav="studio" data-i18n="nav.studio">Studio</a>
         <a href="#modes" data-nav="modes" data-i18n="nav.modes">Styles</a>
+        <a href="#works" data-nav="works" data-i18n="nav.works">Works</a>
         <a href="#about" data-nav="about" data-i18n="nav.about">About</a>
       </nav>
 
@@ -79,73 +131,150 @@
     <!-- ============ HOME ============ -->
     <section id="home" class="view view-home" aria-labelledby="hero-title">
       <div class="hero">
-        <div class="hero-copy">
-          <p class="label hero-eyebrow"><span class="eye" aria-hidden="true"></span><span data-i18n="hero.eyebrow">100% in your browser</span></p>
-          <h1 id="hero-title" class="display hero-title">
-            <span data-i18n="hero.title.a">turn images &amp; video into</span>
-            <span class="hero-accent" data-i18n="hero.title.b">art</span>
-          </h1>
-          <p class="hero-sub" id="hero-sub">&nbsp;</p>
-          <div class="valla" role="presentation"></div>
+        <div class="hero-meta mono" aria-hidden="true">
+          <span>[01]</span>
+          <span data-i18n="hero.eyebrow">100% in your browser</span>
+          <span class="hero-meta-end" data-i18n="hero.meta">Images · video · webcam</span>
+        </div>
+        <h1 id="hero-title" class="headline hero-title">
+          <span class="hero-line" data-i18n="hero.title.a">turn images &amp; video into</span>
+          <span class="hero-accent" data-i18n="hero.title.b">art</span>
+        </h1>
 
-          <div class="dropzone" id="dropzone">
-            <svg class="dz-ants" aria-hidden="true" focusable="false"><rect x="1" y="1" width="100%" height="100%" rx="12" ry="12" pathLength="100"/></svg>
-            <span class="dz-corner dz-tl" aria-hidden="true">&#9484;</span>
-            <span class="dz-corner dz-tr" aria-hidden="true">&#9488;</span>
-            <span class="dz-corner dz-bl" aria-hidden="true">&#9492;</span>
-            <span class="dz-corner dz-br" aria-hidden="true">&#9496;</span>
-            <button type="button" class="dz-pick" id="dz-pick">
-              <span class="dz-arrow" aria-hidden="true">&#8595;</span>
-              <span class="dz-title" data-i18n="dz.title">Upload a file by dragging and dropping it here, or click here to select file</span>
-            </button>
-            <p class="dz-formats mono" aria-label="Supported formats" data-i18n-attr="aria-label:dz.formatsLabel">
-              <span class="dz-tag">IMG</span> PNG JPG WEBP GIF AVIF BMP <span class="dz-sep" aria-hidden="true">&middot;</span> <span class="dz-tag">VID</span> MP4 WEBM MOV
-            </p>
-            <div class="dz-actions" id="dz-actions"></div>
-            <p class="dz-privacy" id="dz-privacy" data-i18n="dz.privacy">Your files never leave your device.</p>
+        <div class="hero-grid">
+          <figure class="hero-demo" id="hero-demo" aria-hidden="true" hidden>
+            <div class="term">
+              <div class="term-bar mono"><span class="term-fig" aria-hidden="true">FIG. 01</span><span id="hero-demo-label">demo &middot; ascii</span></div>
+              <canvas id="hero-canvas" width="640" height="420"></canvas>
+              <span class="tick tick-tl" aria-hidden="true"></span><span class="tick tick-tr" aria-hidden="true"></span>
+              <span class="tick tick-bl" aria-hidden="true"></span><span class="tick tick-br" aria-hidden="true"></span>
+            </div>
+          </figure>
+
+          <div class="hero-copy">
+            <p class="hero-lead" data-i18n="hero.lead">Drop a picture, a video or open your camera.</p>
+            <p class="hero-sub label" id="hero-sub">&nbsp;</p>
+
+            <div class="dropzone" id="dropzone">
+              <svg class="dz-ants" aria-hidden="true" focusable="false"><rect x="1" y="1" width="100%" height="100%" pathLength="100"/></svg>
+              <span class="dz-corner dz-tl" aria-hidden="true">&#9484;</span>
+              <span class="dz-corner dz-tr" aria-hidden="true">&#9488;</span>
+              <span class="dz-corner dz-bl" aria-hidden="true">&#9492;</span>
+              <span class="dz-corner dz-br" aria-hidden="true">&#9496;</span>
+              <button type="button" class="dz-pick" id="dz-pick">
+                <span class="dz-arrow" aria-hidden="true">&#8595;</span>
+                <span class="dz-title" data-i18n="dz.title">Upload a file by dragging and dropping it here, or click here to select file</span>
+              </button>
+              <p class="dz-formats mono" aria-label="Supported formats" data-i18n-attr="aria-label:dz.formatsLabel">
+                <span class="dz-tag">IMG</span> PNG JPG WEBP GIF AVIF BMP <span class="dz-sep" aria-hidden="true">&middot;</span> <span class="dz-tag">VID</span> MP4 WEBM MOV
+              </p>
+              <div class="dz-actions" id="dz-actions"></div>
+              <p class="dz-privacy" id="dz-privacy" data-i18n="dz.privacy">Your files never leave your device.</p>
+            </div>
           </div>
         </div>
-
-        <figure class="hero-demo" id="hero-demo" aria-hidden="true" hidden>
-          <div class="term">
-            <div class="term-bar mono"><span class="term-dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="hero-demo-label">demo &middot; ascii</span></div>
-            <canvas id="hero-canvas" width="640" height="420"></canvas>
-          </div>
-        </figure>
       </div>
+
+      <section id="feature" class="feature" aria-labelledby="feature-title">
+        <div class="feature-inner">
+          <figure class="reveal feature-art" data-reveal="1.18">
+            <img class="reveal-media" src="./assets/landing/remeros-lines-1600.webp"
+                 srcset="./assets/landing/remeros-lines-800.webp 560w, ./assets/landing/remeros-lines-1600.webp 1120w"
+                 sizes="(max-width: 899px) calc(100vw - 32px), 46vw" width="1120" height="1600"
+                 loading="lazy" decoding="async" alt="Fishermen with oars and a basket of fish" data-i18n-attr="alt:works.alt.remeros">
+          </figure>
+          <div class="feature-copy">
+            <p class="label mono"><span class="idx">[02]</span> <span data-i18n="feature.label">New style</span></p>
+            <h2 id="feature-title" class="headline feature-title" data-i18n="feature.title">linear halftone</h2>
+            <p class="feature-body" data-i18n="feature.body">Parallel lines that swell with the tone.</p>
+            <ul class="spec-list mono">
+              <li><span data-i18n="feature.spec.angle">Angle</span><span>0–180°</span></li>
+              <li><span data-i18n="feature.spec.spacing">Spacing</span><span>2–24 px</span></li>
+              <li><span data-i18n="feature.spec.wave">Wave</span><span>0–1</span></li>
+              <li><span data-i18n="feature.spec.follow">Contour following</span><span>0–1</span></li>
+              <li><span data-i18n="feature.spec.export">Export</span><span>PNG · SVG · WEBM</span></li>
+            </ul>
+            <button type="button" class="btn btn-invert" id="feature-try" data-i18n="feature.cta">Try linear halftone</button>
+          </div>
+        </div>
+      </section>
 
       <section id="modes" class="section" aria-labelledby="modes-title" hidden>
         <div class="section-head">
-          <p class="label"><span class="idx">01 /</span> <span data-i18n="modes.label">Styles</span></p>
-          <h2 id="modes-title" class="display section-title" data-i18n="modes.title">pick a style</h2>
+          <p class="label mono"><span class="idx">[03]</span> <span data-i18n="modes.label">Styles</span></p>
+          <h2 id="modes-title" class="headline section-title" data-i18n="modes.title">pick a style</h2>
         </div>
-        <div class="valla" role="presentation"></div>
         <ul class="mode-grid" id="mode-grid"></ul>
       </section>
 
-      <section id="about" class="section" aria-labelledby="about-title">
+      <section id="works" class="section works" aria-labelledby="works-title">
         <div class="section-head">
-          <p class="label"><span class="idx">02 /</span> <span data-i18n="about.label">About</span></p>
-          <h2 id="about-title" class="display section-title" data-i18n="about.title">made to be played with</h2>
+          <p class="label mono"><span class="idx">[04]</span> <span data-i18n="works.label">Made with Dither</span></p>
+          <h2 id="works-title" class="headline section-title" data-i18n="works.title">one picture, many prints</h2>
         </div>
-        <div class="valla" role="presentation"></div>
+        <div class="works-grid">
+          <figure class="work work-wide">
+            <div class="reveal work-frame" data-reveal="1.15">
+              <img class="reveal-media" src="./assets/landing/herrero-rings-1600.webp"
+                   srcset="./assets/landing/herrero-rings-800.webp 800w, ./assets/landing/herrero-rings-1600.webp 1600w"
+                   sizes="(max-width: 899px) calc(100vw - 32px), 62vw" width="1600" height="1232"
+                   loading="lazy" decoding="async" alt="A blacksmith and a villager" data-i18n-attr="alt:works.alt.herrero">
+            </div>
+            <figcaption class="mono"><span>FIG. 02</span><span data-i18n="works.cap.herrero">Linear halftone · rings</span></figcaption>
+          </figure>
+          <figure class="work work-tall">
+            <div class="reveal work-frame" data-reveal="1.2">
+              <img class="reveal-media" src="./assets/landing/labrador-halftone-1600.webp"
+                   srcset="./assets/landing/labrador-halftone-800.webp 572w, ./assets/landing/labrador-halftone-1600.webp 1143w"
+                   sizes="(max-width: 899px) calc(100vw - 32px), 32vw" width="1143" height="1600"
+                   loading="lazy" decoding="async" alt="A farmer with crossed arms" data-i18n-attr="alt:works.alt.labrador">
+            </div>
+            <figcaption class="mono"><span>FIG. 03</span><span data-i18n="works.cap.labrador">Halftone · electric blue</span></figcaption>
+          </figure>
+          <figure class="work work-square">
+            <div class="work-frame">
+              <img src="./assets/landing/pescado-dither-1600.webp"
+                   srcset="./assets/landing/pescado-dither-800.webp 800w, ./assets/landing/pescado-dither-1600.webp 1600w"
+                   sizes="(max-width: 899px) calc(100vw - 32px), 40vw" width="1600" height="1600"
+                   loading="lazy" decoding="async" alt="Fish sellers around a table" data-i18n-attr="alt:works.alt.pescado">
+            </div>
+            <figcaption class="mono"><span>FIG. 04</span><span data-i18n="works.cap.pescado">1-bit dither · checkerboard</span></figcaption>
+          </figure>
+          <figure class="work work-collage">
+            <div class="reveal work-frame" data-reveal="1.15">
+              <img class="reveal-media" src="./assets/landing/puerto-hatch-1600.webp"
+                   srcset="./assets/landing/puerto-hatch-800.webp 800w, ./assets/landing/puerto-hatch-1600.webp 1600w"
+                   sizes="(max-width: 899px) calc(100vw - 32px), 54vw" width="1600" height="1184"
+                   loading="lazy" decoding="async" alt="Two fishermen carrying an oar" data-i18n-attr="alt:works.alt.puerto">
+            </div>
+            <figcaption class="mono"><span>FIG. 05</span><span data-i18n="works.cap.puerto">Crosshatch · collage</span></figcaption>
+          </figure>
+        </div>
+        <p class="works-note" data-i18n="works.note">Every picture on this page was made with Dither.</p>
+      </section>
+
+      <section id="about" class="section about" aria-labelledby="about-title">
+        <div class="section-head">
+          <p class="label mono"><span class="idx">[05]</span> <span data-i18n="about.label">About</span></p>
+          <h2 id="about-title" class="headline section-title" data-i18n="about.title">made to be played with</h2>
+        </div>
         <div class="about-grid">
           <article class="about-card">
-            <h3 class="display" data-i18n="about.private.title">private</h3>
+            <h3 class="card-title" data-i18n="about.private.title">private</h3>
             <p data-i18n="about.private.body">Everything is processed in your browser. Nothing is uploaded to any server.</p>
           </article>
           <article class="about-card">
-            <h3 class="display" data-i18n="about.media.title">images &amp; video</h3>
+            <h3 class="card-title" data-i18n="about.media.title">images &amp; video</h3>
             <p data-i18n="about.media.body">Drop an image or a video, or open your camera.</p>
           </article>
           <article class="about-card">
-            <h3 class="display" data-i18n="about.export.title">export</h3>
+            <h3 class="card-title" data-i18n="about.export.title">export</h3>
             <p data-i18n="about.export.body">Save PNG, SVG, TXT, HTML, ANSI, PLY or video.</p>
           </article>
         </div>
         <div class="about-more">
           <section class="about-block" id="privacy" aria-labelledby="privacy-title">
-            <h3 id="privacy-title" class="display" data-i18n="privacy.title">privacy</h3>
+            <h3 id="privacy-title" class="card-title" data-i18n="privacy.title">privacy</h3>
             <ul class="privacy-list">
               <li data-i18n="privacy.files">Your pictures, videos and camera are processed on your device.</li>
               <li data-i18n="privacy.storage">Settings are stored only in this browser.</li>
@@ -154,9 +283,9 @@
               <li data-i18n="privacy.none">No cookies, no third-party analytics.</li>
             </ul>
           </section>
-          <section class="about-block" aria-labelledby="horain-title">
-            <h3 id="horain-title" class="display" data-i18n="about.horain.title">built with horain</h3>
-            <p data-i18n="about.horain.body">Dither is the UI/UX test bench of Horain.</p>
+          <section class="about-block" aria-labelledby="open-title">
+            <h3 id="open-title" class="card-title" data-i18n="about.open.title">open source</h3>
+            <p data-i18n="about.open.body">Dither is free and open source.</p>
             <p class="credits muted" data-i18n="about.credits">Algorithms and fonts.</p>
           </section>
         </div>
@@ -217,14 +346,11 @@
 
   <footer class="site-footer" id="site-footer">
     <div class="footer-inner">
-      <span class="brand footer-brand">
-        <span class="brand-name">dither</span>
-        <span class="brand-by" data-i18n="brand.by">by</span>
-        <img class="logo logo-on-dark" src="./assets/brand/horain-espino-on-dark.svg" alt="Horain" width="97" height="28">
-        <img class="logo logo-on-light" src="./assets/brand/horain-espino.svg" alt="Horain" width="96" height="26">
-      </span>
-      <div id="visit-counter" class="visit-counter" hidden></div>
-      <nav class="footer-links" aria-label="Footer" data-i18n-attr="aria-label:footer.nav">
+      <div class="footer-top">
+        <p class="footer-claim headline" data-i18n="footer.claim">images in, art out</p>
+        <div id="visit-counter" class="visit-counter" hidden></div>
+      </div>
+      <nav class="footer-links mono" aria-label="Footer" data-i18n-attr="aria-label:footer.nav">
         <a href="https://github.com/ortzigaraio/Dither-art" target="_blank" rel="noopener noreferrer" data-i18n="footer.source">Source on GitHub</a>
         <a href="https://ortzigar.org" target="_blank" rel="noopener noreferrer" data-i18n="footer.madeBy">made by ortzigar.org</a>
         <a href="https://github.com/ortzigaraio/Dither-art/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" data-i18n="footer.license">MIT license</a>
@@ -232,6 +358,7 @@
         <button type="button" class="link-btn" id="footer-keys" aria-keyshortcuts="?" data-i18n="footer.keys">Keyboard shortcuts</button>
       </nav>
     </div>
+    <p class="footer-wordmark wordmark" aria-hidden="true">Dither</p>
   </footer>
 
   <div class="toasts" id="toasts" role="region" aria-label="Notifications" data-i18n-attr="aria-label:toast.region"></div>

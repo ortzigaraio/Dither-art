@@ -19,7 +19,7 @@ const LABEL_SIZE = 10;
 
 export const BAND_PALETTES = {
   topo: { name: { es: 'Topográfica', en: 'Topographic' }, stops: ['#3d6b4f', '#7da35d', '#c9c27c', '#d9a86a', '#a8724c', '#ece6dc'] },
-  horain: { name: { es: 'Horain', en: 'Horain' }, stops: ['#15181e', '#66696f', '#c4f169', '#edfad1', '#f7f8fa'] },
+  horain: { name: { es: 'Lima y tinta', en: 'Lime & ink' }, stops: ['#15181e', '#66696f', '#c4f169', '#edfad1', '#f7f8fa'] },
   ocean: { name: { es: 'Océano', en: 'Ocean' }, stops: ['#0b1d3a', '#1f4e79', '#3f88c5', '#9fd3e6', '#f1f8fb'] },
   magma: { name: { es: 'Magma', en: 'Magma' }, stops: ['#000004', '#3b0f70', '#8c2981', '#de4968', '#fe9f6d', '#fcfdbf'] },
   paper: { name: { es: 'Tinta y papel', en: 'Ink and paper' }, stops: null }, // from the ink to the paper colour

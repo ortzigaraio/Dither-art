@@ -187,7 +187,7 @@ const MODE = {
       showIf: (p) => p.titleBlock,
     },
     { id: 'sheet', type: 'text', default: '1/1', maxLength: 12, label: { es: 'Hoja', en: 'Sheet' }, showIf: (p) => p.titleBlock },
-    { id: 'drawnBy', type: 'text', default: 'HORAIN', maxLength: 40, label: { es: 'Dibujó', en: 'Drawn by' }, showIf: (p) => p.titleBlock },
+    { id: 'drawnBy', type: 'text', default: 'DITHER', maxLength: 40, label: { es: 'Dibujó', en: 'Drawn by' }, showIf: (p) => p.titleBlock },
     { id: 'lineWeight', type: 'range', min: 0.3, max: 3, step: 0.05, default: 1, label: { es: 'Grosor de línea', en: 'Line weight' } },
   ],
 

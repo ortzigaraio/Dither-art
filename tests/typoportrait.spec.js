@@ -121,6 +121,7 @@ test.describe('typographic portrait: escaping', () => {
     await page.addInitScript(() => { window.__pwned = 0; });
     await gotoApp(page);
     const hash = await page.evaluate(async (evil) => {
+      await import('/src/modes/index.js'); // registers every mode (the app loads them on demand)
       const { createStore, encodeShare, sanitizeState } = await import('/src/state.js');
       const s = sanitizeState({ modeId: 'typoportrait', modes: { typoportrait: { text: evil, uppercase: false } } });
       return `#s=${encodeShare(s)}`;
@@ -261,7 +262,7 @@ test.describe('typographic portrait: layout and modulation', () => {
     }
     const empty = await renderMode(page, { ...base('   '), outputs: ['svg'] });
     const info = await inspect(page, empty.outputs.svg, 'svg');
-    expect(info.letters.startsWith('HORAIN')).toBe(true); // fell back to the default text
+    expect(info.letters.startsWith('DITHER')).toBe(true); // fell back to the default text
     await guard.assertClean(expect);
   });
 

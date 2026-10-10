@@ -61,13 +61,13 @@ test.describe('seo and share metadata', () => {
     const res = await request.get('/site.webmanifest');
     expect(res.ok()).toBe(true);
     const m = JSON.parse(await res.text());
-    expect(m.name).toBe('Dither by Horain');
+    expect(m.name).toBe('Dither');
     expect(m.short_name).toBe('Dither');
     expect(m.start_url).toBe('./');
     expect(m.scope).toBe('./');
     expect(m.display).toBe('standalone');
     for (const k of ['background_color', 'theme_color']) expect(m[k]).toMatch(/^#[0-9A-F]{6}$/i);
-    expect(m.icons.some((i) => i.src === 'assets/brand/horain-icon.svg' && i.type === 'image/svg+xml')).toBe(true);
+    expect(m.icons.some((i) => i.src === 'assets/icons/dither-icon.svg' && i.type === 'image/svg+xml')).toBe(true);
     for (const size of ['192x192', '512x512']) expect(m.icons.some((i) => i.sizes === size && i.type === 'image/png')).toBe(true);
     for (const icon of m.icons) {
       expect(icon.src.startsWith('/') || /^https?:/.test(icon.src)).toBe(false); // relative: works under /<repo>/ too

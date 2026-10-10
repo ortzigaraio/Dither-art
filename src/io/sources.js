@@ -581,6 +581,11 @@ export class WebcamSource extends MediaElementSource {
   /** Switch camera: the new stream is opened first so a failure keeps the old one running. */
   async useDevice(deviceId) {
     const next = await WebcamSource.open({ deviceId });
+    if (this._disposed) {
+      // the source was dropped (another file, the demo...) while the new camera was opening: do not leave it on
+      next.dispose();
+      return;
+    }
     const old = this.stream;
     this.stream = next.stream;
     this.video.srcObject = next.stream;
