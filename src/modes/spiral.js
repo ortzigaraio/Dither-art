@@ -24,7 +24,8 @@ function waveParams(p, t) {
 export function spiralLine(p, T, LW, LH) {
   const cx = LW / 2;
   const cy = LH / 2;
-  const R = p.cover ? Math.hypot(LW, LH) / 2 : Math.min(LW, LH) / 2 - 2;
+  // a picture a few pixels tall (1×4096) would give a negative radius, and theta would never reach thetaMax
+  const R = Math.max(1, p.cover ? Math.hypot(LW, LH) / 2 : Math.min(LW, LH) / 2 - 2);
   const turns = Math.max(2, Math.round(p.lines));
   const spacing = R / turns;
   const wavelength = spacing / p.frequency;

@@ -17,6 +17,45 @@ import { isActive as postfxActive, applyPostFX } from './postfx.js';
 const MAX_WORK_SIDE = 8192;
 const MAX_WORK_PIXELS = 16e6;
 
+// Live pipelines, for pipelineStats() (diagnostics and the memory tests). Weak: a forgotten pipeline is not kept alive.
+const live = new Set();
+
+/** Rough bytes held by a mode state: typed arrays, ImageData and canvases, a few levels deep. */
+function stateBytes(root) {
+  const seen = new Set();
+  let bytes = 0;
+  const walk = (v, depth) => {
+    if (!v || typeof v !== 'object' || seen.has(v)) return;
+    seen.add(v);
+    if (ArrayBuffer.isView(v)) { bytes += v.byteLength; return; }
+    if (v instanceof ArrayBuffer) { bytes += v.byteLength; return; }
+    if (typeof ImageData !== 'undefined' && v instanceof ImageData) { bytes += v.data.byteLength; return; }
+    if ((typeof HTMLCanvasElement !== 'undefined' && v instanceof HTMLCanvasElement)
+      || (typeof OffscreenCanvas !== 'undefined' && v instanceof OffscreenCanvas)) { bytes += v.width * v.height * 4; return; }
+    if (depth > 5) return;
+    if (v instanceof Map) { for (const x of v.values()) walk(x, depth + 1); return; }
+    const proto = Object.getPrototypeOf(v);
+    if (!Array.isArray(v) && proto !== Object.prototype && proto !== null) return; // GL contexts, DOM nodes...
+    for (const k of Object.keys(v)) walk(v[k], depth + 1);
+  };
+  walk(root, 0);
+  return bytes;
+}
+
+/**
+ * Diagnostics: what every live pipeline holds (mode states, their bytes, surfaces). Used by the memory tests.
+ * @returns {{label:string, modes:string[], stateBytes:number, surfaceBytes:number, analysisBytes:number, gl:boolean}[]}
+ */
+export function pipelineStats() {
+  const out = [];
+  for (const ref of live) {
+    const p = ref.deref();
+    if (!p) { live.delete(ref); continue; }
+    out.push(p.stats());
+  }
+  return out;
+}
+
 function makeCanvas() {
   return document.createElement('canvas');
 }
@@ -25,8 +64,9 @@ function makeCanvas() {
  * @param {object} [o]
  * @param {() => void} [o.onInvalidate]  re-render request (fonts loaded, worker progress, AI depth arrived...)
  * @param {(event: 'lost'|'restored') => void} [o.onContextEvent]  WebGL context lost / restored (to tell the user)
+ * @param {string} [o.label]  name shown by pipelineStats()
  */
-export function createPipeline({ onInvalidate, onContextEvent } = {}) {
+export function createPipeline({ onInvalidate, onContextEvent, label = '' } = {}) {
   const ws = { canvas: makeCanvas(), ctx: null, scratch: [] };
   ws.ctx = ws.canvas.getContext('2d', { willReadFrequently: true });
   const analysis = new Analysis();
@@ -67,7 +107,18 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
   let lastPre = { imageData: null, usedFilterPath: 'none' };
   let frameCounter = 0;
 
+  /** Dispose and forget a mode state (its buffers, canvases and GL objects). */
+  function dropState(id) {
+    const entry = states.get(id);
+    if (!entry) return;
+    states.delete(id);
+    try { entry.mode.dispose?.(entry.state); } catch { /* resources already gone (context lost) */ }
+  }
+
   function stateFor(mode, ctx) {
+    // Only the mode being rendered keeps its state: switching modes releases the previous one's scratch buffers,
+    // canvases and GL objects (with 25 modes they would otherwise add up to tens of MB per pipeline).
+    for (const [id, entry] of states) if (id !== mode.id || entry.mode !== mode) dropState(id);
     let entry = states.get(mode.id);
     if (!entry) {
       entry = { mode, state: mode.init ? mode.init(ctx) : {} };
@@ -249,7 +300,7 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
     };
   }
 
-  return {
+  const api = {
     render,
     /** Cancel the render in flight (its heavy jobs reject with AbortError and render() resolves `{ aborted: true }`). */
     abortPending() { pending?.abort(); },
@@ -257,12 +308,22 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
     invalidate() { lastKey = ''; },
     /** Mode state, used by exports (toText/toSVG) after a render. */
     getState(modeId) { return states.get(modeId)?.state ?? null; },
+    /** Diagnostics (see pipelineStats()). */
+    stats() {
+      let surfaceBytes = 0;
+      for (const c of [ws.canvas, surface2d, framed, fxCanvas, outGl?.canvas, ...ws.scratch]) if (c) surfaceBytes += c.width * c.height * 4;
+      let bytes = 0;
+      for (const { state } of states.values()) bytes += stateBytes(state);
+      return { label, modes: [...states.keys()], stateBytes: bytes, surfaceBytes, analysisBytes: analysis.bytes, gl: !!outGl };
+    },
     dispose() {
-      for (const { mode, state } of states.values()) {
-        try { mode.dispose?.(state); } catch { /* ignore */ }
-      }
-      states.clear();
+      for (const id of [...states.keys()]) dropState(id);
+      live.delete(selfRef);
       lastKey = '';
+      analysis.release();
+      lastPre = { imageData: null, usedFilterPath: 'none' };
+      for (const c of ws.scratch) if (c) c.width = c.height = 0;
+      ws.scratch.length = 0;
       ws.canvas.width = ws.canvas.height = 1;
       surface2d.width = surface2d.height = 1;
       framed.width = framed.height = 1;
@@ -274,4 +335,7 @@ export function createPipeline({ onInvalidate, onContextEvent } = {}) {
       }
     },
   };
+  const selfRef = new WeakRef(api);
+  live.add(selfRef);
+  return api;
 }
