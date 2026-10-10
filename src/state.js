@@ -2,7 +2,7 @@
 // All external state (localStorage, `#s=` links, imported presets) goes through sanitizeState(), which only
 // keeps known keys, clamps numbers to their schema range, whitelists enums and truncates strings (PLAN.md 18.3).
 
-import { IMAGE_PARAMS } from './engine/preprocess.js';
+import { IMAGE_PARAMS, CUTOUT_PARAMS } from './engine/preprocess.js';
 import { COLOR_PARAMS, normalizeHex } from './engine/color.js';
 import { DEPTH_PARAMS } from './engine/depth.js';
 import { POSTFX_PARAMS } from './engine/postfx.js';
@@ -298,8 +298,16 @@ export function createStore() {
 
     /** Reset a group to its defaults: 'global' | 'color' | 'depth' | 'postfx' | 'mode'. */
     resetGroup(group) {
-      if (group === 'global') state.global = defaultsOf(IMAGE_PARAMS);
-      else if (group === 'color') state.color = defaultsOf(COLOR_PARAMS);
+      if (group === 'global') {
+        // the image group leaves the cut-out settings alone, and the other way round
+        const keep = new Set(CUTOUT_PARAMS.map((q) => q.id));
+        const d = defaultsOf(IMAGE_PARAMS);
+        for (const k of Object.keys(d)) if (keep.has(k)) d[k] = state.global[k];
+        state.global = d;
+      } else if (group === 'cutout') {
+        const d = defaultsOf(CUTOUT_PARAMS);
+        state.global = { ...state.global, ...d };
+      } else if (group === 'color') state.color = defaultsOf(COLOR_PARAMS);
       else if (group === 'depth') state.depth = defaultsOf(DEPTH_PARAMS);
       else if (group === 'postfx') state.postfx = defaultsOf(POSTFX_PARAMS);
       else if (group === 'mode') state.modes[state.modeId] = defaultsOf(getLoadedMode(state.modeId).params);

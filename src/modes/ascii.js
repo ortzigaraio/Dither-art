@@ -10,6 +10,7 @@ import { quantize } from '../engine/dither.js';
 import {
   resolveColors, isDarkBackground, buildGradientLUT, makePaletteMatcher, boostSaturation, rgbToHex,
 } from '../engine/color.js';
+import { autoLevels, applyGamma, localContrast } from '../engine/tone.js';
 import { gridToText } from '../io/exportText.js';
 import { LIMITS, config } from '../config.js';
 
@@ -55,6 +56,12 @@ export default {
 
   presets: [
     { id: 'classic', name: { es: 'Clásico', en: 'Classic' }, mode: { gradient: 'standard' }, color: { colorMode: 'mono', ink: null, bg: null } },
+    {
+      id: 'portrait', name: { es: 'Retrato fino', en: 'Fine portrait' },
+      global: { cols: 220, contrast: 110, sharpness: 3, denoise: 3 },
+      mode: { gradient: 'standard', cellSize: 9, autoLevels: true, localContrast: 0.5, spaceDensity: 2 },
+      color: { colorMode: 'mono', ink: null, bg: null },
+    },
     { id: 'matrix', name: { es: 'Matrix', en: 'Matrix' }, mode: { gradient: 'katakana' }, color: { colorMode: 'mono', ink: '#00ff41', bg: '#031205' } },
     { id: 'blocks', name: { es: 'Bloques color', en: 'Color blocks' }, mode: { gradient: 'blocks', spaceDensity: 0 }, color: { colorMode: 'original' } },
   ],
@@ -95,6 +102,21 @@ export default {
       id: 'edgeThreshold', type: 'range', min: 0, max: 1, step: 0.05, default: 0.3,
       label: { es: 'Umbral de borde', en: 'Edge threshold' },
       showIf: (p, all) => all.global.edges > 0 && p.edgeChars,
+    },
+    {
+      id: 'autoLevels', type: 'toggle', default: false,
+      label: { es: 'Niveles automáticos', en: 'Auto levels' },
+      help: { es: 'Estira el rango de tonos para usar todos los caracteres, del más vacío al más denso. Es lo que más mejora un retrato.', en: 'Stretches the tonal range so every character gets used, from emptiest to densest. The single biggest boost for a portrait.' },
+    },
+    {
+      id: 'gamma', type: 'range', min: 0.4, max: 2.5, step: 0.05, default: 1, randomRange: [0.8, 1.4],
+      label: { es: 'Gamma (medios tonos)', en: 'Gamma (mid-tones)' },
+      help: { es: 'Mayor que 1 aclara los medios tonos; menor que 1 los oscurece.', en: 'Above 1 lifts the mid-tones; below 1 darkens them.' },
+    },
+    {
+      id: 'localContrast', type: 'range', min: 0, max: 1, step: 0.05, default: 0.35, randomRange: [0.2, 0.6],
+      label: { es: 'Contraste local', en: 'Local contrast' },
+      help: { es: 'Separa los detalles de su entorno (ojos, pliegues, bordes) sin quemar el resto.', en: 'Separates details from their surroundings (eyes, folds, edges) without blowing out the rest.' },
     },
     {
       id: 'font', type: 'select', default: 'geist-mono', options: FONT_OPTIONS,
@@ -159,7 +181,12 @@ export default {
     if (!fontsReady(fontId, text)) requestFonts(fontId, text, ctx.invalidate);
 
     // ---- levels: luma -> darkness (bright pixels get dense glyphs on dark backgrounds) ----
-    const luma = ctx.luma();
+    const luma0 = ctx.luma();
+    const luma = state.tone && state.tone.length === n ? state.tone : (state.tone = new Float32Array(n));
+    luma.set(luma0);
+    if (p.autoLevels) autoLevels(luma);
+    applyGamma(luma, p.gamma);
+    localContrast(luma, cols, rows, p.localContrast);
     const t = state.t && state.t.length === n ? state.t : (state.t = new Float32Array(n));
     if (dark) for (let i = 0; i < n; i++) t[i] = luma[i];
     else for (let i = 0; i < n; i++) t[i] = 1 - luma[i];
@@ -205,7 +232,7 @@ export default {
         if (state.cache.gradKey !== gk) { state.cache.gradKey = gk; state.cache.lut = buildGradientLUT(cr.stops); }
         const lut = state.cache.lut;
         for (let i = 0; i < n; i++) {
-          const li = Math.round(luma[i] * 255) * 3;
+          const li = Math.round(luma0[i] * 255) * 3;
           cellRGBA[i * 4] = lut[li]; cellRGBA[i * 4 + 1] = lut[li + 1]; cellRGBA[i * 4 + 2] = lut[li + 2]; cellRGBA[i * 4 + 3] = 255;
         }
       } else { // palette
