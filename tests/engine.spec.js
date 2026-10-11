@@ -569,7 +569,7 @@ test.describe('engine', () => {
     expect(res.same).toBe(true);
     expect(res.moves).toBe(true);
     expect(res.versionsDiffer).toBe(true);
-    expect([res.w, res.h]).toEqual([960, 640]);
+    expect([res.w, res.h]).toEqual([520, 354]);
   });
 
   // ---------------------------------------------------------------------------------------------

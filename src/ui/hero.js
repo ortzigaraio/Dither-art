@@ -1,4 +1,4 @@
-// Home view: the live demo (the real engine running on the procedural DemoSource, rotating through a curated
+// Home view: the live demo (the real engine running on the DemoSource (the Great Wave GIF), rotating through a curated
 // tour of modes every 4 s)
 // and the gallery of modes with lazily rendered, looping thumbnails.
 
@@ -359,6 +359,7 @@ export function createHome({ onOpenMode }) {
       buildGallery();
       modesSection.hidden = false;
       demo = await DemoSource.create({ animated: !reducedMotion() });
+      await frame(0).catch(() => {}); // paint once before showing the figure, so it never appears blank
       demoFigure.hidden = false;
       scheduler.start();
     },
