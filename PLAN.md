@@ -778,7 +778,7 @@ CPU/GPU indica dónde va el trabajo principal.
 | Video | `<video muted playsinline loop>` oculto con `URL.createObjectURL(file)`. Preview con `requestVideoFrameCallback`. Mostrar duración, fps estimado, resolución. |
 | Webcam | `getUserMedia({ video: { width: 1280, height: 720 } })`, selector de cámara si hay varias, espejo por defecto. Grabación con MediaRecorder (sección 9). |
 | Pegar | evento `paste` con `image/*`. |
-| Demo | `DemoSource`: canvas procedural animado (gradientes, esfera sombreada, letras HORAIN, formas en movimiento) → sirve como imagen y como "video" sin archivos con licencia. |
+| Demo | `DemoSource`: GIF animado en bucle de La gran ola de Kanagawa (Hokusai, dominio público, `assets/sample/gran-ola.gif`, decodificado con `ImageDecoder`; sin él, primer fotograma). Sirve como imagen y como "video" sin archivos con licencia. |
 
 Revocar los object URLs al cambiar de fuente. Al cambiar de fuente se conservan modo y parámetros.
 
@@ -1430,3 +1430,6 @@ Registro de cambios respecto a este plan, decididos durante la implementación (
 **ASCII más fino y recorte inteligente (2026-10-10)**
 - ASCII: tres parámetros nuevos de tono (`src/engine/tone.js`), que son lo que hace que un retrato se lea bien: *Niveles automáticos* (estira el 1,5 % más claro y más oscuro para usar todo el gradiente; desactivado por defecto porque neutraliza brillo y contraste; lo activa el preset), *Gamma* y *Contraste local* (máscara de enfoque sobre la rejilla de celdas, 0,35 por defecto). Preset nuevo «Retrato fino» (220 columnas, celda de 9 px, reducción de ruido 3).
 - Grupo nuevo «Recorte y limpieza» en el panel de imagen (`src/engine/cutout.js`, parámetros `CUTOUT_PARAMS` dentro de `IMAGE_PARAMS`): *Reducir ruido* (filtro bilateral 3×3 que respeta los contornos) y *Recorte inteligente* (automático por el color del borde, o quitar zonas claras/oscuras) con tolerancia, «solo fondo conectado al borde», limpieza de motas, suavizado del borde, relleno (el del modo, blanco o negro) y «conservar el fondo». Si el recorte dejara la imagen vacía o intacta, no se aplica. Funciona sin red y sobre cada fotograma de video/webcam. Restablecer un grupo ya no toca el otro. Sin dependencias nuevas; no usa IA (un recorte con IA queda como mejora opcional).
+
+**Muestra de prueba: La gran ola (2026-10-11)**
+- `DemoSource` ya no dibuja la esfera/planeta procedural: reproduce en bucle `assets/sample/gran-ola.gif` (520×354, 20 fotogramas, 64 colores; ondulación de la ola generada a partir de la estampa de Hokusai, dominio público). Se decodifica una vez con `ImageDecoder` (WebCodecs) y se guarda como canvases; sin `ImageDecoder` se usa el primer fotograma. La API de `DemoSource` no cambia (`animated`, `still`). La prueba de tamaño pasó de 960×640 a 520×354.
