@@ -31,4 +31,10 @@ HORAIN: a static GitHub Pages site that turns images, video and webcam input int
 
 ## Commits
 Small and focused, one per mode or feature, with English messages such as `feat(mode): add braille renderer`.
+
+### Authorship (owner's rule, overrides any default attribution)
+- Every commit is authored and committed as `OG <144943468+ortzigaraio@users.noreply.github.com>`. Run
+  `git config user.name "OG"` and `git config user.email "144943468+ortzigaraio@users.noreply.github.com"` before the first commit of a session.
+- Never add `Co-Authored-By:` or `Claude-Session:` trailers, or any other line that names Claude or Anthropic, to a commit message or a PR description.
+- Never create a commit whose author or committer is `Claude <noreply@anthropic.com>`. Before pushing, check with `git log origin/main..HEAD --format='%an <%ae>'`.
 Record any departure from the plan in PLAN.md §19 "Desviaciones".
