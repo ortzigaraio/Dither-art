@@ -52,6 +52,8 @@ test.describe('axe-core', () => {
       await page.click(`#mode-list [data-mode-id="${id}"]`);
       await page.evaluate(() => document.querySelectorAll('#controls details').forEach((d) => { d.open = true; }));
       await page.waitForTimeout(300);
+      // the item that just lost aria-current is still fading back: axe would read a half-way colour
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
       expect(await axe(page), id).toEqual([]);
     }
     await guard.assertClean(expect);
