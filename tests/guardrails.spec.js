@@ -357,7 +357,7 @@ test.describe('18.1 file input', () => {
     await page.click('[data-action="demo"]');
     await page.waitForSelector('body[data-view="studio"]');
     await expect(page.locator('[data-group="input"] .src-name')).toHaveText(/demo/i);
-    await expect(page.locator('[data-group="input"] .src-line')).toContainText('384×216');
+    await expect(page.locator('[data-group="input"] .src-line')).toContainText('480×326');
     await page.waitForFunction(() => Number(document.getElementById('viewer-canvas').dataset.frame || 0) > 0);
     await guard.assertClean(expect);
   });
