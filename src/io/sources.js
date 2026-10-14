@@ -106,62 +106,45 @@ export class ImageSource {
   }
 }
 
-const DEMO_URL = new URL('../../assets/sample/gran-ola.gif', import.meta.url).href;
-let demoFramesPromise = null;
+// The sample clip is stored as one sprite sheet (assets/sample/hombre-sheet.webp): COUNT frames of W x H in a grid of
+// COLS columns, sampled at FPS from the owner's 10 s clip. A sheet decodes the same way in every browser (no video codec
+// and no ImageDecoder), and any time maps straight to a frame, which keeps the demo deterministic and random-access.
+const DEMO = { url: new URL('../../assets/sample/hombre-sheet.webp', import.meta.url).href, cols: 10, count: 100, w: 384, h: 216, fps: 10 };
+let demoSheetPromise = null;
 
-/** Decode the sample GIF once: [{ canvas, ms }]. Engines without ImageDecoder get its first frame only. */
-function loadDemoFrames() {
-  if (demoFramesPromise) return demoFramesPromise;
-  demoFramesPromise = (async () => {
-    const frames = [];
-    if (typeof ImageDecoder !== 'undefined') {
-      try {
-        const res = await fetch(DEMO_URL);
-        const dec = new ImageDecoder({ data: await res.arrayBuffer(), type: 'image/gif' });
-        await dec.tracks.ready;
-        const n = dec.tracks.selectedTrack.frameCount;
-        for (let i = 0; i < n; i++) {
-          const { image } = await dec.decode({ frameIndex: i });
-          const c = makeCanvas(image.displayWidth, image.displayHeight);
-          c.getContext('2d').drawImage(image, 0, 0);
-          frames.push({ canvas: c, ms: Math.max(20, (image.duration || 70000) / 1000) });
-          image.close();
-        }
-        dec.close();
-        if (frames.length) return frames;
-      } catch { /* fall through to the still frame */ }
-    }
+/** Decode the sample sheet once. */
+function loadDemoSheet() {
+  if (demoSheetPromise) return demoSheetPromise;
+  demoSheetPromise = (async () => {
     const img = new Image();
-    img.src = DEMO_URL;
+    img.src = DEMO.url;
     await img.decode();
-    const c = makeCanvas(img.naturalWidth, img.naturalHeight);
-    c.getContext('2d').drawImage(img, 0, 0);
-    return [{ canvas: c, ms: 70 }];
+    return img;
   })();
-  demoFramesPromise.catch(() => { demoFramesPromise = null; });
-  return demoFramesPromise;
+  demoSheetPromise.catch(() => { demoSheetPromise = null; });
+  return demoSheetPromise;
 }
 
 /**
- * The sample picture: the looping GIF of Hokusai's The Great Wave off Kanagawa (public domain, assets/sample/).
- * With `animated: true` frame(time) steps through the GIF (time in seconds); otherwise it shows the frame at `still`.
+ * The sample clip: a 10 s looping animation of Friedrich's Wanderer above the Sea of Fog (assets/sample/).
+ * With `animated: true` frame(time) steps through the clip (time in seconds); otherwise it shows the frame at `still`.
  */
 export class DemoSource {
   static async create(opts = {}) {
-    return new DemoSource(await loadDemoFrames(), opts);
+    return new DemoSource(await loadDemoSheet(), opts);
   }
 
-  constructor(frames, { animated = false, still = 1.4 } = {}) {
+  constructor(sheet, { animated = false, still = 1.4 } = {}) {
     this.id = 'demo';
     this.kind = 'demo';
     this.name = 'demo';
-    this.frames = frames;
-    this.width = frames[0].canvas.width;
-    this.height = frames[0].canvas.height;
-    this.animated = animated && frames.length > 1;
+    this.sheet = sheet;
+    this.width = DEMO.w;
+    this.height = DEMO.h;
+    this.animated = !!animated;
     this.still = still;
     this.version = nextVersion++;
-    this.loop = frames.reduce((sum, f) => sum + f.ms, 0) / 1000;
+    this.loop = DEMO.count / DEMO.fps;
     this.canvas = makeCanvas(this.width, this.height);
     this.ctx = this.canvas.getContext('2d');
     this._lastIndex = -1;
@@ -174,17 +157,17 @@ export class DemoSource {
   }
 
   draw(t) {
-    let at = (((Number(t) || 0) % this.loop) + this.loop) % this.loop * 1000;
-    let index = 0;
-    while (index < this.frames.length - 1 && at >= this.frames[index].ms) at -= this.frames[index++].ms;
+    const at = (((Number(t) || 0) % this.loop) + this.loop) % this.loop;
+    const index = Math.min(DEMO.count - 1, Math.floor(at * DEMO.fps));
     if (index === this._lastIndex) return;
     this._lastIndex = index;
-    this.ctx.drawImage(this.frames[index].canvas, 0, 0);
+    this.ctx.drawImage(this.sheet, (index % DEMO.cols) * DEMO.w, Math.floor(index / DEMO.cols) * DEMO.h, DEMO.w, DEMO.h, 0, 0, DEMO.w, DEMO.h);
   }
 
   dispose() {
     this.canvas.width = 1;
     this.canvas.height = 1;
+    this.sheet = null;
   }
 }
 

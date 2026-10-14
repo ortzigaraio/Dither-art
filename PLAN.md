@@ -778,7 +778,7 @@ CPU/GPU indica dónde va el trabajo principal.
 | Video | `<video muted playsinline loop>` oculto con `URL.createObjectURL(file)`. Preview con `requestVideoFrameCallback`. Mostrar duración, fps estimado, resolución. |
 | Webcam | `getUserMedia({ video: { width: 1280, height: 720 } })`, selector de cámara si hay varias, espejo por defecto. Grabación con MediaRecorder (sección 9). |
 | Pegar | evento `paste` con `image/*`. |
-| Demo | `DemoSource`: GIF animado en bucle de La gran ola de Kanagawa (Hokusai, dominio público, `assets/sample/gran-ola.gif`, decodificado con `ImageDecoder`; sin él, primer fotograma). Sirve como imagen y como "video" sin archivos con licencia. |
+| Demo | `DemoSource`: clip de 10 s en bucle del dueño (El caminante sobre el mar de nubes), guardado como hoja de fotogramas `assets/sample/hombre-sheet.webp` (100 fotogramas de 384×216 a 10 fps, en cuadrícula de 10 columnas); acceso directo por tiempo, sin códec de vídeo ni `ImageDecoder`. Sirve como imagen y como "video" sin archivos con licencia de terceros. |
 
 Revocar los object URLs al cambiar de fuente. Al cambiar de fuente se conservan modo y parámetros.
 
@@ -1433,3 +1433,6 @@ Registro de cambios respecto a este plan, decididos durante la implementación (
 
 **Muestra de prueba: La gran ola (2026-10-11)**
 - `DemoSource` ya no dibuja la esfera/planeta procedural: reproduce en bucle `assets/sample/gran-ola.gif` (520×354, 20 fotogramas, 64 colores; ondulación de la ola generada a partir de la estampa de Hokusai, dominio público). Se decodifica una vez con `ImageDecoder` (WebCodecs) y se guarda como canvases; sin `ImageDecoder` se usa el primer fotograma. La API de `DemoSource` no cambia (`animated`, `still`). La prueba de tamaño pasó de 960×640 a 520×354.
+
+**Demo: el vídeo del dueño (2026-10-13)**
+- `DemoSource` reproduce ahora el clip `hombre.mp4` del dueño (10 s, 1280×720, 24 fps) en lugar del GIF de la gran ola, que se elimina de `assets/sample/`. El clip se convirtió una vez con ffmpeg a una hoja de fotogramas WebP (`fps=10,scale=384:216,tile=10x10`, 384 KB) en lugar de usar un `<video>`: la demo necesita acceso por tiempo y síncrono (las miniaturas piden fotogramas concretos y las pruebas comparan imágenes), y la hoja se decodifica igual en todos los navegadores, también en Firefox y Safari, que con el GIF solo mostraban el primer fotograma. A 10 fps y 384×216 el decodificado ocupa ~33 MB. El audio no se usa (la demo va muda). La comprobación de las dimensiones de la prueba pasa de 520×354 a 384×216.
