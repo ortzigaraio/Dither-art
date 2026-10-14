@@ -1,4 +1,4 @@
-// Home view: the live demo (the real engine running on the DemoSource (the owner's clip), rotating through a curated
+// Home view: the live demo (the real engine running on the DemoSource (the animated Great Wave), rotating through a curated
 // tour of modes every 4 s)
 // and the gallery of modes with lazily rendered, looping thumbnails.
 

@@ -778,7 +778,7 @@ CPU/GPU indica dónde va el trabajo principal.
 | Video | `<video muted playsinline loop>` oculto con `URL.createObjectURL(file)`. Preview con `requestVideoFrameCallback`. Mostrar duración, fps estimado, resolución. |
 | Webcam | `getUserMedia({ video: { width: 1280, height: 720 } })`, selector de cámara si hay varias, espejo por defecto. Grabación con MediaRecorder (sección 9). |
 | Pegar | evento `paste` con `image/*`. |
-| Demo | `DemoSource`: clip de 10 s en bucle del dueño (El caminante sobre el mar de nubes), guardado como hoja de fotogramas `assets/sample/hombre-sheet.webp` (100 fotogramas de 384×216 a 10 fps, en cuadrícula de 10 columnas); acceso directo por tiempo, sin códec de vídeo ni `ImageDecoder`. Sirve como imagen y como "video" sin archivos con licencia de terceros. |
+| Demo | `DemoSource`: La gran ola de Kanagawa (Hokusai, dominio público) en blanco y negro, con el agua animada en un bucle continuo de 3 s; hoja de fotogramas `assets/sample/gran-ola-sheet.webp` (36 fotogramas de 480×326 a 12 fps, en cuadrícula de 6 columnas) generada con `tools/make_demo_wave.py` a partir de `assets/source/gran-ola.jpg`; acceso directo por tiempo, sin códec de vídeo ni `ImageDecoder`. |
 
 Revocar los object URLs al cambiar de fuente. Al cambiar de fuente se conservan modo y parámetros.
 
@@ -1436,3 +1436,8 @@ Registro de cambios respecto a este plan, decididos durante la implementación (
 
 **Demo: el vídeo del dueño (2026-10-13)**
 - `DemoSource` reproduce ahora el clip `hombre.mp4` del dueño (10 s, 1280×720, 24 fps) en lugar del GIF de la gran ola, que se elimina de `assets/sample/`. El clip se convirtió una vez con ffmpeg a una hoja de fotogramas WebP (`fps=10,scale=384:216,tile=10x10`, 384 KB) en lugar de usar un `<video>`: la demo necesita acceso por tiempo y síncrono (las miniaturas piden fotogramas concretos y las pruebas comparan imágenes), y la hoja se decodifica igual en todos los navegadores, también en Firefox y Safari, que con el GIF solo mostraban el primer fotograma. A 10 fps y 384×216 el decodificado ocupa ~33 MB. El audio no se usa (la demo va muda). La comprobación de las dimensiones de la prueba pasa de 520×354 a 384×216.
+
+**Demo: la gran ola animada en blanco y negro (2026-10-14)**
+- El dueño pidió dejar el vídeo del caminante y volver a la gran ola, en blanco y negro y animada «como una ola de verdad» con la misma estética del grabado. `assets/sample/hombre-sheet.webp` se elimina (el vídeo sigue en el historial) y `DemoSource` lee ahora `assets/sample/gran-ola-sheet.webp`.
+- La animación se genera con `tools/make_demo_wave.py` (numpy, scipy y scikit-image; no se distribuyen): la estampa se pasa a grises con algo de contraste de tinta y solo se mueve el agua, con un campo de desplazamiento periódico en el tiempo (el bucle de 3 s no tiene corte): oleaje que viaja por la imagen, flujo a lo largo de las propias líneas del grabado (estructura del gradiente), garras de la cresta que avanzan y retroceden y un leve temblor de la espuma. El cielo, la etiqueta, la firma y el Fuji quedan quietos. El original se guarda en `assets/source/gran-ola.jpg`.
+- Hoja de 480×326: 22 MB decodificada (la anterior de 384×216 y 100 fotogramas, 33 MB). Pruebas: tamaño 480×326.

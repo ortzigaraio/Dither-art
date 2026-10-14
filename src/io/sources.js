@@ -106,10 +106,10 @@ export class ImageSource {
   }
 }
 
-// The sample clip is stored as one sprite sheet (assets/sample/hombre-sheet.webp): COUNT frames of W x H in a grid of
-// COLS columns, sampled at FPS from the owner's 10 s clip. A sheet decodes the same way in every browser (no video codec
-// and no ImageDecoder), and any time maps straight to a frame, which keeps the demo deterministic and random-access.
-const DEMO = { url: new URL('../../assets/sample/hombre-sheet.webp', import.meta.url).href, cols: 10, count: 100, w: 384, h: 216, fps: 10 };
+// The sample clip is stored as one sprite sheet (assets/sample/gran-ola-sheet.webp): COUNT frames of W x H in a grid of
+// COLS columns, FPS frames per second, built by tools/make_demo_wave.py. A sheet decodes the same way in every browser
+// (no video codec and no ImageDecoder), and any time maps straight to a frame, which keeps the demo deterministic.
+const DEMO = { url: new URL('../../assets/sample/gran-ola-sheet.webp', import.meta.url).href, cols: 6, count: 36, w: 480, h: 326, fps: 12 };
 let demoSheetPromise = null;
 
 /** Decode the sample sheet once. */
@@ -126,7 +126,8 @@ function loadDemoSheet() {
 }
 
 /**
- * The sample clip: a 10 s looping animation of Friedrich's Wanderer above the Sea of Fog (assets/sample/).
+ * The sample clip: Hokusai's The Great Wave off Kanagawa (public domain) in black and white, with the water moving as
+ * a seamless 3 s loop (assets/sample/, made by tools/make_demo_wave.py).
  * With `animated: true` frame(time) steps through the clip (time in seconds); otherwise it shows the frame at `still`.
  */
 export class DemoSource {
