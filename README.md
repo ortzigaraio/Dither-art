@@ -7,7 +7,7 @@ exported on your device, and nothing is uploaded.
 **Live:** <https://dither.ortzigar.org> · Spec: [`PLAN.md`](PLAN.md) (Spanish) · Agent rules: [`CLAUDE.md`](CLAUDE.md) ·
 Publishing: [`DEPLOY.md`](DEPLOY.md)
 
-![Home: the hero runs the real engine on a procedural demo, touring the styles](docs/screenshots/home.jpg)
+![Home: the hero runs the real engine on an animated black-and-white Great Wave, touring the styles](docs/screenshots/home.jpg)
 
 Its six themes, tokens and components (`css/tokens.css`, `css/components.css`) do not depend on the app's logic.
 
@@ -29,6 +29,14 @@ Workers, served as-is by GitHub Pages.
   - **Simulation:** Gray-Scott reaction-diffusion and Life-like cellular automata.
 - **Inputs:** images (PNG, JPG, WebP, GIF, AVIF and BMP, validated by their magic bytes), video (MP4, WebM and MOV) and the
   webcam. Drop a file anywhere on the page, paste one, or try the demo.
+- **Image tools** (in the *Cut-out & clean-up* group, for every style that takes an image):
+  - **Smart cut-out:** isolates the subject and flattens the background to white, black or the style's own empty colour. *Auto* learns the
+    background from the image border; it can also remove light or dark areas. It has a tolerance, an option to keep only
+    background touching the edge (so a white shirt or an eye survives), speck clean-up and a soft edge. It runs on every frame of a video or webcam.
+  - **Reduce noise:** an edge-preserving filter that smooths grain and compression speckle without erasing outlines.
+  - **ASCII tone:** *Auto levels*, *Gamma* and *Local contrast* make portraits readable, and the *Fine portrait* preset puts it together.
+  - Cleaner results: use sharp photos with the subject clearly apart from the background, raise *Reduce noise* to 3–6 for dark, webcam
+    or heavily compressed pictures, and keep *Clean specks* at 25–50. The cut-out works by colour, so it does best on plain backgrounds.
 - **Exports:** PNG at 1×, 2× or 4×; SVG (in px or on A4, A3, Letter or a custom page in mm, with Inkscape layers and a plotter
   mode); TXT, HTML and ANSI; PLY and JSON; and MP4 or WebM video with the original sound. You can also copy the result to the clipboard.
 - **Post-FX:** scanlines, CRT curvature, glow, chromatic aberration, vignette, grain and flicker, with a *Full CRT* preset.
@@ -60,7 +68,7 @@ All paths are relative, so the same files work under `https://<user>.github.io/<
 ```bash
 cd tests
 npm install
-npx playwright test               # the full suite takes about 20 minutes
+npx playwright test               # the full suite (about 460 tests) takes about 30 minutes
 ```
 
 `@playwright/test` is pinned to 1.56.1 because its Chromium (revision 1194) is the one preinstalled in the development
@@ -75,6 +83,10 @@ node make-icons.mjs          # assets/icons/*.png from assets/icons/dither-icon.
 node make-og-image.mjs       # assets/og-image.png (1200×630, Open Graph / Twitter card)
 node make-screenshots.mjs    # docs/screenshots/*.jpg (this README)
 ```
+
+The demo on the home page is a black-and-white *Great Wave* whose water moves in a seamless 3 s loop. It is stored as a
+sprite sheet and produced from `assets/source/gran-ola.jpg` with `python3 tools/make_demo_wave.py SOURCE.jpg
+assets/sample/gran-ola-sheet.webp` (needs numpy, scipy, scikit-image and Pillow; the site itself ships none of them).
 
 ## Visit counter
 
@@ -96,7 +108,9 @@ src/modes/        one module per output style (interface in PLAN.md 6) + registr
 src/ui/           header, dropzone, hero and gallery, controls (generated from schemas), presets, viewer, shortcuts, counter…
 src/io/           validation by magic bytes, sources, image/text/SVG/video export
 src/i18n/         ES and EN dictionaries
-assets/           brand logos (never edited), self-hosted fonts, icons, og-image.png
+assets/           brand logos (never edited), self-hosted fonts, icons, og-image.png, sample/ (the demo sheet), source/ (original pictures)
+designs/          design mockups of the site (not part of the app)
+tools/            asset generators that need Python (the demo animation)
 docs/screenshots/ README screenshots (generated)
 vendor/           third-party modules (kept local: no runtime CDN)
 worker/counter/   visit counter Worker (deployed separately)
@@ -126,8 +140,11 @@ the URL hash, and the image itself is never stored or sent anywhere.
 - Noise and 3D: simplex and curl noise; SDF raymarching (a homage to donut.c).
 - Simulation: Gray-Scott with Karl Sims' Laplacian.
 - Depth: Depth Anything V2 through transformers.js.
+- Image tools: bilateral filtering (noise), colour-distance flood fill from the border (cut-out), percentile levels, gamma and unsharp masking (ASCII tone).
 
 **Libraries:** video by [Mediabunny](vendor/README.md).
+
+**Demo picture:** *The Great Wave off Kanagawa* by Hokusai (c. 1831, public domain), turned into black and white and animated for Dither.
 
 **Fonts (SIL OFL):** Unbounded, Geist, Geist Mono, JetBrains Mono, VT323, IBM Plex Mono and Space Mono.
 

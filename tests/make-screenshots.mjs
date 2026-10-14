@@ -42,7 +42,10 @@ const mode = (id, extra) => async (page) => {
 };
 
 try {
-  await shot('home', {});
+  // the hero rotates through the looks; wait for the 1-bit dithering one, which shows the demo picture best
+  await shot('home', {
+    setup: (page) => page.waitForFunction(() => document.getElementById('hero-demo')?.dataset.mode === 'dither1bit', null, { timeout: 60_000 }),
+  });
   await shot('gallery', {
     setup: async (page) => {
       await page.evaluate(() => document.getElementById('modes').scrollIntoView());
